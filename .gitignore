@@ -1,0 +1,19 @@
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Build
+target/
+*.class
+*.jar
+*.war
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
