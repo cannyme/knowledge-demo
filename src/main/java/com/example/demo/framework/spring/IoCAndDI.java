@@ -1,8 +1,6 @@
 package com.example.demo.framework.spring;
 
-import org.springframework.context.annotation.*;
-import org.springframework.beans.factory.annotation.*;
-import org.springframework.stereotype.*;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * Spring IoC（控制反转）和 DI（依赖注入）

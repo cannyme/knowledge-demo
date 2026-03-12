@@ -1,8 +1,5 @@
 package com.example.demo.database.mysql;
 
-import java.sql.*;
-import java.util.*;
-
 /**
  * MySQL索引优化
  *

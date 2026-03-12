@@ -1,6 +1,5 @@
 package com.example.demo.database.mysql;
 
-import javax.sql.DataSource;
 import java.sql.*;
 import java.util.concurrent.*;
 

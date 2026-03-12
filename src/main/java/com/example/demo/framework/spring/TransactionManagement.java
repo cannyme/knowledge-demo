@@ -1,8 +1,5 @@
 package com.example.demo.framework.spring;
 
-import org.springframework.transaction.annotation.*;
-import org.springframework.transaction.support.*;
-
 /**
  * Spring事务管理
  *

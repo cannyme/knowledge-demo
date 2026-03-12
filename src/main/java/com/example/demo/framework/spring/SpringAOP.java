@@ -1,8 +1,6 @@
 package com.example.demo.framework.spring;
 
-import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.springframework.stereotype.Component;
 
 /**
  * Spring AOP（面向切面编程）

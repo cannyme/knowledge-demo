@@ -1,8 +1,5 @@
 package com.example.demo.database.redis;
 
-import java.util.*;
-import java.util.concurrent.*;
-
 /**
  * Redis核心数据结构与应用场景
  *

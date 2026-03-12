@@ -1,8 +1,5 @@
 package com.example.demo.database.distributed;
 
-import java.util.*;
-import java.util.concurrent.*;
-
 /**
  * 分布式锁实现方案
  *

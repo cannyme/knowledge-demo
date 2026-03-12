@@ -1,7 +1,5 @@
 package com.example.demo.database.distributed;
 
-import java.util.*;
-
 /**
  * 分布式事务解决方案
  *

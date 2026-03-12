@@ -3,12 +3,6 @@ package com.example.demo.framework.springboot;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.boot.autoconfigure.*;
-import org.springframework.boot.autoconfigure.condition.*;
-import org.springframework.boot.context.properties.*;
-import org.springframework.context.annotation.*;
-import org.springframework.stereotype.Component;
-
 /**
  * Spring Boot 自动装配原理
  *
