@@ -4,7 +4,7 @@ Java 后端开发核心知识点示例代码，涵盖 Java 基础、设计模式
 
 ## 项目特点
 
-- **47 个知识点文件**，每个文件专注于一个核心知识点
+- **50 个知识点文件**，每个文件专注于一个核心知识点
 - **详细中文注释**，配合 ASCII 图解便于理解
 - **可运行的示例代码**，大部分文件包含 main 方法
 - **面试题汇总**，每文件末尾包含常见面试问题
@@ -27,7 +27,7 @@ Java 后端开发核心知识点示例代码，涵盖 Java 基础、设计模式
 |------|------|----------|
 | Spring | `framework/spring/` | IoC/DI、AOP、事务管理、Spring Security |
 | Spring Boot | `framework/springboot/` | 自动装配原理 |
-| Spring Cloud | `framework/springcloud/` | 服务发现、负载均衡、熔断限流、API 网关、Feign |
+| Spring Cloud | `framework/springcloud/` | 服务发现、负载均衡、熔断限流、API 网关、Feign、Nacos、Apollo、Sentinel、Dubbo |
 | MyBatis | `framework/mybatis/` | 核心概念、缓存、插件 |
 
 ### 数据库
