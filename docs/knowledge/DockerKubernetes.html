@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docker与Kubernetes基础 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+    --text-dim: #4a5068; --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e; --text-dim: #7a7a8e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .highlight { background: linear-gradient(135deg, rgba(240, 180, 41, 0.2), rgba(78, 205, 196, 0.15)); padding: 16px; border-radius: 8px; border-left: 3px solid var(--amber); margin: 16px 0; }
+  .tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .tip-title { color: var(--green); font-weight: 600; margin-bottom: 8px; }
+  .warning { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .warning-title { color: var(--red); font-weight: 600; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Architecture</span></nav>
+  <header class="hero">
+    <div class="hero-badge">☸️ DEVOPS</div>
+    <h1 class="hero-title">Docker与Kubernetes基础</h1>
+    <p class="hero-desc">Docker是容器化技术的代表，Kubernetes是容器编排的行业标准。掌握这两个技术对于现代云原生应用开发和部署至关重要。</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🐳</div><h2 class="section-title">Docker核心概念</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>概念</th><th>说明</th><th>类比</th></tr>
+        <tr><td>Image（镜像）</td><td>只读模板，包含运行应用所需的一切</td><td>类（Class）</td></tr>
+        <tr><td>Container（容器）</td><td>镜像的运行实例</td><td>对象（Object）</td></tr>
+        <tr><td>Dockerfile</td><td>构建镜像的脚本</td><td>构建脚本</td></tr>
+        <tr><td>Registry（仓库）</td><td>存储和分发镜像（Docker Hub）</td><td>Maven仓库</td></tr>
+        <tr><td>Volume（卷）</td><td>持久化存储，独立于容器生命周期</td><td>外部硬盘</td></tr>
+        <tr><td>Network（网络）</td><td>容器间通信机制</td><td>虚拟网络</td></tr>
+      </table>
+      <div class="mermaid">
+graph LR
+    A[Dockerfile] -->|build| B[Image]
+    B -->|push| C[Registry]
+    C -->|pull| D[Image]
+    D -->|run| E[Container]
+    E -->|commit| B
+    F[Volume] -->|mount| E
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📄</div><h2 class="section-title">Dockerfile指令详解</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>指令</th><th>说明</th><th>示例</th></tr>
+        <tr><td>FROM</td><td>基础镜像</td><td>FROM openjdk:17-jdk-slim</td></tr>
+        <tr><td>WORKDIR</td><td>工作目录</td><td>WORKDIR /app</td></tr>
+        <tr><td>COPY</td><td>复制文件</td><td>COPY target/*.jar app.jar</td></tr>
+        <tr><td>ADD</td><td>复制（支持URL、自动解压）</td><td>ADD app.tar.gz /app</td></tr>
+        <tr><td>RUN</td><td>执行命令</td><td>RUN apt-get update && apt-get install -y curl</td></tr>
+        <tr><td>ENV</td><td>环境变量</td><td>ENV JAVA_OPTS="-Xmx512m"</td></tr>
+        <tr><td>EXPOSE</td><td>暴露端口</td><td>EXPOSE 8080</td></tr>
+        <tr><td>ENTRYPOINT</td><td>容器启动命令（不可覆盖）</td><td>ENTRYPOINT ["java","-jar","app.jar"]</td></tr>
+        <tr><td>CMD</td><td>容器启动命令（可被覆盖）</td><td>CMD ["--server.port=8080"]</td></tr>
+        <tr><td>VOLUME</td><td>数据卷</td><td>VOLUME /app/logs</td></tr>
+      </table>
+
+      <h3>Spring Boot应用Dockerfile示例</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Dockerfile</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 多阶段构建：构建阶段
+FROM maven:3.8-openjdk-17 AS build
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# 运行阶段
+FROM openjdk:17-jdk-slim
+WORKDIR /app
+
+# 从构建阶段复制jar
+COPY --from=build /app/target/*.jar app.jar
+
+# 创建非root用户
+RUN useradd -m -u 1000 appuser
+USER appuser
+
+# 暴露端口
+EXPOSE 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+# 启动命令
+ENTRYPOINT ["java", "-jar", "app.jar"]</code></pre></div>
+      </div>
+      <div class="tip">
+        <div class="tip-title">💡 多阶段构建优势</div>
+        <ul>
+          <li>减小镜像体积（不包含Maven等构建工具）</li>
+          <li>提高安全性（不暴露源码和构建工具）</li>
+          <li>构建和运行分离，职责清晰</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⌨️</div><h2 class="section-title">Docker常用命令</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="image">镜像操作</button>
+        <button class="tab" data-tab="container">容器操作</button>
+        <button class="tab" data-tab="compose">Docker Compose</button>
+      </div>
+
+      <div id="image" class="tab-content active">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Shell</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code># 构建镜像
+docker build -t myapp:1.0 .
+
+# 查看镜像
+docker images
+docker rmi myapp:1.0
+
+# 推送/拉取镜像
+docker push registry/myapp:1.0
+docker pull nginx:latest
+
+# 导出/导入镜像
+docker save -o myapp.tar myapp:1.0
+docker load -i myapp.tar</code></pre></div>
+        </div>
+      </div>
+
+      <div id="container" class="tab-content">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Shell</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code># 运行容器
+docker run -d -p 8080:8080 --name myapp myapp:1.0
+
+# 常用选项
+# -d: 后台运行
+# -p: 端口映射
+# -v: 挂载卷
+# -e: 环境变量
+# --network: 指定网络
+# --restart: 重启策略
+
+# 容器管理
+docker ps              # 查看运行中容器
+docker ps -a           # 查看所有容器
+docker stop myapp      # 停止容器
+docker start myapp     # 启动容器
+docker rm myapp        # 删除容器
+docker logs -f myapp   # 查看日志
+docker exec -it myapp /bin/bash  # 进入容器</code></pre></div>
+        </div>
+      </div>
+
+      <div id="compose" class="tab-content">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_HOST=db
+      - DB_PORT=3306
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: mydb
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+
+volumes:
+  db-data:
+  redis-data:
+
+networks:
+  app-network:
+    driver: bridge</code></pre></div>
+        </div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Shell</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code># 启动所有服务
+docker-compose up -d
+
+# 查看服务状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f app
+
+# 停止并删除
+docker-compose down
+
+# 重新构建
+docker-compose up -d --build</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">☸️</div><h2 class="section-title">Kubernetes架构</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+graph TB
+    subgraph Master节点
+    A[API Server] --> B[etcd]
+    C[Scheduler] --> A
+    D[Controller Manager] --> A
+    end
+
+    subgraph Worker节点1
+    E[kubelet] --> F[Pod 1]
+    E --> G[Pod 2]
+    H[kube-proxy] --> E
+    end
+
+    subgraph Worker节点2
+    I[kubelet] --> J[Pod 3]
+    I --> K[Pod 4]
+    L[kube-proxy] --> I
+    end
+
+    A --> E
+    A --> I
+      </div>
+
+      <table>
+        <tr><th>组件</th><th>类型</th><th>说明</th></tr>
+        <tr><td>API Server</td><td>Master</td><td>集群统一入口，RESTful API</td></tr>
+        <tr><td>Scheduler</td><td>Master</td><td>调度Pod到合适的Node</td></tr>
+        <tr><td>Controller Manager</td><td>Master</td><td>控制器管理器，维护集群状态</td></tr>
+        <tr><td>etcd</td><td>Master</td><td>键值存储，保存集群数据</td></tr>
+        <tr><td>kubelet</td><td>Node</td><td>节点代理，管理Pod生命周期</td></tr>
+        <tr><td>kube-proxy</td><td>Node</td><td>网络代理，实现Service负载均衡</td></tr>
+      </table>
+
+      <h3>Kubernetes资源对象</h3>
+      <table>
+        <tr><th>资源</th><th>说明</th></tr>
+        <tr><td>Pod</td><td>最小部署单元，一个或多个容器</td></tr>
+        <tr><td>Deployment</td><td>管理Pod副本数量，滚动更新</td></tr>
+        <tr><td>Service</td><td>服务发现和负载均衡</td></tr>
+        <tr><td>ConfigMap</td><td>配置管理</td></tr>
+        <tr><td>Secret</td><td>敏感信息管理</td></tr>
+        <tr><td>PV/PVC</td><td>持久化存储</td></tr>
+        <tr><td>Ingress</td><td>HTTP路由，域名到Service的映射</td></tr>
+        <tr><td>Namespace</td><td>资源隔离</td></tr>
+        <tr><td>HPA</td><td>自动扩缩容</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📦</div><h2 class="section-title">K8s部署YAML示例</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="deployment">Deployment</button>
+        <button class="tab" data-tab="service">Service</button>
+        <button class="tab" data-tab="config">ConfigMap</button>
+      </div>
+
+      <div id="deployment" class="tab-content active">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: myapp
+        image: myapp:1.0
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: myapp-config
+              key: profile
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5</code></pre></div>
+        </div>
+      </div>
+
+      <div id="service" class="tab-content">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+spec:
+  selector:
+    app: myapp
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP
+
+---
+# Ingress配置
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: myapp-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: myapp.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: myapp
+            port:
+              number: 80</code></pre></div>
+        </div>
+      </div>
+
+      <div id="config" class="tab-content">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: myapp-config
+data:
+  profile: "prod"
+  application.yml: |
+    server:
+      port: 8080
+    spring:
+      datasource:
+        url: jdbc:mysql://db:3306/mydb
+        username: root
+        password: ${DB_PASSWORD}
+
+---
+# Secret用于敏感信息
+apiVersion: v1
+kind: Secret
+metadata:
+  name: myapp-secret
+type: Opaque
+stringData:
+  DB_PASSWORD: "mysecretpassword"
+  API_KEY: "sk-xxxxxxxx"</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">kubectl常用命令</h2></div>
+    <div class="section-body">
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Shell</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 查看资源
+kubectl get pods                    # 查看Pod
+kubectl get pods -o wide            # 详细信息（节点IP）
+kubectl get deployments             # 查看Deployment
+kubectl get services                # 查看Service
+kubectl get all                     # 查看所有资源
+
+# 查看详情
+kubectl describe pod myapp-xxx      # Pod详情
+kubectl logs myapp-xxx              # 查看日志
+kubectl logs -f myapp-xxx           # 实时查看日志
+kubectl exec -it myapp-xxx -- /bin/bash  # 进入容器
+
+# 创建/更新资源
+kubectl apply -f deployment.yaml    # 应用配置
+kubectl delete -f deployment.yaml   # 删除资源
+
+# 扩缩容
+kubectl scale deployment myapp --replicas=5
+
+# 滚动更新
+kubectl set image deployment/myapp myapp=myapp:2.0
+kubectl rollout status deployment/myapp
+kubectl rollout undo deployment/myapp  # 回滚
+
+# 端口转发
+kubectl port-forward pod/myapp-xxx 8080:8080</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">服务发现和负载均衡</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+graph LR
+    A[用户请求] --> B[Ingress]
+    B --> C[Service ClusterIP]
+    C --> D[Pod 1]
+    C --> E[Pod 2]
+    C --> F[Pod 3]
+      </div>
+      <table>
+        <tr><th>Service类型</th><th>说明</th><th>适用场景</th></tr>
+        <tr><td>ClusterIP</td><td>集群内部访问</td><td>内部服务通信</td></tr>
+        <tr><td>NodePort</td><td>暴露节点端口</td><td>测试环境</td></tr>
+        <tr><td>LoadBalancer</td><td>云厂商负载均衡</td><td>生产环境</td></tr>
+        <tr><td>ExternalName</td><td>外部服务映射</td><td>外接服务</td></tr>
+      </table>
+      <div class="tip">
+        <div class="tip-title">💡 负载均衡算法</div>
+        <p>Kube-proxy默认使用iptables模式，支持随机或轮询负载均衡。新版本支持IPVS模式，提供更多负载均衡算法。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">滚动更新和回滚</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+graph LR
+    A[v1版本<br/>3个副本] -->|更新| B[创建v2 Pod]
+    B --> C[删除v1 Pod]
+    C --> D[v2版本<br/>3个副本]
+    D -->|发现问题| E[回滚]
+    E --> A
+      </div>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Shell</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 滚动更新
+kubectl set image deployment/myapp myapp=myapp:v2.0
+
+# 查看更新状态
+kubectl rollout status deployment/myapp
+
+# 暂停更新
+kubectl rollout pause deployment/myapp
+
+# 恢复更新
+kubectl rollout resume deployment/myapp
+
+# 查看历史版本
+kubectl rollout history deployment/myapp
+
+# 回滚到上一版本
+kubectl rollout undo deployment/myapp
+
+# 回滚到指定版本
+kubectl rollout undo deployment/myapp --to-revision=2</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🆚</div><h2 class="section-title">Docker vs Kubernetes关系</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>维度</th><th>Docker</th><th>Kubernetes</th></tr>
+        <tr><td>定位</td><td>容器运行时</td><td>容器编排平台</td></tr>
+        <tr><td>管理范围</td><td>单机容器</td><td>集群容器</td></tr>
+        <tr><td>功能</td><td>构建、运行、分发</td><td>调度、扩缩、自愈、服务发现</td></tr>
+        <tr><td>关系</td><td colspan="2">K8s使用Docker作为容器运行时（CRI）</td></tr>
+      </table>
+      <div class="highlight">
+        <strong>使用场景：</strong>
+        <ul>
+          <li><strong>开发环境：</strong>Docker + Docker Compose 足够</li>
+          <li><strong>测试环境：</strong>可以使用Minikube或单节点K8s</li>
+          <li><strong>生产环境：</strong>Kubernetes是必须的，处理多节点、高可用、自动扩缩</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">✅</div><h2 class="section-title">最佳实践</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="docker-best">Docker最佳实践</button>
+        <button class="tab" data-tab="k8s-best">K8s最佳实践</button>
+      </div>
+
+      <div id="docker-best" class="tab-content active">
+        <div class="tip">
+          <div class="tip-title">💡 Docker最佳实践</div>
+          <ul>
+            <li>使用多阶段构建减小镜像体积</li>
+            <li>使用.dockerignore排除不必要文件</li>
+            <li>不要以root用户运行容器</li>
+            <li>使用特定版本标签，不使用latest</li>
+            <li>利用缓存优化构建顺序（不常变动的放前面）</li>
+            <li>添加健康检查HEALTHCHECK</li>
+          </ul>
+        </div>
+      </div>
+
+      <div id="k8s-best" class="tab-content">
+        <div class="tip">
+          <div class="tip-title">💡 K8s最佳实践</div>
+          <ul>
+            <li>配置资源限制（requests/limits）</li>
+            <li>配置健康检查（liveness/readiness）</li>
+            <li>使用ConfigMap/Secret管理配置</li>
+            <li>使用Helm管理复杂应用</li>
+            <li>配置HPA自动扩缩容</li>
+            <li>使用Namespace隔离环境</li>
+            <li>设置Pod安全策略</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

@@ -17,3 +17,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Temporary/generated files
+.playwright-mcp/
+skills-lock.json

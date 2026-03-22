@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>单例模式 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .table-container { overflow-x: auto; margin: 20px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .highlight { color: var(--amber); font-weight: 600; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-family: var(--font-code); }
+  .tag-success { background: rgba(126, 231, 135, 0.15); color: var(--green); }
+  .tag-danger { background: rgba(255, 123, 114, 0.15); color: var(--red); }
+  .tag-warning { background: rgba(240, 180, 41, 0.15); color: var(--amber); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>设计模式</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🏷️ SINGLETON</div>
+    <h1 class="hero-title">单例模式</h1>
+    <p class="hero-desc">确保一个类只有一个实例，并提供一个全局访问点。单例模式是创建型设计模式中最常用的一种，广泛应用于配置管理、数据库连接池、日志记录等场景。</p>
+  </header>
+
+  <!-- 模式定义与意图 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📖</div><h2 class="section-title">模式定义与意图</h2></div>
+    <div class="section-body">
+      <p><strong class="highlight">定义：</strong>单例模式（Singleton Pattern）是一种创建型设计模式，它确保一个类只有一个实例存在，并提供一个全局访问点来获取该实例。</p>
+      <p><strong class="highlight">核心思想：</strong>通过私有化构造方法，控制实例的创建过程，保证整个应用程序中只存在一个实例对象。</p>
+      <div class="mermaid">classDiagram
+    class Singleton {
+        -static Singleton instance
+        -Singleton()
+        +static Singleton getInstance()
+    }</div>
+      <p><strong class="highlight">关键要素：</strong></p>
+      <ul>
+        <li><strong>私有化构造器：</strong>防止外部通过new关键字创建实例</li>
+        <li><strong>静态实例引用：</strong>持有唯一的实例引用</li>
+        <li><strong>全局访问点：</strong>提供公共静态方法获取实例</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 适用场景 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">适用场景</h2></div>
+    <div class="section-body">
+      <p>以下场景适合使用单例模式：</p>
+      <ul>
+        <li><strong>配置管理器：</strong>应用配置信息只需加载一次，全局共享</li>
+        <li><strong>数据库连接池：</strong>管理有限的数据库连接资源</li>
+        <li><strong>日志记录器：</strong>统一处理日志输出，避免重复创建</li>
+        <li><strong>缓存管理器：</strong>全局缓存数据的统一管理</li>
+        <li><strong>线程池：</strong>管理系统线程资源的池化对象</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 代码实现 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💻</div><h2 class="section-title">代码实现</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="eager">饿汉式</button>
+        <button class="tab" data-tab="lazy">懒汉式</button>
+        <button class="tab" data-tab="dcl">双重检查锁</button>
+        <button class="tab" data-tab="static-inner">静态内部类</button>
+        <button class="tab" data-tab="enum">枚举</button>
+      </div>
+
+      <div id="eager" class="tab-content active">
+        <p><strong class="highlight">饿汉式（Eager Initialization）</strong> - 类加载时就创建实例，线程安全但不支持懒加载</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>public class EagerSingleton {
+    // 类加载时就创建实例
+    private static final EagerSingleton INSTANCE = new EagerSingleton();
+
+    // 私有构造方法，防止外部实例化
+    private EagerSingleton() {}
+
+    public static EagerSingleton getInstance() {
+        return INSTANCE;
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="lazy" class="tab-content">
+        <p><strong class="highlight">懒汉式（Lazy Initialization）</strong> - 支持懒加载但线程不安全（不推荐单独使用）</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>public class LazySingleton {
+    private static LazySingleton instance;
+
+    private LazySingleton() {}
+
+    // 线程不安全：多线程可能同时进入if判断
+    public static LazySingleton getInstance() {
+        if (instance == null) {
+            instance = new LazySingleton();
+        }
+        return instance;
+    }
+
+    // 线程安全版本（同步方法）- 性能较差
+    public static synchronized LazySingleton getInstanceSafe() {
+        if (instance == null) {
+            instance = new LazySingleton();
+        }
+        return instance;
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="dcl" class="tab-content">
+        <p><strong class="highlight">双重检查锁（Double Checked Locking）</strong> - 线程安全 + 懒加载 + 高性能</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>public class DCLSingleton {
+    // volatile 禁止指令重排序
+    private static volatile DCLSingleton instance;
+
+    private DCLSingleton() {}
+
+    public static DCLSingleton getInstance() {
+        // 第一次检查：避免不必要的同步
+        if (instance == null) {
+            synchronized (DCLSingleton.class) {
+                // 第二次检查：确保只有一个实例被创建
+                if (instance == null) {
+                    instance = new DCLSingleton();
+                }
+            }
+        }
+        return instance;
+    }
+}</code></pre></div>
+        </div>
+        <p><strong class="highlight">为什么需要volatile？</strong></p>
+        <ul>
+          <li>保证可见性：一个线程修改后，其他线程立即可见</li>
+          <li>禁止指令重排序：防止 instance = new DCLSingleton() 被重排序</li>
+          <li>new操作分为三步：分配内存、初始化对象、引用指向内存地址</li>
+        </ul>
+      </div>
+
+      <div id="static-inner" class="tab-content">
+        <p><strong class="highlight">静态内部类（Static Inner Class）</strong> - 最推荐的实现方式之一</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>public class StaticInnerSingleton {
+    private StaticInnerSingleton() {}
+
+    // 静态内部类持有外部类的实例
+    private static class Holder {
+        private static final StaticInnerSingleton INSTANCE = new StaticInnerSingleton();
+    }
+
+    public static StaticInnerSingleton getInstance() {
+        return Holder.INSTANCE;
+    }
+}</code></pre></div>
+        </div>
+        <p><strong class="highlight">实现原理：</strong></p>
+        <ul>
+          <li>外部类加载时，静态内部类不会立即加载</li>
+          <li>只有调用getInstance()时，JVM才加载Holder类</li>
+          <li>JVM保证类初始化时的线程安全性</li>
+          <li>不需要synchronized关键字，性能最优</li>
+        </ul>
+      </div>
+
+      <div id="enum" class="tab-content">
+        <p><strong class="highlight">枚举（Enum）</strong> - 最安全的实现方式，Effective Java推荐</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>public enum EnumSingleton {
+    INSTANCE;
+
+    // 可以添加业务方法
+    public void doSomething() {
+        System.out.println("单例方法执行");
+    }
+}
+
+// 使用
+EnumSingleton instance = EnumSingleton.INSTANCE;
+instance.doSomething();</code></pre></div>
+        </div>
+        <p><strong class="highlight">枚举单例的优势：</strong></p>
+        <ul>
+          <li>线程安全：枚举类型由JVM保证线程安全</li>
+          <li>防止反射攻击：枚举构造器私有且无法通过反射调用</li>
+          <li>防止序列化破坏：枚举自带序列化机制，readResolve自动处理</li>
+          <li>代码简洁，实现简单</li>
+        </ul>
+      </div>
+
+      <h3 style="margin-top: 32px;">实现方式对比</h3>
+      <div class="table-container">
+        <table>
+          <tr>
+            <th>实现方式</th>
+            <th>线程安全</th>
+            <th>懒加载</th>
+            <th>性能</th>
+            <th>推荐程度</th>
+          </tr>
+          <tr>
+            <td>饿汉式</td>
+            <td><span class="tag tag-success">是</span></td>
+            <td><span class="tag tag-danger">否</span></td>
+            <td>高</td>
+            <td>⭐⭐⭐</td>
+          </tr>
+          <tr>
+            <td>懒汉式(非同步)</td>
+            <td><span class="tag tag-danger">否</span></td>
+            <td><span class="tag tag-success">是</span></td>
+            <td>高</td>
+            <td><span class="tag tag-danger">不推荐</span></td>
+          </tr>
+          <tr>
+            <td>懒汉式(同步方法)</td>
+            <td><span class="tag tag-success">是</span></td>
+            <td><span class="tag tag-success">是</span></td>
+            <td>低</td>
+            <td>⭐</td>
+          </tr>
+          <tr>
+            <td>双重检查锁</td>
+            <td><span class="tag tag-success">是</span></td>
+            <td><span class="tag tag-success">是</span></td>
+            <td>高</td>
+            <td>⭐⭐⭐⭐</td>
+          </tr>
+          <tr>
+            <td>静态内部类</td>
+            <td><span class="tag tag-success">是</span></td>
+            <td><span class="tag tag-success">是</span></td>
+            <td>高</td>
+            <td>⭐⭐⭐⭐⭐</td>
+          </tr>
+          <tr>
+            <td>枚举</td>
+            <td><span class="tag tag-success">是</span></td>
+            <td><span class="tag tag-danger">否</span></td>
+            <td>高</td>
+            <td>⭐⭐⭐⭐⭐</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 优缺点分析 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">优缺点分析</h2></div>
+    <div class="section-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div>
+          <h4 style="color: var(--green); margin-bottom: 12px;">优点</h4>
+          <ul>
+            <li><strong>全局唯一：</strong>确保只有一个实例存在，避免资源重复创建</li>
+            <li><strong>全局访问：</strong>提供统一的访问点，方便使用</li>
+            <li><strong>延迟加载：</strong>部分实现方式支持懒加载，节省资源</li>
+            <li><strong>线程安全：</strong>多种实现方式保证多线程环境下的安全性</li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="color: var(--red); margin-bottom: 12px;">缺点</h4>
+          <ul>
+            <li><strong>违反单一职责：</strong>单例类既要管理实例又要执行业务逻辑</li>
+            <li><strong>隐藏依赖：</strong>通过全局访问点使用，依赖关系不明显</li>
+            <li><strong>测试困难：</strong>全局状态可能影响单元测试的隔离性</li>
+            <li><strong>扩展困难：</strong>继承和扩展相对复杂</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 与其他模式的关系 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔗</div><h2 class="section-title">与其他模式的关系</h2></div>
+    <div class="section-body">
+      <table>
+        <tr>
+          <th>相关模式</th>
+          <th>关系说明</th>
+        </tr>
+        <tr>
+          <td><strong class="highlight">工厂模式</strong></td>
+          <td>工厂模式可以封装单例的创建逻辑，使客户端无需关心单例的具体实现</td>
+        </tr>
+        <tr>
+          <td><strong class="highlight">建造者模式</strong></td>
+          <td>当单例需要复杂初始化时，可使用建造者模式构建实例</td>
+        </tr>
+        <tr>
+          <td><strong class="highlight">依赖注入</strong></td>
+          <td>Spring等框架通过IoC容器管理单例Bean，替代传统单例模式</td>
+        </tr>
+      </table>
+      <p style="margin-top: 16px;"><strong class="highlight">Spring中的单例：</strong>Spring容器默认将Bean作为单例管理，比传统单例模式更灵活，支持依赖注入和AOP代理。</p>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

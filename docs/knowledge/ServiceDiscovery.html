@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>服务注册与发现 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+
+  /* Table styles */
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); font-weight: 600; }
+  td { padding: 12px 16px; border: 1px solid var(--border-card); color: var(--text-secondary); }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+
+  /* Tip/Warning/Highlight boxes */
+  .tip-box { background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.3); border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
+  .tip-box::before { content: '💡 '; font-size: 16px; }
+  .tip-box strong { color: var(--cyan); }
+
+  .warning-box { background: rgba(240, 180, 41, 0.1); border: 1px solid rgba(240, 180, 41, 0.3); border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
+  .warning-box::before { content: '⚠️ '; font-size: 16px; }
+  .warning-box strong { color: var(--amber); }
+
+  .highlight-box { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.3); border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
+  .highlight-box::before { content: '🎯 '; font-size: 16px; }
+  .highlight-box strong { color: var(--green); }
+
+  /* Architecture diagram cards */
+  .arch-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 20px 0; }
+  .arch-card { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; }
+  .arch-card h4 { color: var(--cyan); font-size: 16px; margin-bottom: 12px; }
+  .arch-card ul { margin: 0; padding-left: 20px; }
+
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } .arch-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">服务注册与发现</h1>
+    <p class="hero-desc">微服务架构的核心基础设施，解决服务间如何相互找到对方的问题</p>
+  </header>
+
+  <!-- 为什么需要服务发现 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">❓</div><h2 class="section-title">为什么需要服务发现</h2></div>
+    <div class="section-body">
+      <p>在单体架构中，服务调用通过固定的IP和端口完成。但在微服务架构中，服务实例动态变化，需要服务发现机制来管理：</p>
+
+      <div class="mermaid">flowchart LR
+        subgraph Before["传统方式：硬编码地址"]
+          A[订单服务] -->|http://192.168.1.100:8080| B[用户服务]
+          style Before fill:rgba(255,123,114,0.1)
+        end
+
+        subgraph After["服务发现：动态寻址"]
+          C[订单服务] -->|registry.lookup"user-service"| D[(注册中心)]
+          D -->|返回可用实例| E[用户服务实例1]
+          D -->|返回可用实例| F[用户服务实例2]
+          D -->|返回可用实例| G[用户服务实例3]
+          style After fill:rgba(126,231,135,0.1)
+        end
+
+        Before -.->|演进| After</div>
+
+      <div class="arch-grid">
+        <div class="arch-card">
+          <h4>微服务带来的挑战</h4>
+          <ul>
+            <li>服务实例动态扩缩容，IP不固定</li>
+            <li>服务故障后需要自动剔除</li>
+            <li>服务间调用关系复杂</li>
+            <li>需要负载均衡分配流量</li>
+          </ul>
+        </div>
+        <div class="arch-card">
+          <h4>服务发现的价值</h4>
+          <ul>
+            <li>服务间解耦，无需知道对方地址</li>
+            <li>自动感知服务上下线</li>
+            <li>支持动态负载均衡</li>
+            <li>提供健康检查机制</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="highlight-box"><strong>核心概念：</strong>服务注册——服务启动时向注册中心注册自己的地址；服务发现——服务调用时从注册中心获取目标服务的可用地址列表。</div>
+    </div>
+  </section>
+
+  <!-- 服务注册与发现流程 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">服务注册与发现流程</h2></div>
+    <div class="section-body">
+      <p>完整的服务注册与发现流程包含以下步骤：</p>
+
+      <div class="mermaid">sequenceDiagram
+        participant P as Provider
+        participant R as Registry
+        participant C as Consumer
+
+        Note over P,R: 服务注册阶段
+        P->>P: 服务启动
+        P->>R: 1. register(ip, port, serviceName)
+        R-->>P: 注册成功
+
+        Note over C,R: 服务发现阶段
+        C->>R: 2. subscribe(serviceName)
+        R-->>C: 3. 返回服务列表
+        R->>C: 4. 推送服务变更（异步）
+
+        Note over P,C: 服务调用阶段
+        C->>P: 5. 直接调用（无需经过注册中心）
+
+        Note over P,R: 心跳保活
+        loop 每5秒
+          P->>R: 6. heartbeat
+        end
+
+        Note over P,R: 服务下线
+        P->>R: 7. deregister（优雅关闭）
+        R->>C: 8. 推送服务下线通知</div>
+
+      <table>
+        <tr><th>步骤</th><th>操作</th><th>说明</th></tr>
+        <tr><td>1</td><td>服务注册</td><td>Provider启动时向注册中心发送注册请求（IP、端口、服务名、元数据）</td></tr>
+        <tr><td>2</td><td>服务订阅</td><td>Consumer启动时向注册中心订阅需要调用的服务</td></tr>
+        <tr><td>3</td><td>地址推送</td><td>注册中心将可用服务地址列表推送给Consumer</td></tr>
+        <tr><td>4</td><td>变更通知</td><td>服务列表变更时，注册中心主动推送通知Consumer</td></tr>
+        <tr><td>5</td><td>服务调用</td><td>Consumer缓存服务地址，调用时直接访问Provider</td></tr>
+        <tr><td>6</td><td>心跳保活</td><td>Provider定时发送心跳，证明自己存活</td></tr>
+        <tr><td>7</td><td>服务下线</td><td>Provider关闭时主动注销，或心跳超时被动剔除</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 客户端发现 vs 服务端发现 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔀</div><h2 class="section-title">客户端发现 vs 服务端发现</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="client-side">客户端发现</button>
+        <button class="tab" data-tab="server-side">服务端发现</button>
+      </div>
+
+      <div id="client-side" class="tab-content active">
+        <p>客户端发现模式：服务消费者自己从注册中心获取服务列表，并选择目标实例：</p>
+
+        <div class="mermaid">flowchart LR
+          C[Consumer] -->|1. 查询服务| R[(注册中心)]
+          R -->|2. 返回实例列表| C
+          C -->|3. 选择并调用| P1[Provider 1]
+          C -->|3. 选择并调用| P2[Provider 2]
+
+          style C fill:rgba(240,180,41,0.2)
+          style R fill:rgba(78,205,196,0.2)</div>
+
+        <div class="arch-grid">
+          <div class="arch-card">
+            <h4>优点</h4>
+            <ul>
+              <li>架构简单，无需额外组件</li>
+              <li>Consumer可灵活实现负载均衡</li>
+              <li>调用延迟低（直连Provider）</li>
+            </ul>
+          </div>
+          <div class="arch-card">
+            <h4>缺点</h4>
+            <ul>
+              <li>Consumer需要集成服务发现SDK</li>
+              <li>多语言环境需要各自实现</li>
+              <li>无法统一控制流量</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="tip-box"><strong>典型实现：</strong>Eureka、Nacos、Consul + Spring Cloud LoadBalancer、Dubbo</div>
+      </div>
+
+      <div id="server-side" class="tab-content">
+        <p>服务端发现模式：通过负载均衡器统一代理服务调用，Consumer无需感知服务发现细节：</p>
+
+        <div class="mermaid">flowchart LR
+          C[Consumer] -->|1. 调用服务| LB[负载均衡器/API网关]
+          LB -->|2. 查询服务| R[(注册中心)]
+          R -->|3. 返回实例| LB
+          LB -->|4. 转发请求| P1[Provider 1]
+          LB -->|4. 转发请求| P2[Provider 2]
+
+          style LB fill:rgba(240,180,41,0.2)
+          style R fill:rgba(78,205,196,0.2)</div>
+
+        <div class="arch-grid">
+          <div class="arch-card">
+            <h4>优点</h4>
+            <ul>
+              <li>Consumer无需关注服务发现</li>
+              <li>可统一控制流量和安全策略</li>
+              <li>支持异构语言服务</li>
+            </ul>
+          </div>
+          <div class="arch-card">
+            <h4>缺点</h4>
+            <ul>
+              <li>增加网络跳数，延迟增加</li>
+              <li>负载均衡器成为单点</li>
+              <li>需要维护额外的基础设施</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="tip-box"><strong>典型实现：</strong>Kubernetes Service、AWS ELB、Nginx + Consul Template、Spring Cloud Gateway</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Eureka架构 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">☁️</div><h2 class="section-title">Eureka架构</h2></div>
+    <div class="section-body">
+      <p>Eureka是Netflix开源的服务注册中心，采用AP架构，强调高可用性：</p>
+
+      <div class="mermaid">flowchart TB
+        subgraph Server["Eureka Server集群"]
+          S1[Eureka Server 1] <-->|复制| S2[Eureka Server 2]
+          S2 <-->|复制| S3[Eureka Server 3]
+        end
+
+        subgraph Client["Eureka Client"]
+          P1[Provider] -->|注册| S1
+          P2[Provider] -->|注册| S2
+          C1[Consumer] -->|发现| S1
+        end
+
+        S1 -.->|自我保护| S1
+
+        style Server fill:rgba(240,180,41,0.1)
+        style Client fill:rgba(78,205,196,0.1)</div>
+
+      <table>
+        <tr><th>组件</th><th>职责</th></tr>
+        <tr><td>Eureka Server</td><td>服务注册中心，维护服务注册表，提供服务注册与发现接口</td></tr>
+        <tr><td>Eureka Client</td><td>服务提供者/消费者，负责服务注册、心跳续约、服务获取</td></tr>
+        <tr><td>服务注册表</td><td>内存中的服务实例信息，Server间通过异步复制同步</td></tr>
+      </table>
+
+      <h4 style="color: var(--amber); margin: 20px 0 12px;">自我保护机制</h4>
+      <p>当网络分区发生时，Eureka保护服务注册表不被误清理：</p>
+
+      <div class="mermaid">flowchart TB
+        A[正常状态] -->|心跳续约| B[服务健康]
+        A -->|网络故障| C[大量服务失联]
+        C -->|15分钟内丢失>85%心跳| D[进入自我保护模式]
+        D -->|停止剔除| E[保留所有注册信息]
+        E -->|网络恢复| A
+
+        style D fill:rgba(240,180,41,0.3)
+        style E fill:rgba(126,231,135,0.2)</div>
+
+      <div class="warning-box"><strong>注意：</strong>自我保护模式下，Eureka不会剔除任何服务，可能导致Consumer调用到已宕机的服务。需要在网络恢复后及时退出保护模式。</div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># Eureka Server配置
+eureka:
+  server:
+    # 关闭自我保护（开发环境）
+    enable-self-preservation: false
+    # 清理间隔（毫秒）
+    eviction-interval-timer-in-ms: 5000
+  instance:
+    hostname: localhost
+
+# Eureka Client配置
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka1:8761/eureka,http://eureka2:8762/eureka
+    # 注册自己
+    register-with-eureka: true
+    # 获取注册表
+    fetch-registry: true
+  instance:
+    # 心跳间隔（秒）
+    lease-renewal-interval-in-seconds: 30
+    # 服务过期时间（秒）
+    lease-expiration-duration-in-seconds: 90</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Nacos服务发现 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔷</div><h2 class="section-title">Nacos服务发现</h2></div>
+    <div class="section-body">
+      <p>Nacos是阿里巴巴开源的动态服务发现、配置管理和服务管理平台，功能全面：</p>
+
+      <div class="mermaid">flowchart TB
+        subgraph Nacos["Nacos集群"]
+          N1[Nacos Node 1 Leader]
+          N2[Nacos Node 2 Follower]
+          N3[Nacos Node 3 Follower]
+          N1 <-->|Raft| N2
+          N2 <-->|Raft| N3
+          N1 <-->|Raft| N3
+        end
+
+        DB[(MySQL)] --> N1
+        DB --> N2
+        DB --> N3
+
+        P1[Provider] -->|注册| N1
+        C1[Consumer] -->|订阅| N2
+
+        style Nacos fill:rgba(240,180,41,0.1)
+        style DB fill:rgba(126,231,135,0.1)</div>
+
+      <table>
+        <tr><th>特性</th><th>说明</th></tr>
+        <tr><td>AP/CP切换</td><td>支持临时实例（AP）和持久实例（CP）两种模式</td></tr>
+        <tr><td>集群模式</td><td>基于Raft协议实现数据一致性</td></tr>
+        <tr><td>数据持久化</td><td>服务信息持久化到MySQL，避免数据丢失</td></tr>
+        <tr><td>配置中心</td><td>集成配置管理功能，支持动态配置推送</td></tr>
+        <tr><td>元数据</td><td>支持丰富的服务元数据，用于灰度发布、路由等</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># Nacos服务发现配置
+spring:
+  application:
+    name: user-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        # 命名空间（环境隔离）
+        namespace: dev
+        # 分组
+        group: DEFAULT_GROUP
+        # 服务名
+        service: ${spring.application.name}
+        # 权重
+        weight: 1
+        # 元数据
+        metadata:
+          version: 1.0.0
+          region: beijing
+        # 临时实例（false=持久实例，服务端探测）
+        ephemeral: true</code></pre></div>
+      </div>
+
+      <div class="highlight-box"><strong>Nacos心跳机制：</strong>客户端心跳间隔5秒，服务端15秒未收到心跳标记为不健康，30秒未收到则从列表移除。</div>
+    </div>
+  </section>
+
+  <!-- Consul服务发现 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔷</div><h2 class="section-title">Consul服务发现</h2></div>
+    <div class="section-body">
+      <p>Consul是HashiCorp出品的开源服务网格解决方案，提供服务发现、健康检查、Key/Value存储等功能：</p>
+
+      <div class="mermaid">flowchart TB
+        subgraph Consul["Consul集群"]
+          C1[Consul Server Leader]
+          C2[Consul Server]
+          C3[Consul Server]
+          C1 <-->|Raft| C2
+          C2 <-->|Raft| C3
+        end
+
+        A1[Consul Agent] -->|注册| C1
+        A2[Consul Agent] -->|健康检查| C2
+
+        P1[Service] --> A1
+        P2[Service] --> A2
+
+        C1 -->|DNS/HTTP| D[Consumer]
+
+        style Consul fill:rgba(240,180,41,0.1)</div>
+
+      <table>
+        <tr><th>特性</th><th>说明</th></tr>
+        <tr><td>CP架构</td><td>基于Raft协议保证强一致性，优先保证数据正确性</td></tr>
+        <tr><td>多数据中心</td><td>原生支持多数据中心部署，适合全球化部署</td></tr>
+        <tr><td>健康检查</td><td>支持HTTP/TCP/Script等多种健康检查方式</td></tr>
+        <tr><td>DNS服务</td><td>内置DNS服务器，可直接通过DNS解析服务地址</td></tr>
+        <tr><td>KV存储</td><td>支持Key/Value存储，可用于配置管理</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JSON</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// Consul服务定义配置
+{
+  "service": {
+    "name": "user-service",
+    "tags": ["v1", "java"],
+    "port": 8080,
+    "check": {
+      "http": "http://localhost:8080/health",
+      "interval": "10s",
+      "timeout": "5s"
+    },
+    "meta": {
+      "version": "1.0.0",
+      "region": "us-east-1"
+    }
+  }
+}</code></pre></div>
+      </div>
+
+      <div class="tip-box"><strong>适用场景：</strong>Consul适合需要强一致性、多数据中心部署、异构语言集成的场景。</div>
+    </div>
+  </section>
+
+  <!-- 健康检查机制 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">❤️</div><h2 class="section-title">健康检查机制</h2></div>
+    <div class="section-body">
+      <p>健康检查是服务发现的核心功能，用于及时剔除不可用的服务实例：</p>
+
+      <div class="mermaid">flowchart TB
+        subgraph ClientHB["客户端心跳模式"]
+          P1[Provider] -->|定时心跳| R1[注册中心]
+          R1 -->|判定存活| P1
+        end
+
+        subgraph ServerHB["服务端探测模式"]
+          R2[注册中心] -->|主动探测| P2[Provider]
+          P2 -->|返回健康状态| R2
+        end
+
+        style ClientHB fill:rgba(78,205,196,0.1)
+        style ServerHB fill:rgba(240,180,41,0.1)</div>
+
+      <table>
+        <tr><th>检查方式</th><th>说明</th><th>适用场景</th></tr>
+        <tr><td>客户端心跳</td><td>服务主动发送心跳包，注册中心被动接收</td><td>大多数场景，实现简单，开销小</td></tr>
+        <tr><td>HTTP探测</td><td>注册中心主动调用服务的健康检查接口</td><td>需要更精确的健康判断</td></tr>
+        <tr><td>TCP探测</td><td>检测端口是否可连接</td><td>检查服务是否存活</td></tr>
+        <tr><td>脚本探测</td><td>执行自定义脚本检查</td><td>复杂健康检查逻辑</td></tr>
+      </table>
+
+      <div class="mermaid">gantt
+        title 心跳时间线示例（Nacos）
+        dateFormat X
+        axisFormat %s秒
+
+        section 心跳
+        服务注册成功      :0, 1s
+        心跳1             :5s, 6s
+        心跳2             :10s, 11s
+        心跳3             :15s, 16s
+        心跳丢失          :20s, 21s
+
+        section 状态
+        健康              :0, 15s
+        不健康            :15s, 30s
+        已移除            :30s, 35s</div>
+
+      <table>
+        <tr><th>注册中心</th><th>心跳间隔</th><th>不健康阈值</th><th>移除阈值</th></tr>
+        <tr><td>Nacos</td><td>5秒</td><td>15秒</td><td>30秒</td></tr>
+        <tr><td>Eureka</td><td>30秒</td><td>-</td><td>90秒</td></tr>
+        <tr><td>Consul</td><td>可配置</td><td>可配置</td><td>可配置</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 优雅下线示例
+@Component
+public class GracefulShutdown {
+
+    @PreDestroy
+    public void shutdown() {
+        // 1. 从注册中心注销
+        namingService.deregisterInstance(
+            serviceName, ip, port);
+
+        // 2. 等待正在处理的请求完成
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // 3. 关闭服务
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 服务发现对比表 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">服务发现对比表</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>特性</th><th>Eureka</th><th>Nacos</th><th>Consul</th><th>ZooKeeper</th></tr>
+        <tr><td>CAP模型</td><td>AP</td><td>AP/CP可切换</td><td>CP</td><td>CP</td></tr>
+        <tr><td>开发语言</td><td>Java</td><td>Java</td><td>Go</td><td>Java</td></tr>
+        <tr><td>维护状态</td><td>已停止维护</td><td>活跃维护</td><td>活跃维护</td><td>活跃维护</td></tr>
+        <tr><td>配置中心</td><td>不支持</td><td>支持</td><td>简单支持</td><td>支持</td></tr>
+        <tr><td>健康检查</td><td>客户端心跳</td><td>客户端/服务端</td><td>多种方式</td><td>客户端心跳</td></tr>
+        <tr><td>多数据中心</td><td>支持</td><td>支持</td><td>原生支持</td><td>需自行实现</td></tr>
+        <tr><td>SpringCloud集成</td><td>原生支持</td><td>支持</td><td>支持</td><td>需适配</td></tr>
+        <tr><td>Dubbo集成</td><td>支持</td><td>推荐</td><td>支持</td><td>官方推荐</td></tr>
+        <tr><td>易用性</td><td>简单</td><td>功能丰富</td><td>中等</td><td>复杂</td></tr>
+      </table>
+
+      <div class="arch-grid">
+        <div class="arch-card">
+          <h4>Eureka 适用场景</h4>
+          <ul>
+            <li>已有Spring Cloud Netflix项目</li>
+            <li>追求AP高可用</li>
+            <li>简单服务发现需求</li>
+          </ul>
+        </div>
+        <div class="arch-card">
+          <h4>Nacos 适用场景</h4>
+          <ul>
+            <li>新项目首选（推荐）</li>
+            <li>需要配置中心集成</li>
+            <li>阿里生态/K8s环境</li>
+          </ul>
+        </div>
+        <div class="arch-card">
+          <h4>Consul 适用场景</h4>
+          <ul>
+            <li>需要强一致性</li>
+            <li>多数据中心部署</li>
+            <li>异构语言集成</li>
+          </ul>
+        </div>
+        <div class="arch-card">
+          <h4>ZooKeeper 适用场景</h4>
+          <ul>
+            <li>Dubbo传统项目</li>
+            <li>需要强一致性</li>
+            <li>已有ZK集群</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="highlight-box"><strong>选型建议：</strong>新项目优先选择Nacos，功能全面且活跃维护；已有Eureka项目可逐步迁移到Nacos；需要多数据中心场景考虑Consul。</div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } }); } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; mermaid.initialize({ startOnLoad: false, theme: 'default', themeVariables: { primaryColor: '#b8860b', lineColor: '#4a90a4', background: '#f8f6f1' } }); } location.reload(); });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code'); if (code) { navigator.clipboard.writeText(code.textContent).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); } }
+</script>
+</body>
+</html>

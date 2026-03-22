@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>观察者模式 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .table-container { overflow-x: auto; margin: 20px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .highlight { color: var(--amber); font-weight: 600; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-family: var(--font-code); }
+  .tag-success { background: rgba(126, 231, 135, 0.15); color: var(--green); }
+  .tag-danger { background: rgba(255, 123, 114, 0.15); color: var(--red); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>设计模式</span></nav>
+  <header class="hero">
+    <div class="hero-badge">👁️ OBSERVER</div>
+    <h1 class="hero-title">观察者模式</h1>
+    <p class="hero-desc">定义对象间的一对多依赖关系，当一个对象状态改变时，所有依赖它的对象都会收到通知并自动更新。观察者模式是事件驱动编程的基础。</p>
+  </header>
+
+  <!-- 模式定义与意图 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📖</div><h2 class="section-title">模式定义与意图</h2></div>
+    <div class="section-body">
+      <p><strong class="highlight">定义：</strong>观察者模式（Observer Pattern）是一种行为型设计模式，它定义了对象之间的一对多依赖关系，当一个对象状态发生改变时，所有依赖于它的对象都得到通知并被自动更新。</p>
+      <p><strong class="highlight">核心思想：</strong>将观察者和被观察者解耦，被观察者（主题）维护一个观察者列表，状态变化时主动通知所有观察者。</p>
+      <div class="mermaid">classDiagram
+    class Subject {
+        -observers: List~Observer~
+        +attach(Observer)
+        +detach(Observer)
+        +notify()
+    }
+    class Observer { <<interface>> +update() }
+    class ConcreteSubject {
+        +getState()
+        +setState()
+    }
+    class ConcreteObserver {
+        +update()
+    }
+    Observer <|.. ConcreteObserver
+    Subject <|-- ConcreteSubject
+    Subject "1" --> "*" Observer
+    ConcreteObserver --> ConcreteSubject</div>
+      <p><strong class="highlight">角色说明：</strong></p>
+      <ul>
+        <li><strong>Subject（主题/被观察者）：</strong>维护观察者列表，提供注册和注销方法</li>
+        <li><strong>Observer（观察者）：</strong>定义更新接口，接收主题的通知</li>
+        <li><strong>ConcreteSubject（具体主题）：</strong>实现主题接口，维护具体状态</li>
+        <li><strong>ConcreteObserver（具体观察者）：</strong>实现观察者接口，更新自身状态</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 适用场景 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">适用场景</h2></div>
+    <div class="section-body">
+      <p>以下场景适合使用观察者模式：</p>
+      <ul>
+        <li><strong>事件驱动系统：</strong>GUI事件处理（按钮点击、鼠标移动）</li>
+        <li><strong>消息推送：</strong>公众号文章推送、群聊消息通知</li>
+        <li><strong>日志监控：</strong>日志变更时触发告警通知</li>
+        <li><strong>数据同步：</strong>缓存更新通知、数据库变更同步</li>
+        <li><strong>Spring事件机制：</strong>ApplicationEvent事件发布与监听</li>
+        <li><strong>响应式编程：</strong>RxJava、Reactor中的发布-订阅模型</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 代码实现 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💻</div><h2 class="section-title">代码实现</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="basic">基础实现</button>
+        <button class="tab" data-tab="push-pull">推模型vs拉模型</button>
+        <button class="tab" data-tab="spring">Spring事件</button>
+        <button class="tab" data-tab="eventbus">EventBus</button>
+      </div>
+
+      <div id="basic" class="tab-content active">
+        <p><strong class="highlight">基础实现：</strong>公众号订阅系统示例</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 观察者接口
+interface Observer {
+    void update(String message);
+}
+
+// 主题接口
+interface Subject {
+    void attach(Observer observer);
+    void detach(Observer observer);
+    void notifyObservers(String message);
+}
+
+// 具体主题：公众号
+class OfficialAccount implements Subject {
+    private final List&lt;Observer&gt; observers = new ArrayList&lt;&gt;();
+    private final String name;
+
+    public OfficialAccount(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void attach(Observer observer) {
+        observers.add(observer);
+        System.out.println("新用户关注了：" + name);
+    }
+
+    @Override
+    public void detach(Observer observer) {
+        observers.remove(observer);
+        System.out.println("用户取关了：" + name);
+    }
+
+    @Override
+    public void notifyObservers(String message) {
+        System.out.println("\n=== " + name + " 发布新文章 ===");
+        for (Observer observer : observers) {
+            observer.update(message);
+        }
+    }
+
+    public void publishArticle(String title) {
+        notifyObservers(title);
+    }
+}
+
+// 具体观察者：用户
+class User implements Observer {
+    private final String name;
+
+    public User(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void update(String message) {
+        System.out.println(name + " 收到推送：" + message);
+    }
+}
+
+// 使用
+OfficialAccount account = new OfficialAccount("技术分享");
+User user1 = new User("张三");
+User user2 = new User("李四");
+
+account.attach(user1);
+account.attach(user2);
+account.publishArticle("观察者模式详解");
+
+account.detach(user2);
+account.publishArticle("Spring事件机制");</code></pre></div>
+        </div>
+      </div>
+
+      <div id="push-pull" class="tab-content">
+        <p><strong class="highlight">推模型 vs 拉模型</strong></p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// ============ 推模型：主题主动推送数据 ============
+interface PushObserver {
+    void update(String message, Object data);
+}
+
+// 推模型实现
+class PushUser implements PushObserver {
+    private final String name;
+
+    public PushUser(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void update(String message, Object data) {
+        // 直接接收主题推送的数据
+        System.out.println(name + " 收到推送：" + message + " 数据：" + data);
+    }
+}
+
+// ============ 拉模型：观察者主动获取数据 ============
+interface PullObserver {
+    void update(Subject subject);
+}
+
+// 拉模型实现
+class PullUser implements PullObserver {
+    private final String name;
+
+    public PullUser(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void update(Subject subject) {
+        // 观察者主动从主题获取需要的数据
+        // String data = ((OfficialAccount) subject).getLatestArticle();
+        System.out.println(name + " 主动获取数据");
+    }
+}</code></pre></div>
+        </div>
+        <table>
+          <tr>
+            <th>特性</th>
+            <th>推模型</th>
+            <th>拉模型</th>
+          </tr>
+          <tr>
+            <td>数据传递</td>
+            <td>主题主动推送完整数据</td>
+            <td>只通知状态变化，观察者按需获取</td>
+          </tr>
+          <tr>
+            <td>灵活性</td>
+            <td>观察者被动接收，不够灵活</td>
+            <td>观察者按需获取，更灵活</td>
+          </tr>
+          <tr>
+            <td>性能</td>
+            <td>可能推送无用数据</td>
+            <td>减少不必要的数据传输</td>
+          </tr>
+        </table>
+      </div>
+
+      <div id="spring" class="tab-content">
+        <p><strong class="highlight">Spring事件机制</strong> - 观察者模式的典型应用</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 1. 定义自定义事件
+public class OrderCreatedEvent extends ApplicationEvent {
+    private final Long orderId;
+    private final String userId;
+
+    public OrderCreatedEvent(Object source, Long orderId, String userId) {
+        super(source);
+        this.orderId = orderId;
+        this.userId = userId;
+    }
+
+    public Long getOrderId() { return orderId; }
+    public String getUserId() { return userId; }
+}
+
+// 2. 方式一：实现ApplicationListener接口
+@Component
+public class OrderEventListener implements ApplicationListener&lt;OrderCreatedEvent&gt; {
+    @Override
+    public void onApplicationEvent(OrderCreatedEvent event) {
+        System.out.println("收到订单创建事件：" + event.getOrderId());
+    }
+}
+
+// 3. 方式二：使用@EventListener注解（推荐）
+@Component
+public class OrderEventHandler {
+
+    @EventListener
+    public void handleOrderCreated(OrderCreatedEvent event) {
+        System.out.println("处理订单：" + event.getOrderId());
+    }
+
+    // 异步处理
+    @Async
+    @EventListener
+    public void handleAsync(OrderCreatedEvent event) {
+        System.out.println("异步处理订单：" + event.getOrderId());
+    }
+
+    // 条件监听
+    @EventListener(condition = "#event.orderId > 1000")
+    public void handleHighValueOrder(OrderCreatedEvent event) {
+        System.out.println("处理大额订单：" + event.getOrderId());
+    }
+
+    // 事务提交后监听
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleAfterCommit(OrderCreatedEvent event) {
+        System.out.println("事务提交后处理：" + event.getOrderId());
+    }
+}
+
+// 4. 发布事件
+@Service
+public class OrderService {
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
+    public void createOrder(Long orderId, String userId) {
+        // 创建订单逻辑...
+
+        // 发布事件
+        eventPublisher.publishEvent(new OrderCreatedEvent(this, orderId, userId));
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="eventbus" class="tab-content">
+        <p><strong class="highlight">简易EventBus实现</strong></p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 简易事件总线
+public class EventBus {
+    private final Map&lt;Class&lt;?&gt;, List&lt;Consumer&lt;?&gt;&gt;&gt; listeners = new HashMap&lt;&gt;();
+
+    public &lt;T&gt; void register(Class&lt;T&gt; eventType, Consumer&lt;T&gt; listener) {
+        listeners.computeIfAbsent(eventType, k -> new ArrayList&lt;&gt;()).add(listener);
+    }
+
+    @SuppressWarnings("unchecked")
+    public &lt;T&gt; void post(T event) {
+        List&lt;Consumer&lt;?&gt;&gt; consumers = listeners.get(event.getClass());
+        if (consumers != null) {
+            for (Consumer&lt;?&gt; consumer : consumers) {
+                ((Consumer&lt;T&gt;) consumer).accept(event);
+            }
+        }
+    }
+}
+
+// 使用
+EventBus eventBus = new EventBus();
+eventBus.register(String.class, msg -> System.out.println("收到消息：" + msg));
+eventBus.register(Integer.class, num -> System.out.println("收到数字：" + num));
+
+eventBus.post("Hello World");
+eventBus.post(123);</code></pre></div>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 32px;">JDK内置观察者（已过时）</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// JDK提供的观察者模式支持（已在Java 9标记为过时）
+// java.util.Observable - 被观察者（类，不是接口）
+// java.util.Observer - 观察者接口
+
+// 缺点：
+// 1. Observable是类，不是接口，违反"组合优于继承"
+// 2. 线程不安全
+// 3. 缺乏灵活性</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 优缺点分析 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">优缺点分析</h2></div>
+    <div class="section-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div>
+          <h4 style="color: var(--green); margin-bottom: 12px;">优点</h4>
+          <ul>
+            <li><strong>松耦合：</strong>观察者和主题之间解耦，可以独立变化</li>
+            <li><strong>开闭原则：</strong>新增观察者无需修改主题代码</li>
+            <li><strong>广播通信：</strong>支持一对多的消息广播</li>
+            <li><strong>动态关系：</strong>可以在运行时添加或删除观察者</li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="color: var(--red); margin-bottom: 12px;">缺点</h4>
+          <ul>
+            <li><strong>循环依赖风险：</strong>观察者和主题可能形成循环依赖</li>
+            <li><strong>通知顺序不确定：</strong>观察者接收通知的顺序不确定</li>
+            <li><strong>性能问题：</strong>观察者过多时，通知开销大</li>
+            <li><strong>内存泄漏：</strong>忘记移除观察者可能导致内存泄漏</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 与其他模式的关系 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔗</div><h2 class="section-title">与其他模式的关系</h2></div>
+    <div class="section-body">
+      <table>
+        <tr>
+          <th>相关模式</th>
+          <th>关系说明</th>
+        </tr>
+        <tr>
+          <td><strong class="highlight">中介者模式</strong></td>
+          <td>观察者模式通过观察者通信，中介者模式通过中介者协调通信</td>
+        </tr>
+        <tr>
+          <td><strong class="highlight">单例模式</strong></td>
+          <td>事件总线通常设计为单例，确保全局唯一</td>
+        </tr>
+        <tr>
+          <td><strong class="highlight">发布-订阅模式</strong></td>
+          <td>发布-订阅是观察者模式的变体，引入事件总线作为中间层</td>
+        </tr>
+        <tr>
+          <td><strong class="highlight">MVC模式</strong></td>
+          <td>MVC中的模型变更通知视图更新使用观察者模式</td>
+        </tr>
+      </table>
+      <p style="margin-top: 16px;"><strong class="highlight">观察者模式 vs 发布-订阅模式：</strong>观察者模式中观察者和主题直接通信，发布-订阅模式引入事件通道作为中间层，发布者和订阅者完全解耦。</p>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

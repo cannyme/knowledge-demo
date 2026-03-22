@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java Knowledge Review - 知识结构图谱</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+
+  :root {
+    --bg-deep: #0a0e17;
+    --bg-card: rgba(16, 22, 36, 0.7);
+    --bg-card-hover: rgba(22, 30, 50, 0.85);
+    --bg-card-active: rgba(30, 40, 65, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12);
+    --border-card-hover: rgba(240, 180, 41, 0.4);
+    --amber: #f0b429;
+    --amber-light: #ffd166;
+    --amber-dim: rgba(240, 180, 41, 0.08);
+    --cyan: #4ecdc4;
+    --cyan-dim: rgba(78, 205, 196, 0.15);
+    --text-primary: #e8e6e3;
+    --text-secondary: #8a8f98;
+    --text-dim: #4a5068;
+    --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+    --glow-cyan: 0 0 25px rgba(78, 205, 196, 0.12);
+    --font-code: 'JetBrains Mono', monospace;
+    --font-heading: 'Outfit', sans-serif;
+  }
+
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-card-hover: rgba(255, 255, 255, 0.95);
+    --bg-card-active: rgba(245, 245, 250, 1);
+    --border-card: rgba(160, 120, 20, 0.18);
+    --border-card-hover: rgba(160, 120, 20, 0.4);
+    --amber: #b8860b;
+    --amber-light: #996600;
+    --amber-dim: rgba(184, 134, 11, 0.06);
+    --cyan: #0d7377;
+    --cyan-dim: rgba(13, 115, 119, 0.12);
+    --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e;
+    --text-dim: #7a7a8e;
+    --glow-amber: 0 0 20px rgba(184, 134, 11, 0.08);
+    --glow-cyan: 0 0 20px rgba(13, 115, 119, 0.08);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-heading);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  [data-theme="light"] body::before {
+    background-image:
+      linear-gradient(rgba(160, 120, 20, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(160, 120, 20, 0.06) 1px, transparent 1px);
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 30%, rgba(78, 205, 196, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 60%, rgba(240, 180, 41, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  [data-theme="light"] body::after {
+    background: radial-gradient(ellipse at 20% 30%, rgba(13, 115, 119, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 60%, rgba(184, 134, 11, 0.06) 0%, transparent 50%);
+  }
+
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 999;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border-card);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    box-shadow: var(--glow-amber);
+  }
+  .theme-toggle:hover {
+    border-color: var(--amber);
+    transform: scale(1.1);
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 60px;
+    padding-top: 20px;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    font-family: var(--font-code);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cyan);
+    background: var(--cyan-dim);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    border-radius: 20px;
+    padding: 6px 18px;
+    margin-bottom: 28px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .hero h1 {
+    font-weight: 900;
+    font-size: clamp(36px, 6vw, 68px);
+    line-height: 1.1;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--amber-light) 0%, var(--amber) 40%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero .version {
+    font-family: var(--font-code);
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+  }
+
+  .hero .desc {
+    font-size: clamp(16px, 2vw, 20px);
+    font-weight: 300;
+    color: var(--text-secondary);
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: var(--font-code);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--amber);
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .module {
+    margin-bottom: 48px;
+  }
+
+  .module-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+    padding-left: 4px;
+  }
+
+  .module-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border-card-hover), transparent);
+  }
+
+  .module-tag {
+    font-family: var(--font-code);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--amber);
+    background: var(--amber-dim);
+    border: 1px solid rgba(240, 180, 41, 0.15);
+    border-radius: 6px;
+    padding: 4px 14px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .module-title {
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--text-primary);
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 20px;
+    backdrop-filter: blur(12px);
+    transition: all 0.35s ease;
+    overflow: hidden;
+    cursor: pointer;
+    animation: cardIn 0.5s ease-out both;
+  }
+
+  .card:nth-child(1) { animation-delay: 0.05s; }
+  .card:nth-child(2) { animation-delay: 0.10s; }
+  .card:nth-child(3) { animation-delay: 0.15s; }
+  .card:nth-child(4) { animation-delay: 0.20s; }
+  .card:nth-child(5) { animation-delay: 0.25s; }
+  .card:nth-child(6) { animation-delay: 0.30s; }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--amber), var(--cyan));
+    opacity: 0;
+    transition: opacity 0.35s;
+  }
+
+  .card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-card-hover);
+    transform: translateY(-4px);
+    box-shadow: var(--glow-amber);
+  }
+
+  .card:hover::before { opacity: 1; }
+
+  .card.active {
+    background: var(--bg-card-active);
+    border-color: var(--amber);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    background: var(--amber-dim);
+    border: 1px solid rgba(240, 180, 41, 0.2);
+  }
+
+  .card-title-group {
+    flex: 1;
+  }
+
+  .card-title {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+
+  .card-subtitle {
+    font-family: var(--font-code);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .card-meta {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    font-family: var(--font-code);
+    font-size: 11px;
+  }
+
+  .card-tag {
+    color: var(--cyan);
+    background: var(--cyan-dim);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .subcategory {
+    display: none;
+    margin-top: 16px;
+  }
+
+  .subcategory.show {
+    display: block;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .sub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  
+  .sub-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+  .sub-card {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--border-card);
+    border-radius: 8px;
+    padding: 14px 16px;
+    transition: all 0.2s ease;
+  }
+
+  [data-theme="light"] 
+  .sub-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+  .sub-card {
+    background: rgba(0,0,0,0.04);
+  }
+
+  .sub-card:hover {
+    border-color: var(--cyan);
+    transform: translateX(4px);
+  }
+
+  .sub-card-title {
+    font-family: var(--font-code);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .sub-card-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .architecture-section {
+    margin: 60px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 16px;
+    padding: 40px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .architecture-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber));
+  }
+
+  .architecture-section h2 {
+    font-weight: 800;
+    font-size: 24px;
+    color: var(--text-primary);
+    margin-bottom: 32px;
+    text-align: center;
+  }
+
+  .arch-diagram {
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    overflow-x: auto;
+  }
+
+  .arch-diagram pre {
+    margin: 0;
+    color: var(--cyan);
+  }
+
+  .arch-diagram .dim { color: var(--text-dim); }
+  .arch-diagram .highlight { color: var(--amber-light); }
+
+  .arch-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .arch-table td {
+    padding: 4px 12px;
+    vertical-align: top;
+  }
+
+  .arch-table .col-javabase { width: 22%; }
+  .arch-table .col-framework { width: 22%; }
+  .arch-table .col-database { width: 22%; }
+  .arch-table .col-csbasics { width: 18%; }
+  .arch-table .col-arch { width: 16%; }
+
+  .arch-table .header-row td {
+    color: var(--amber);
+    font-weight: 600;
+    padding-top: 8px;
+  }
+
+  .arch-table .module-name {
+    color: var(--text-primary);
+  }
+
+  .arch-table .separator {
+    border-bottom: 1px solid var(--border-card);
+    padding: 0;
+    height: 8px;
+  }
+
+  .arch-table .footer-row td {
+    padding-top: 12px;
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+
+  .arch-table .sub-item {
+    color: var(--cyan);
+    font-size: 12px;
+  }
+
+  .arch-border {
+    border: 1px solid var(--border-card);
+    border-radius: 8px;
+    padding: 20px;
+    background: rgba(0,0,0,0.15);
+  }
+
+  [data-theme="light"] .arch-border {
+    background: rgba(0,0,0,0.03);
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 80px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border-card);
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 2;
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 32px 16px 60px; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .stats-bar { gap: 24px; }
+    .architecture-section { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+
+<div class="container">
+  <section class="hero">
+    <div class="hero-badge">Java Backend Knowledge - JDK 1.8</div>
+    <h1>Java Knowledge Review</h1>
+    <p class="version">50 Knowledge Points - Maven - Spring Boot</p>
+    <p class="desc">
+      涵盖 Java 基础、设计模式、框架原理、数据库、中间件和系统架构的完整知识体系。<br>
+      每个知识点都是独立的代码文件，包含核心概念、实现示例和最佳实践。
+    </p>
+
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-value">50</span>
+        <span class="stat-label">知识文件</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">5</span>
+        <span class="stat-label">大模块</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">17</span>
+        <span class="stat-label">设计模式</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">10</span>
+        <span class="stat-label">框架组件</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="architecture-section">
+    <h2>Project Architecture</h2>
+    <div class="arch-border">
+      <table class="arch-table">
+        <tr class="header-row">
+          <td class="col-javabase">javabase/</td>
+          <td class="col-framework">framework/</td>
+          <td class="col-database">database/</td>
+          <td class="col-csbasics">csbasics/</td>
+          <td class="col-arch">architecture/</td>
+        </tr>
+        <tr>
+          <td class="col-javabase"><span class="sub-item">|-</span> <span class="module-name">designpatterns/</span></td>
+          <td class="col-framework"><span class="sub-item">|-</span> <span class="module-name">spring/</span></td>
+          <td class="col-database"><span class="sub-item">|-</span> <span class="module-name">mysql/</span></td>
+          <td class="col-csbasics"><span class="sub-item">|-</span> <span class="module-name">algorithm/</span></td>
+          <td class="col-arch"><span class="sub-item">|-</span> <span class="module-name">sysdesign/</span></td>
+        </tr>
+        <tr>
+          <td class="col-javabase"><span class="sub-item">|-</span> <span class="module-name">concurrency/</span></td>
+          <td class="col-framework"><span class="sub-item">|-</span> <span class="module-name">springboot/</span></td>
+          <td class="col-database"><span class="sub-item">|-</span> <span class="module-name">redis/</span></td>
+          <td class="col-csbasics"><span class="sub-item">|-</span> <span class="module-name">datastruct/</span></td>
+          <td class="col-arch"><span class="sub-item">|-</span> <span class="module-name">tracing/</span></td>
+        </tr>
+        <tr>
+          <td class="col-javabase"><span class="sub-item">|-</span> <span class="module-name">collections/</span></td>
+          <td class="col-framework"><span class="sub-item">|-</span> <span class="module-name">springcloud/</span></td>
+          <td class="col-database"><span class="sub-item">|-</span> <span class="module-name">distributed/</span></td>
+          <td class="col-csbasics"><span class="sub-item">|-</span> <span class="module-name">network/</span></td>
+          <td class="col-arch"><span class="sub-item">|-</span> <span class="module-name">k8s/</span></td>
+        </tr>
+        <tr>
+          <td class="col-javabase"><span class="sub-item">|-</span> <span class="module-name">jvm/</span></td>
+          <td class="col-framework"><span class="sub-item">|-</span> <span class="module-name">mybatis/</span></td>
+          <td class="col-database"><span class="sub-item">|-</span> <span class="module-name">mq/</span></td>
+          <td class="col-csbasics"></td>
+          <td class="col-arch"></td>
+        </tr>
+        <tr>
+          <td class="col-javabase"><span class="sub-item">|-</span> <span class="module-name">java8/</span></td>
+          <td class="col-framework"></td>
+          <td class="col-database"></td>
+          <td class="col-csbasics"></td>
+          <td class="col-arch"></td>
+        </tr>
+        <tr>
+          <td colspan="5" class="separator"></td>
+        </tr>
+        <tr class="footer-row">
+          <td colspan="5">
+            Knowledge Format: <span style="color: var(--amber);">Concept Table</span> + <span style="color: var(--amber);">ASCII Diagram</span> + <span style="color: var(--amber);">Code Example</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="module">
+    <div class="module-header">
+      <span class="module-tag">Module 01</span>
+      <span class="module-title">Java Base</span>
+      <div class="module-line"></div>
+    </div>
+    <div class="cards-grid">
+      <div class="card" data-target="dp">
+        <div class="card-header">
+          <div class="card-icon">1</div>
+          <div class="card-title-group">
+            <div class="card-title">Design Patterns</div>
+            <div class="card-subtitle">javabase.designpatterns</div>
+          </div>
+        </div>
+        <div class="card-desc">10 种经典设计模式：创建型、结构型、行为模式全覆盖</div>
+        <div class="card-meta">
+          <span class="card-tag">10 files</span>
+          <span class="card-tag">GoF Patterns</span>
+        </div>
+      </div>
+
+      <div id="dp" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/SingletonPattern.html" class="sub-card"><div class="sub-card-title">SingletonPattern</div><div class="sub-card-desc">6 种实现方式：饿汉/懒汉/DCL/静态内部类/枚举</div></a>
+          <a href="knowledge/FactoryPattern.html" class="sub-card"><div class="sub-card-title">FactoryPattern</div><div class="sub-card-desc">简单工厂、工厂方法、抽象工厂模式</div></a>
+          <a href="knowledge/BuilderPattern.html" class="sub-card"><div class="sub-card-title">BuilderPattern</div><div class="sub-card-desc">链式调用构建复杂对象</div></a>
+          <a href="knowledge/ProxyPattern.html" class="sub-card"><div class="sub-card-title">ProxyPattern</div><div class="sub-card-desc">静态代理、JDK 动态代理、CGLIB 代理</div></a>
+          <a href="knowledge/DecoratorPattern.html" class="sub-card"><div class="sub-card-title">DecoratorPattern</div><div class="sub-card-desc">IO 流包装、权限包装等动态扩展</div></a>
+          <a href="knowledge/ObserverPattern.html" class="sub-card"><div class="sub-card-title">ObserverPattern</div><div class="sub-card-desc">事件监听、发布订阅模式</div></a>
+          <a href="knowledge/StrategyPattern.html" class="sub-card"><div class="sub-card-title">StrategyPattern</div><div class="sub-card-desc">算法族封装，支付/排序策略</div></a>
+          <a href="knowledge/TemplateMethodPattern.html" class="sub-card"><div class="sub-card-title">TemplateMethodPattern</div><div class="sub-card-desc">算法骨架定义，子类实现可变步骤</div></a>
+          <a href="knowledge/AdapterPattern.html" class="sub-card"><div class="sub-card-title">AdapterPattern</div><div class="sub-card-desc">类适配器、对象适配器、接口适配器</div></a>
+          <a href="knowledge/ChainOfResponsibility.html" class="sub-card"><div class="sub-card-title">ChainOfResponsibility</div><div class="sub-card-desc">职责链模式，过滤器链、审批流程</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="concurrency">
+        <div class="card-header">
+          <div class="card-icon">2</div>
+          <div class="card-title-group">
+            <div class="card-title">Concurrency</div>
+            <div class="card-subtitle">javabase.concurrency</div>
+          </div>
+        </div>
+        <div class="card-desc">线程安全、锁机制、线程池原理与最佳实践</div>
+        <div class="card-meta">
+          <span class="card-tag">2 files</span>
+          <span class="card-tag">JUC</span>
+        </div>
+      </div>
+
+      <div id="concurrency" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/ThreadSafety.html" class="sub-card"><div class="sub-card-title">ThreadSafety</div><div class="sub-card-desc">volatile、synchronized、CAS、AQS 原理</div></a>
+          <a href="knowledge/ThreadPools.html" class="sub-card"><div class="sub-card-title">ThreadPools</div><div class="sub-card-desc">Executor 框架、7 种线程池、拒绝策略</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="collections">
+        <div class="card-header">
+          <div class="card-icon">3</div>
+          <div class="card-title-group">
+            <div class="card-title">Collections</div>
+            <div class="card-subtitle">javabase.collections</div>
+          </div>
+        </div>
+        <div class="card-desc">Java 集合框架：List、Set、Map 实现原理与选型</div>
+        <div class="card-meta">
+          <span class="card-tag">1 file</span>
+          <span class="card-tag">Collection</span>
+        </div>
+      </div>
+
+      <div id="collections" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/CollectionFramework.html" class="sub-card"><div class="sub-card-title">CollectionFramework</div><div class="sub-card-desc">ArrayList/LinkedList、HashSet/TreeSet、HashMap/ConcurrentHashMap</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="jvm">
+        <div class="card-header">
+          <div class="card-icon">4</div>
+          <div class="card-title-group">
+            <div class="card-title">JVM</div>
+            <div class="card-subtitle">javabase.jvm</div>
+          </div>
+        </div>
+        <div class="card-desc">JVM 内存模型、类加载机制、垃圾回收原理</div>
+        <div class="card-meta">
+          <span class="card-tag">2 files</span>
+          <span class="card-tag">JVM</span>
+        </div>
+      </div>
+
+      <div id="jvm" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/JVMMemoryModel.html" class="sub-card"><div class="sub-card-title">JVMMemoryModel</div><div class="sub-card-desc">堆、栈、方法区、程序计数器、本地方法栈</div></a>
+          <a href="knowledge/ClassLoading.html" class="sub-card"><div class="sub-card-title">ClassLoading</div><div class="sub-card-desc">类加载器层次、双亲委派、打破双亲委派</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="java8">
+        <div class="card-header">
+          <div class="card-icon">5</div>
+          <div class="card-title-group">
+            <div class="card-title">Java 8+</div>
+            <div class="card-subtitle">javabase.java8</div>
+          </div>
+        </div>
+        <div class="card-desc">Lambda、Stream API、Optional、新日期时间 API</div>
+        <div class="card-meta">
+          <span class="card-tag">1 file</span>
+          <span class="card-tag">Functional</span>
+        </div>
+      </div>
+
+      <div id="java8" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/Java8Features.html" class="sub-card"><div class="sub-card-title">Java8Features</div><div class="sub-card-desc">Lambda 表达式、方法引用、Stream、Optional、DateTime</div></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="module">
+    <div class="module-header">
+      <span class="module-tag">Module 02</span>
+      <span class="module-title">Framework</span>
+      <div class="module-line"></div>
+    </div>
+    <div class="cards-grid">
+      <div class="card" data-target="spring">
+        <div class="card-header">
+          <div class="card-icon">S</div>
+          <div class="card-title-group">
+            <div class="card-title">Spring Core</div>
+            <div class="card-subtitle">framework.spring</div>
+          </div>
+        </div>
+        <div class="card-desc">IoC/DI、AOP、事务管理、Spring Security 核心原理</div>
+        <div class="card-meta">
+          <span class="card-tag">4 files</span>
+          <span class="card-tag">Spring 5.x</span>
+        </div>
+      </div>
+
+      <div id="spring" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/IoCAndDI.html" class="sub-card"><div class="sub-card-title">IoCAndDI</div><div class="sub-card-desc">控制反转、依赖注入方式、Bean 生命周期</div></a>
+          <a href="knowledge/SpringAOP.html" class="sub-card"><div class="sub-card-title">SpringAOP</div><div class="sub-card-desc">切面、连接点、通知、代理实现原理</div></a>
+          <a href="knowledge/TransactionManagement.html" class="sub-card"><div class="sub-card-title">TransactionManagement</div><div class="sub-card-desc">声明式事务、传播行为、隔离级别</div></a>
+          <a href="knowledge/SpringSecurity.html" class="sub-card"><div class="sub-card-title">SpringSecurity</div><div class="sub-card-desc">认证、授权、JWT、OAuth2 集成</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="springboot">
+        <div class="card-header">
+          <div class="card-icon">B</div>
+          <div class="card-title-group">
+            <div class="card-title">Spring Boot</div>
+            <div class="card-subtitle">framework.springboot</div>
+          </div>
+        </div>
+        <div class="card-desc">自动配置原理、Starter 机制、Actuator 监控</div>
+        <div class="card-meta">
+          <span class="card-tag">1 file</span>
+          <span class="card-tag">Auto-Config</span>
+        </div>
+      </div>
+
+      <div id="springboot" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/AutoConfiguration.html" class="sub-card"><div class="sub-card-title">AutoConfiguration</div><div class="sub-card-desc">@EnableAutoConfiguration、spring.factories、条件注解</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="springcloud">
+        <div class="card-header">
+          <div class="card-icon">C</div>
+          <div class="card-title-group">
+            <div class="card-title">Spring Cloud</div>
+            <div class="card-subtitle">framework.springcloud</div>
+          </div>
+        </div>
+        <div class="card-desc">微服务全家桶：注册中心、网关、熔断、负载均衡、RPC</div>
+        <div class="card-meta">
+          <span class="card-tag">8 files</span>
+          <span class="card-tag">Microservices</span>
+        </div>
+      </div>
+
+      <div id="springcloud" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/ServiceDiscovery.html" class="sub-card"><div class="sub-card-title">ServiceDiscovery</div><div class="sub-card-desc">Eureka、Consul、服务注册与发现</div></a>
+          <a href="knowledge/LoadBalancer.html" class="sub-card"><div class="sub-card-title">LoadBalancer</div><div class="sub-card-desc">Ribbon、Spring Cloud LoadBalancer 负载均衡</div></a>
+          <a href="knowledge/CircuitBreaker.html" class="sub-card"><div class="sub-card-title">CircuitBreaker</div><div class="sub-card-desc">Hystrix、Resilience4j 熔断降级</div></a>
+          <a href="knowledge/ApiGateway.html" class="sub-card"><div class="sub-card-title">ApiGateway</div><div class="sub-card-desc">Zuul、Spring Cloud Gateway 路由与过滤器</div></a>
+          <a href="knowledge/FeignClient.html" class="sub-card"><div class="sub-card-title">FeignClient</div><div class="sub-card-desc">声明式 HTTP 客户端、负载均衡集成</div></a>
+          <a href="knowledge/NacosAndApollo.html" class="sub-card"><div class="sub-card-title">NacosAndApollo</div><div class="sub-card-desc">配置中心、动态配置推送、灰度发布</div></a>
+          <a href="knowledge/SentinelFlowControl.html" class="sub-card"><div class="sub-card-title">SentinelFlowControl</div><div class="sub-card-desc">流量控制、熔断降级、系统保护</div></a>
+          <a href="knowledge/DubboRPC.html" class="sub-card"><div class="sub-card-title">DubboRPC</div><div class="sub-card-desc">Dubbo 架构、服务导出、服务引入</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="mybatis">
+        <div class="card-header">
+          <div class="card-icon">M</div>
+          <div class="card-title-group">
+            <div class="card-title">MyBatis</div>
+            <div class="card-subtitle">framework.mybatis</div>
+          </div>
+        </div>
+        <div class="card-desc">SQL 映射、缓存机制、插件开发、执行流程</div>
+        <div class="card-meta">
+          <span class="card-tag">1 file</span>
+          <span class="card-tag">ORM</span>
+        </div>
+      </div>
+
+      <div id="mybatis" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/MyBatisUsage.html" class="sub-card"><div class="sub-card-title">MyBatisUsage</div><div class="sub-card-desc">Mapper 接口、XML 映射、一级/二级缓存、插件拦截器</div></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="module">
+    <div class="module-header">
+      <span class="module-tag">Module 03</span>
+      <span class="module-title">Database</span>
+      <div class="module-line"></div>
+    </div>
+    <div class="cards-grid">
+      <div class="card" data-target="mysql">
+        <div class="card-header">
+          <div class="card-icon">My</div>
+          <div class="card-title-group">
+            <div class="card-title">MySQL</div>
+            <div class="card-subtitle">database.mysql</div>
+          </div>
+        </div>
+        <div class="card-desc">索引优化、事务隔离、MVCC、分库分表、连接池</div>
+        <div class="card-meta">
+          <span class="card-tag">5 files</span>
+          <span class="card-tag">InnoDB</span>
+        </div>
+      </div>
+
+      <div id="mysql" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/MySQLIndex.html" class="sub-card"><div class="sub-card-title">MySQLIndex</div><div class="sub-card-desc">B+树、聚簇/非聚簇索引、最左前缀、索引失效</div></a>
+          <a href="knowledge/TransactionIsolation.html" class="sub-card"><div class="sub-card-title">TransactionIsolation</div><div class="sub-card-desc">ACID、4 种隔离级别、脏读/不可重复读/幻读</div></a>
+          <a href="knowledge/MVCC.html" class="sub-card"><div class="sub-card-title">MVCC</div><div class="sub-card-desc">版本链、ReadView、快照读与当前读</div></a>
+          <a href="knowledge/Sharding.html" class="sub-card"><div class="sub-card-title">Sharding</div><div class="sub-card-desc">分库分表策略、ShardingSphere、分布式 ID</div></a>
+          <a href="knowledge/ConnectionPool.html" class="sub-card"><div class="sub-card-title">ConnectionPool</div><div class="sub-card-desc">HikariCP、Druid、连接池原理与调优</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="redis">
+        <div class="card-header">
+          <div class="card-icon">Re</div>
+          <div class="card-title-group">
+            <div class="card-title">Redis</div>
+            <div class="card-subtitle">database.redis</div>
+          </div>
+        </div>
+        <div class="card-desc">数据类型、持久化、高可用、分布式锁、缓存设计</div>
+        <div class="card-meta">
+          <span class="card-tag">2 files</span>
+          <span class="card-tag">Cache</span>
+        </div>
+      </div>
+
+      <div id="redis" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/RedisDataStructures.html" class="sub-card"><div class="sub-card-title">RedisDataStructures</div><div class="sub-card-desc">String、Hash、List、Set、ZSet、Bitmap、HyperLogLog</div></a>
+          <a href="knowledge/RedisHighAvailability.html" class="sub-card"><div class="sub-card-title">RedisHighAvailability</div><div class="sub-card-desc">RDB/AOF、主从复制、哨兵、Cluster 集群</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="distributed-db">
+        <div class="card-header">
+          <div class="card-icon">Di</div>
+          <div class="card-title-group">
+            <div class="card-title">Distributed</div>
+            <div class="card-subtitle">database.distributed</div>
+          </div>
+        </div>
+        <div class="card-desc">分布式锁、分布式事务：2PC、3PC、TCC、Saga</div>
+        <div class="card-meta">
+          <span class="card-tag">2 files</span>
+          <span class="card-tag">DistDB</span>
+        </div>
+      </div>
+
+      <div id="distributed-db" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/DistributedLock.html" class="sub-card"><div class="sub-card-title">DistributedLock</div><div class="sub-card-desc">Redis RedLock、Zookeeper、Etcd 分布式锁</div></a>
+          <a href="knowledge/DistributedTransaction.html" class="sub-card"><div class="sub-card-title">DistributedTransaction</div><div class="sub-card-desc">Seata、事务消息、最大努力通知</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="mq">
+        <div class="card-header">
+          <div class="card-icon">MQ</div>
+          <div class="card-title-group">
+            <div class="card-title">Message Queue</div>
+            <div class="card-subtitle">database.mq</div>
+          </div>
+        </div>
+        <div class="card-desc">RocketMQ、Kafka：架构设计、消息可靠性、顺序消息</div>
+        <div class="card-meta">
+          <span class="card-tag">3 files</span>
+          <span class="card-tag">MQ</span>
+        </div>
+      </div>
+
+      <div id="mq" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/RocketMQ.html" class="sub-card"><div class="sub-card-title">RocketMQ</div><div class="sub-card-desc">NameServer、Broker、Producer、Consumer 架构</div></a>
+          <a href="knowledge/Kafka.html" class="sub-card"><div class="sub-card-title">Kafka</div><div class="sub-card-desc">Partition、Replication、ISR、Consumer Group</div></a>
+          <a href="knowledge/MessageReliability.html" class="sub-card"><div class="sub-card-title">MessageReliability</div><div class="sub-card-desc">发送确认、消费确认、消息幂等、死信队列</div></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="module">
+    <div class="module-header">
+      <span class="module-tag">Module 04</span>
+      <span class="module-title">CS Basics</span>
+      <div class="module-line"></div>
+    </div>
+    <div class="cards-grid">
+      <div class="card" data-target="algorithm">
+        <div class="card-header">
+          <div class="card-icon">A</div>
+          <div class="card-title-group">
+            <div class="card-title">Algorithm</div>
+            <div class="card-subtitle">csbasics.algorithm</div>
+          </div>
+        </div>
+        <div class="card-desc">经典排序算法：时间/空间复杂度分析与对比</div>
+        <div class="card-meta">
+          <span class="card-tag">1 file</span>
+          <span class="card-tag">Big-O</span>
+        </div>
+      </div>
+
+      <div id="algorithm" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/SortingAlgorithm.html" class="sub-card"><div class="sub-card-title">SortingAlgorithm</div><div class="sub-card-desc">冒泡、选择、插入、希尔、归并、快速、堆排序</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="datastructure">
+        <div class="card-header">
+          <div class="card-icon">D</div>
+          <div class="card-title-group">
+            <div class="card-title">Data Structure</div>
+            <div class="card-subtitle">csbasics.datastructure</div>
+          </div>
+        </div>
+        <div class="card-desc">HashMap 源码、高级数据结构：树、堆、图</div>
+        <div class="card-meta">
+          <span class="card-tag">2 files</span>
+          <span class="card-tag">Source</span>
+        </div>
+      </div>
+
+      <div id="datastructure" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/HashMapSource.html" class="sub-card"><div class="sub-card-title">HashMapSource</div><div class="sub-card-desc">JDK 1.7 vs 1.8、扰动函数、扩容机制、红黑树</div></a>
+          <a href="knowledge/AdvancedDataStructures.html" class="sub-card"><div class="sub-card-title">AdvancedDataStructures</div><div class="sub-card-desc">B/B+树、跳表、布隆过滤器、一致性哈希</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="network">
+        <div class="card-header">
+          <div class="card-icon">N</div>
+          <div class="card-title-group">
+            <div class="card-title">Network</div>
+            <div class="card-subtitle">csbasics.network</div>
+          </div>
+        </div>
+        <div class="card-desc">TCP/HTTP 协议、Netty NIO 网络编程</div>
+        <div class="card-meta">
+          <span class="card-tag">2 files</span>
+          <span class="card-tag">IO</span>
+        </div>
+      </div>
+
+      <div id="network" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/TCPAndHTTP.html" class="sub-card"><div class="sub-card-title">TCPAndHTTP</div><div class="sub-card-desc">三次握手、四次挥手、HTTP 1.x/2/3、HTTPS</div></a>
+          <a href="knowledge/NettyNIO.html" class="sub-card"><div class="sub-card-title">NettyNIO</div><div class="sub-card-desc">BIO/NIO/AIO、Channel、Selector、ByteBuffer</div></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="module">
+    <div class="module-header">
+      <span class="module-tag">Module 05</span>
+      <span class="module-title">Architecture</span>
+      <div class="module-line"></div>
+    </div>
+    <div class="cards-grid">
+      <div class="card" data-target="sysdesign">
+        <div class="card-header">
+          <div class="card-icon">SD</div>
+          <div class="card-title-group">
+            <div class="card-title">System Design</div>
+            <div class="card-subtitle">architecture</div>
+          </div>
+        </div>
+        <div class="card-desc">缓存设计、分布式 ID、秒杀系统、限流降级</div>
+        <div class="card-meta">
+          <span class="card-tag">1 file</span>
+          <span class="card-tag">High Concurrency</span>
+        </div>
+      </div>
+
+      <div id="sysdesign" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/SystemDesign.html" class="sub-card"><div class="sub-card-title">SystemDesign</div><div class="sub-card-desc">缓存穿透/击穿/雪崩、雪花算法、秒杀架构</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="tracing">
+        <div class="card-header">
+          <div class="card-icon">TR</div>
+          <div class="card-title-group">
+            <div class="card-title">Distributed Tracing</div>
+            <div class="card-subtitle">architecture</div>
+          </div>
+        </div>
+        <div class="card-desc">链路追踪：SkyWalking、Zipkin、日志聚合</div>
+        <div class="card-meta">
+          <span class="card-tag">1 file</span>
+          <span class="card-tag">Observability</span>
+        </div>
+      </div>
+
+      <div id="tracing" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/DistributedTracing.html" class="sub-card"><div class="sub-card-title">DistributedTracing</div><div class="sub-card-desc">Trace、Span、Baggage、采样策略</div></a>
+        </div>
+      </div>
+
+      <div class="card" data-target="k8s">
+        <div class="card-header">
+          <div class="card-icon">K8</div>
+          <div class="card-title-group">
+            <div class="card-title">Docker & Kubernetes</div>
+            <div class="card-subtitle">architecture</div>
+          </div>
+        </div>
+        <div class="card-desc">容器化、K8s 核心概念、服务编排</div>
+        <div class="card-meta">
+          <span class="card-tag">1 file</span>
+          <span class="card-tag">DevOps</span>
+        </div>
+      </div>
+
+      <div id="k8s" class="subcategory">
+        <div class="sub-grid">
+          <a href="knowledge/DockerKubernetes.html" class="sub-card"><div class="sub-card-title">DockerKubernetes</div><div class="sub-card-desc">容器镜像、Pod、Service、Deployment、Ingress</div></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    Java Knowledge Review Demo - 50 Knowledge Points<br>
+    Built with Spring Boot 2.7.x - JDK 1.8 - Maven
+  </div>
+</div>
+
+<script>
+(function() {
+  var themeToggle = document.getElementById('themeToggle');
+
+  function toggleTheme() {
+    var html = document.documentElement;
+    if (html.getAttribute('data-theme') === 'light') {
+      html.removeAttribute('data-theme');
+      themeToggle.textContent = '\ud83c\udf19';
+      localStorage.setItem('theme', 'dark');
+    } else {
+      html.setAttribute('data-theme', 'light');
+      themeToggle.textContent = '\u2600\ufe0f';
+      localStorage.setItem('theme', 'light');
+    }
+  }
+
+  themeToggle.addEventListener('click', toggleTheme);
+
+  if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = '\u2600\ufe0f';
+  }
+
+  document.querySelectorAll('.card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var targetId = this.getAttribute('data-target');
+      if (!targetId) return;
+
+      var subcategory = document.getElementById(targetId);
+      var isVisible = subcategory.classList.contains('show');
+
+      document.querySelectorAll('.subcategory').forEach(function(el) {
+        el.classList.remove('show');
+      });
+      document.querySelectorAll('.card').forEach(function(el) {
+        el.classList.remove('active');
+      });
+
+      if (!isVisible) {
+        subcategory.classList.add('show');
+        this.classList.add('active');
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

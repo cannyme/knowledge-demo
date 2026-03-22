@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redis高可用方案 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .section-body h3 { font-size: 17px; color: var(--text-primary); margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-card); }
+  .section-body h3:first-child { margin-top: 0; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .highlight-box { background: rgba(240, 180, 41, 0.08); border-left: 4px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .warning-box { background: rgba(255, 123, 114, 0.08); border-left: 4px solid var(--red); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .comparison-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  .comparison-table th, .comparison-table td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  .comparison-table th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  .comparison-table tr:hover { background: rgba(240, 180, 41, 0.03); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>缓存</span></nav>
+  <header class="hero">
+    <div class="hero-badge">⚡ CACHE</div>
+    <h1 class="hero-title">Redis高可用方案</h1>
+    <p class="hero-desc">Redis 高可用架构从主从复制到哨兵模式再到集群模式，逐步解决单机故障、自动故障转移和海量数据存储问题。</p>
+  </header>
+
+  <!-- 高可用架构演进 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">Redis高可用架构演进</h2></div>
+    <div class="section-body">
+      <p>Redis 高可用架构经历了三个阶段的演进：</p>
+
+      <h3>1. 主从复制（读写分离）</h3>
+      <ul>
+        <li>一主多从架构，主节点负责写，从节点负责读</li>
+        <li>解决了读性能瓶颈，但不具备自动故障转移能力</li>
+        <li>主节点故障需要手动切换</li>
+      </ul>
+
+      <h3>2. Sentinel 哨兵（自动故障转移）</h3>
+      <ul>
+        <li>在读写分离基础上增加了故障监控和自动切换</li>
+        <li>解决了高可用问题，但存储容量仍受限于单节点</li>
+        <li>适用于读多写少、数据量可控的场景</li>
+      </ul>
+
+      <h3>3. Cluster 集群（数据分片）</h3>
+      <ul>
+        <li>支持数据分片，突破单机内存限制</li>
+        <li>内置高可用，自动故障转移</li>
+        <li>适用于海量数据场景</li>
+      </ul>
+
+      <div class="mermaid">graph LR
+    A[单机模式] --> B[主从复制]
+    B --> C[哨兵模式]
+    C --> D[集群模式]
+    B -.->|读写分离| E[解决读性能]
+    C -.->|自动切换| F[解决高可用]
+    D -.->|数据分片| G[解决扩展性]</div>
+    </div>
+  </section>
+
+  <!-- 主从复制原理 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📋</div><h2 class="section-title">主从复制原理</h2></div>
+    <div class="section-body">
+      <p>主从复制包含全量同步和增量同步两个阶段：</p>
+
+      <h3>全量同步（首次连接）</h3>
+      <ol>
+        <li>从节点发送 SYNC 命令连接主节点</li>
+        <li>主节点执行 BGSAVE，生成 RDB 快照文件</li>
+        <li>主节点将 RDB 文件发送给从节点</li>
+        <li>从节点加载 RDB 文件完成全量同步</li>
+        <li>主节点将新写入的命令缓存到复制缓冲区</li>
+        <li>RDB 发送完成后，主节点发送缓冲区的写命令给从节点</li>
+      </ol>
+
+      <h3>增量同步（断线重连）</h3>
+      <ol>
+        <li>从节点重连后发送 PSYNC 命令，携带复制偏移量</li>
+        <li>如果偏移量在主节点复制积压缓冲区内，则进行增量同步</li>
+        <li>主节点将积压缓冲区中的命令发送给从节点</li>
+        <li>如果偏移量已不在缓冲区，则重新进行全量同步</li>
+      </ol>
+
+      <div class="mermaid">sequenceDiagram
+    participant S as Slave
+    participant M as Master
+    S->>M: SYNC / PSYNC offset
+    alt 全量同步
+        M->>M: BGSAVE 生成 RDB
+        M->>S: 发送 RDB 文件
+        S->>S: 加载 RDB
+        M->>S: 发送缓冲区命令
+    else 增量同步
+        M->>S: 发送积压缓冲区命令
+    end
+    loop 持续复制
+        M->>S: 传播写命令
+    end</div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">CONFIG</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 从节点配置
+replicaof 192.168.1.100 6379
+replica-read-only yes
+
+# 复制积压缓冲区大小（默认1MB）
+repl-backlog-size 64mb
+
+# 主节点至少2个从节点同步才认为写成功
+min-replicas-to-write 2
+min-replicas-max-lag 10</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sentinel 哨兵机制 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🛡️</div><h2 class="section-title">Sentinel 哨兵机制</h2></div>
+    <div class="section-body">
+      <p>Sentinel 是 Redis 的高可用解决方案，提供三大功能：</p>
+      <ul>
+        <li><strong>监控</strong>：持续监控主从节点运行状态</li>
+        <li><strong>通知</strong>：节点故障时通知管理员</li>
+        <li><strong>自动故障转移</strong>：主节点故障时自动选举新主节点</li>
+      </ul>
+
+      <div class="mermaid">graph TD
+    subgraph Sentinel集群
+    S1[Sentinel 1]
+    S2[Sentinel 2]
+    S3[Sentinel 3]
+    end
+    S1 -.->|监控| M[Master]
+    S2 -.->|监控| M
+    S3 -.->|监控| M
+    S1 -.->|监控| R1[Slave 1]
+    S2 -.->|监控| R1
+    S3 -.->|监控| R2[Slave 2]</div>
+
+      <h3>主观下线 vs 客观下线</h3>
+      <table class="comparison-table">
+        <tr><th>类型</th><th>定义</th><th>触发条件</th></tr>
+        <tr><td>主观下线（SDOWN）</td><td>单个 Sentinel 认为节点不可用</td><td>心跳检测超时（默认 30s）</td></tr>
+        <tr><td>客观下线（ODOWN）</td><td>多数 Sentinel 认为节点不可用</td><td>quorum 个 Sentinel 同意</td></tr>
+      </table>
+
+      <h3>故障转移流程</h3>
+      <ol>
+        <li>Sentinel 检测到主节点客观下线</li>
+        <li>Sentinel 之间选举 Leader（Raft 算法）</li>
+        <li>Leader 从从节点中选举新主节点
+          <ul>
+            <li>优先选择复制偏移量最大的（数据最新）</li>
+            <li>相同偏移量选择 runid 最小的</li>
+            <li>排除已下线的节点</li>
+          </ul>
+        </li>
+        <li>其他从节点切换复制到新主节点</li>
+        <li>通知客户端新主节点地址</li>
+        <li>原主节点恢复后成为从节点</li>
+      </ol>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">CONFIG</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># sentinel.conf
+sentinel monitor mymaster 192.168.1.100 6379 2
+sentinel down-after-milliseconds mymaster 30000
+sentinel failover-timeout mymaster 180000
+sentinel parallel-syncs mymaster 1
+
+# mymaster: 主节点别名
+# 2: 客观下线所需的 Sentinel 数量（quorum）
+# 30000: 主观下线判定时间（毫秒）</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cluster 集群 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔀</div><h2 class="section-title">Cluster 集群</h2></div>
+    <div class="section-body">
+      <p>Redis Cluster 是分布式解决方案，通过数据分片实现水平扩展：</p>
+
+      <h3>16384 个哈希槽</h3>
+      <ul>
+        <li>Redis Cluster 将数据划分为 16384 个槽（slot）</li>
+        <li>每个 key 通过 CRC16(key) % 16384 计算所属槽位</li>
+        <li>每个主节点负责一部分槽位</li>
+      </ul>
+      <div class="mermaid">graph TD
+    subgraph Redis集群
+    M1[Master 1<br/>槽位 0-5460]
+    M2[Master 2<br/>槽位 5461-10922]
+    M3[Master 3<br/>槽位 10923-16383]
+    M1 --> S1[Slave 1]
+    M2 --> S2[Slave 2]
+    M3 --> S3[Slave 3]
+    end</div>
+
+      <h3>节点通信（Gossip 协议）</h3>
+      <ul>
+        <li>节点之间通过 PING/PONG 消息交换状态信息</li>
+        <li>每个节点保存完整的集群拓扑信息</li>
+        <li>不需要中心化协调节点</li>
+        <li>协议特点：最终一致性，适合大规模集群</li>
+      </ul>
+
+      <h3>槽迁移</h3>
+      <p>当需要扩容或缩容时，进行槽迁移：</p>
+      <ol>
+        <li>目标节点准备接收槽位</li>
+        <li>源节点将槽内 key 逐一迁移到目标节点</li>
+        <li>迁移过程中，key 在原节点仍可访问</li>
+        <li>迁移完成后，更新槽位映射关系</li>
+        <li>广播新的槽位分配信息</li>
+      </ol>
+
+      <h3>Hash Tags</h3>
+      <p>使用 Hash Tags 将相关 key 路由到同一槽位，支持批量操作：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">REDIS</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 使用 {} 内的内容计算槽位
+user:{123}:profile  → 只用 123 计算槽位
+user:{123}:orders   → 与上面同一槽位
+
+# 这样可以批量操作
+MGET user:{123}:profile user:{123}:orders</code></pre></div>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">CONFIG</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># redis.conf
+cluster-enabled yes
+cluster-config-file nodes.conf
+cluster-node-timeout 5000
+cluster-require-full-coverage no
+
+# 集群命令
+CLUSTER INFO          # 查看集群信息
+CLUSTER NODES         # 查看节点信息
+CLUSTER MEET          # 添加节点
+CLUSTER ADDSLOTS      # 分配槽位
+CLUSTER FAILOVER      # 手动故障转移</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 缓存问题 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">缓存问题及解决方案</h2></div>
+    <div class="section-body">
+
+      <h3>缓存穿透</h3>
+      <p><strong>问题</strong>：查询一个数据库和缓存都不存在的数据，每次请求都打到数据库</p>
+      <p><strong>场景</strong>：恶意攻击使用不存在 ID 查询</p>
+      <p><strong>解决方案</strong>：</p>
+      <ul>
+        <li><strong>布隆过滤器</strong>：在缓存前加布隆过滤器，快速判断 key 是否存在</li>
+        <li><strong>缓存空值</strong>：数据库不存在也缓存（设置较短过期时间）</li>
+        <li><strong>参数校验</strong>：对非法参数进行拦截</li>
+      </ul>
+      <div class="mermaid">graph TD
+    A[请求] --> B{布隆过滤器}
+    B -->|可能存在| C[查询缓存]
+    B -->|一定不存在| D[直接返回]
+    C -->|命中| E[返回数据]
+    C -->|未命中| F[查询数据库]
+    F --> G[回写缓存]
+    F -->|不存在| H[缓存空值]</div>
+
+      <h3>缓存击穿</h3>
+      <p><strong>问题</strong>：热点 key 突然过期，大量请求同时打到数据库</p>
+      <p><strong>场景</strong>：秒杀活动中的热门商品缓存过期</p>
+      <p><strong>解决方案</strong>：</p>
+      <ul>
+        <li><strong>互斥锁</strong>：只允许一个线程重建缓存，其他线程等待</li>
+        <li><strong>逻辑过期</strong>：缓存不设置 TTL，通过逻辑时间判断是否过期，异步重建</li>
+        <li><strong>热点 key 永不过期</strong>：后台定时刷新热点数据</li>
+      </ul>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 互斥锁解决缓存击穿
+public String getData(String key) {
+    String value = redis.get(key);
+    if (value == null) {
+        // 获取锁
+        if (redis.setnx("lock:" + key, "1", 10)) {
+            try {
+                value = db.query(key);
+                redis.set(key, value, 300);
+            } finally {
+                redis.del("lock:" + key);
+            }
+        } else {
+            // 其他线程等待后重试
+            Thread.sleep(100);
+            return getData(key);
+        }
+    }
+    return value;
+}</code></pre></div>
+      </div>
+
+      <h3>缓存雪崩</h3>
+      <p><strong>问题</strong>：大量 key 同时过期，或 Redis 宕机，导致数据库压力骤增</p>
+      <p><strong>场景</strong>：批量导入的数据同时设置相同过期时间</p>
+      <p><strong>解决方案</strong>：</p>
+      <ul>
+        <li><strong>随机过期时间</strong>：在基础过期时间上增加随机值</li>
+        <li><strong>多级缓存</strong>：本地缓存（Caffeine）+ 分布式缓存（Redis）</li>
+        <li><strong>熔断降级</strong>：数据库压力过大时直接返回默认值</li>
+        <li><strong>高可用架构</strong>：Redis Cluster 避免单点故障</li>
+      </ul>
+      <div class="highlight-box">
+        <strong>随机过期时间示例</strong><br>
+        expire = baseExpire + random(0, 300)  // 基础过期时间 + 0~5分钟随机值
+      </div>
+
+      <table class="comparison-table">
+        <tr><th>问题</th><th>原因</th><th>核心解决方案</th></tr>
+        <tr><td>缓存穿透</td><td>查询不存在的数据</td><td>布隆过滤器、缓存空值</td></tr>
+        <tr><td>缓存击穿</td><td>热点 key 过期</td><td>互斥锁、逻辑过期</td></tr>
+        <tr><td>缓存雪崩</td><td>大量 key 同时过期</td><td>随机过期、多级缓存</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

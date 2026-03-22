@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redis核心数据结构 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.2); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .tip::before { content: '💡 Tip: '; font-weight: 600; color: var(--green); }
+  .warning { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.2); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .warning::before { content: '⚠️ Warning: '; font-weight: 600; color: var(--red); }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--border-card); padding: 12px; text-align: left; }
+  th { background: rgba(240, 180, 41, 0.1); font-weight: 600; color: var(--amber); }
+  tr:hover { background: rgba(240, 180, 41, 0.05); }
+  .subsection-title { font-weight: 700; font-size: 16px; color: var(--cyan); margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-card); }
+  h4 { color: var(--amber); margin: 16px 0 8px; font-size: 15px; }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>缓存</span></nav>
+  <header class="hero">
+    <div class="hero-badge">⚡ CACHE</div>
+    <h1 class="hero-title">Redis核心数据结构</h1>
+    <p class="hero-desc">Redis是一款高性能的内存数据结构存储系统，支持多种数据类型，广泛应用于缓存、消息队列、排行榜等场景。单线程QPS可达10万+，支持持久化、主从复制和分布式集群。</p>
+  </header>
+
+  <!-- Redis特点 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">Redis核心特点</h2></div>
+    <div class="section-body">
+      <ul>
+        <li><strong>基于内存</strong>：纯内存操作，速度极快</li>
+        <li><strong>单线程模型</strong>：避免上下文切换，简化并发控制</li>
+        <li><strong>IO多路复用</strong>：使用epoll处理高并发连接</li>
+        <li><strong>多种数据结构</strong>：String、Hash、List、Set、ZSet等</li>
+        <li><strong>持久化机制</strong>：支持RDB快照和AOF日志</li>
+        <li><strong>高可用方案</strong>：主从复制、哨兵、集群模式</li>
+      </ul>
+      <div class="mermaid">flowchart LR
+    A[客户端] -->|命令| B[Redis服务器]
+    B --> C[内存存储]
+    B --> D[String]
+    B --> E[Hash]
+    B --> F[List]
+    B --> G[Set]
+    B --> H[ZSet]</div>
+    </div>
+  </section>
+
+  <!-- String类型 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏷️</div><h2 class="section-title">String 字符串</h2></div>
+    <div class="section-body">
+      <h4>底层实现：SDS（Simple Dynamic String）</h4>
+      <p>SDS是Redis自定义的动态字符串结构，相比C语言字符串，具有获取长度O(1)、避免缓冲区溢出、减少内存重分配次数等优点。</p>
+
+      <h4>应用场景</h4>
+      <ul>
+        <li><strong>缓存对象</strong>：将对象序列化为JSON字符串存储</li>
+        <li><strong>计数器</strong>：使用INCR/INCRBY实现原子自增</li>
+        <li><strong>分布式锁</strong>：使用SETNX实现互斥锁</li>
+        <li><strong>分布式ID生成</strong>：使用INCR生成唯一递增ID</li>
+      </ul>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Redis</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 设置值（缓存对象）
+SET user:1 '{"name":"张三","age":25}'
+
+# 分布式锁
+SETNX lock:order 1              # 不存在才设置
+SET lock:order 1 EX 30 NX       # 设置并添加过期时间（推荐）
+
+# 计数器
+INCR page:view:home             # 自增
+INCRBY article:read:123 5       # 增加指定值
+
+# 批量操作
+MGET user:1 user:2 user:3       # 批量获取</code></pre></div>
+      </div>
+
+      <div class="tip">String类型的值最大可存储512MB，但实际应用中建议控制单个value大小在10KB以内，避免big key问题。</div>
+    </div>
+  </section>
+
+  <!-- Hash类型 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📦</div><h2 class="section-title">Hash 哈希</h2></div>
+    <div class="section-body">
+      <h4>底层实现</h4>
+      <p>小数据量时使用ziplist（压缩列表），大数据量时转换为hashtable（哈希表）。</p>
+
+      <h4>应用场景</h4>
+      <ul>
+        <li><strong>对象存储</strong>：比String更灵活，可以只修改某个字段</li>
+        <li><strong>购物车</strong>：用户ID作为key，商品ID作为field，数量作为value</li>
+      </ul>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Redis</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 存储用户对象
+HSET user:1 name "张三" age 25 email "zhangsan@example.com"
+HGET user:1 name                # 获取单个字段
+HGETALL user:1                  # 获取所有字段
+HMSET user:1 name "李四" age 26 # 设置多个字段
+
+# 购物车实现
+HSET cart:user:1 item:1001 2        # 商品1001，数量2
+HINCRBY cart:user:1 item:1001 1     # 增加数量
+HDEL cart:user:1 item:1001          # 删除商品
+HLEN cart:user:1                    # 购物车商品数量</code></pre></div>
+      </div>
+
+      <table>
+        <tr><th>对比项</th><th>String存储对象</th><th>Hash存储对象</th></tr>
+        <tr><td>灵活性</td><td>修改字段需整体更新</td><td>可单独修改某个字段</td></tr>
+        <tr><td>内存占用</td><td>较大</td><td>较小（字段复用key空间）</td></tr>
+        <tr><td>适用场景</td><td>整体读取，较少修改</td><td>频繁修改部分字段</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- List类型 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📋</div><h2 class="section-title">List 列表</h2></div>
+    <div class="section-body">
+      <h4>底层实现：quicklist（ziplist + linkedlist）</h4>
+      <p>Redis 3.2之前使用ziplist或linkedlist，3.2之后使用quicklist，结合了两者的优点：内存占用小且支持快速插入删除。</p>
+
+      <h4>应用场景</h4>
+      <ul>
+        <li><strong>消息队列</strong>：生产者-消费者模式</li>
+        <li><strong>最新列表</strong>：最新文章、最新消息</li>
+        <li><strong>时间线</strong>：用户动态时间线</li>
+      </ul>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Redis</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 消息队列（生产者-消费者）
+LPUSH queue:order '{"orderId":123}'   # 左边推入（生产者）
+RPOP queue:order                       # 右边弹出（消费者）
+BRPOP queue:order 10                   # 阻塞弹出，10秒超时
+
+# 最新文章列表
+LPUSH articles:latest article:100
+LTRIM articles:latest 0 99             # 只保留最新100篇
+LRANGE articles:latest 0 9             # 获取最新10篇
+
+# 时间线
+LPUSH timeline:user:1 tweet:1001
+LPUSH timeline:user:1 tweet:1002</code></pre></div>
+      </div>
+
+      <div class="tip">使用BRPOP/BLPOP实现阻塞式消息队列时，超时时间建议设置在5-30秒之间，太短会增加网络开销，太长会影响系统响应。</div>
+    </div>
+  </section>
+
+  <!-- Set类型 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎲</div><h2 class="section-title">Set 集合</h2></div>
+    <div class="section-body">
+      <h4>底层实现</h4>
+      <p>整数集合（intset）或哈希表（hashtable），自动根据数据类型和规模选择最优实现。</p>
+
+      <h4>核心特性</h4>
+      <ul>
+        <li><strong>无序</strong>：元素没有顺序</li>
+        <li><strong>不重复</strong>：自动去重</li>
+        <li><strong>集合运算</strong>：支持交集、并集、差集</li>
+      </ul>
+
+      <h4>应用场景</h4>
+      <ul>
+        <li><strong>标签系统</strong>：给用户打标签</li>
+        <li><strong>共同关注</strong>：使用交集找出共同好友</li>
+        <li><strong>抽奖</strong>：随机抽取不重复用户</li>
+      </ul>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Redis</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 用户标签
+SADD user:1:tags "90后" "程序员" "游戏"
+SMEMBERS user:1:tags              # 获取所有标签
+SISMEMBER user:1:tags "程序员"    # 判断是否有某标签
+
+# 共同关注（交集）
+SADD user:1:following user:2 user:3 user:4
+SADD user:2:following user:3 user:4 user:5
+SINTER user:1:following user:2:following  # 共同关注: user:3, user:4
+SDIFF user:1:following user:2:following   # 差集: user:2
+SUNION user:1:following user:2:following  # 并集: user:2,3,4,5
+
+# 抽奖
+SADD lottery:2024 user:1 user:2 user:3
+SRANDMEMBER lottery:2024 1         # 随机抽1人（不移除）
+SPOP lottery:2024 1                # 随机抽1人（移除）</code></pre></div>
+      </div>
+
+      <table>
+        <tr><th>命令</th><th>功能</th><th>示例</th></tr>
+        <tr><td>SINTER</td><td>交集</td><td>SINTER set1 set2</td></tr>
+        <tr><td>SUNION</td><td>并集</td><td>SUNION set1 set2</td></tr>
+        <tr><td>SDIFF</td><td>差集</td><td>SDIFF set1 set2</td></tr>
+        <tr><td>SRANDMEMBER</td><td>随机获取（不移除）</td><td>SRANDMEMBER key count</td></tr>
+        <tr><td>SPOP</td><td>随机获取（移除）</td><td>SPOP key count</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ZSet类型 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏆</div><h2 class="section-title">ZSet 有序集合</h2></div>
+    <div class="section-body">
+      <h4>底层实现：跳表（skiplist）+ 哈希表</h4>
+      <p>小数据量使用ziplist，大数据量使用skiplist+dict组合。跳表实现O(logN)的插入和查询，同时支持范围查询。</p>
+
+      <div class="mermaid">graph TB
+    subgraph "跳表结构示意"
+    L4["L4: head ----------------------------------------> tail"]
+    L3["L3: head ----------> 30 -------------------------> tail"]
+    L2["L2: head --> 10 --> 30 --> 50 -------------------> tail"]
+    L1["L1: head --> 10 --> 30 --> 50 --> 70 --> 90 --> tail"]
+    end
+    L4 --> L3 --> L2 --> L1</div>
+
+      <h4>应用场景</h4>
+      <ul>
+        <li><strong>排行榜</strong>：游戏分数排行、热榜</li>
+        <li><strong>延时队列</strong>：使用score作为执行时间戳</li>
+        <li><strong>范围查询</strong>：按分数范围获取数据</li>
+      </ul>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Redis</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 排行榜
+ZADD leaderboard:score 100 user:1 200 user:2 150 user:3
+ZINCRBY leaderboard:score 50 user:1      # 增加分数
+ZREVRANGE leaderboard:score 0 9 WITHSCORES  # 降序前10名
+ZRANK leaderboard:score user:1           # 获取排名（升序）
+ZREVRANK leaderboard:score user:1        # 获取排名（降序）
+
+# 延时队列（订单超时取消）
+# score为订单过期时间戳
+ZADD delay:queue 1704067200 order:123
+# 消费者定时检查
+ZRANGEBYSCORE delay:queue 0 {当前时间戳} LIMIT 0 100
+ZREM delay:queue order:123               # 处理后移除</code></pre></div>
+      </div>
+
+      <div class="tip">ZRANGEBYSCORE命令非常适合实现延时队列，消费者通过定时轮询获取已到期的任务进行处理。</div>
+    </div>
+  </section>
+
+  <!-- 持久化机制 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💾</div><h2 class="section-title">持久化机制</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="rdb">RDB</button>
+        <button class="tab" data-tab="aof">AOF</button>
+        <button class="tab" data-tab="mix">混合持久化</button>
+      </div>
+
+      <div class="tab-content active" id="rdb">
+        <h4>RDB（Redis Database）</h4>
+        <p>将内存数据以二进制快照的形式保存到磁盘。</p>
+        <ul>
+          <li><strong>优点</strong>：文件紧凑、恢复速度快、适合备份</li>
+          <li><strong>缺点</strong>：可能丢失最后一次持久化后的数据</li>
+        </ul>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">CONFIG</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code># RDB触发条件
+save 900 1      # 900秒内至少1次修改
+save 300 10     # 300秒内至少10次修改
+save 60 10000   # 60秒内至少10000次修改
+
+# 手动触发
+SAVE            # 阻塞持久化
+BGSAVE          # 后台持久化（fork子进程）</code></pre></div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="aof">
+        <h4>AOF（Append Only File）</h4>
+        <p>记录所有写命令到日志文件，重启时重新执行命令恢复数据。</p>
+        <ul>
+          <li><strong>优点</strong>：数据更安全，最多丢失1秒数据</li>
+          <li><strong>缺点</strong>：文件更大，恢复速度较慢</li>
+        </ul>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">CONFIG</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code># AOF配置
+appendonly yes
+appendfilename "appendonly.aof"
+
+# 刷盘策略
+appendfsync always      # 每次写入都刷盘（最安全，最慢）
+appendfsync everysec    # 每秒刷盘（推荐）
+appendfsync no          # 由操作系统决定（最快，可能丢数据）
+
+# AOF重写
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb</code></pre></div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="mix">
+        <h4>混合持久化（Redis 4.0+）</h4>
+        <p>重写时同时使用RDB和AOF：先写RDB格式的快照，然后追加AOF格式的增量命令。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">CONFIG</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code># 开启混合持久化
+aof-use-rdb-preamble yes</code></pre></div>
+        </div>
+      </div>
+
+      <table>
+        <tr><th>特性</th><th>RDB</th><th>AOF</th></tr>
+        <tr><td>数据安全性</td><td>低（可能丢失分钟级）</td><td>高（最多丢1秒）</td></tr>
+        <tr><td>文件大小</td><td>小（压缩二进制）</td><td>大（文本命令）</td></tr>
+        <tr><td>恢复速度</td><td>快</td><td>慢</td></tr>
+        <tr><td>系统资源消耗</td><td>高（fork时）</td><td>低（持续写入）</td></tr>
+        <tr><td>适用场景</td><td>备份、主从复制</td><td>数据安全要求高</td></tr>
+      </table>
+
+      <div class="tip">最佳实践：同时开启RDB和AOF，使用混合持久化，定期备份RDB文件。</div>
+    </div>
+  </section>
+
+  <!-- 缓存问题 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🛡️</div><h2 class="section-title">缓存问题及解决方案</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="penetration">缓存穿透</button>
+        <button class="tab" data-tab="breakdown">缓存击穿</button>
+        <button class="tab" data-tab="avalanche">缓存雪崩</button>
+      </div>
+
+      <div class="tab-content active" id="penetration">
+        <h4>缓存穿透</h4>
+        <p><strong>问题描述</strong>：大量请求查询不存在的数据，绕过缓存直接打到数据库。常见于恶意请求（如id=-1）或查询不存在的用户。</p>
+
+        <h4>解决方案</h4>
+        <div class="subsection-title">方案1：缓存空对象</div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>public Object getWithNullCache(String key) {
+    Object value = redis.get(key);
+    if (value != null) {
+        // 命中缓存（可能是空值标记）
+        return "NULL".equals(value) ? null : value;
+    }
+
+    // 查询数据库
+    value = db.query(key);
+
+    if (value != null) {
+        redis.set(key, value, 300);  // 正常过期时间
+    } else {
+        // 缓存空值，设置较短过期时间
+        redis.set(key, "NULL", 60);
+    }
+    return value;
+}</code></pre></div>
+        </div>
+
+        <div class="subsection-title">方案2：布隆过滤器</div>
+        <p>原理：位图 + 多个哈希函数。判断元素可能存在时可能误判，判断元素一定不存在时一定准确。</p>
+
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>public Object getWithBloomFilter(String key) {
+    // 先检查布隆过滤器
+    if (!bloomFilter.mightContain(key)) {
+        return null;  // 一定不存在，直接返回
+    }
+
+    // 可能存在，继续查询缓存和数据库
+    Object value = redis.get(key);
+    if (value != null) return value;
+
+    value = db.query(key);
+    if (value != null) redis.set(key, value);
+    return value;
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="breakdown">
+        <h4>缓存击穿</h4>
+        <p><strong>问题描述</strong>：热点Key过期，大量请求同时穿透到数据库。与缓存穿透的区别在于：击穿是Key存在但过期了，穿透是Key不存在。</p>
+
+        <h4>解决方案</h4>
+        <div class="subsection-title">方案1：互斥锁</div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>public Object getWithMutex(String key) {
+    Object value = redis.get(key);
+    if (value != null) return value;
+
+    String lockKey = "lock:" + key;
+    try {
+        // 尝试获取锁
+        boolean locked = redis.setnx(lockKey, "1", 10);
+        if (locked) {
+            // 获取锁成功，查询数据库
+            value = db.query(key);
+            redis.set(key, value, 300);
+        } else {
+            // 获取锁失败，等待后重试
+            Thread.sleep(50);
+            return getWithMutex(key);
+        }
+    } finally {
+        redis.del(lockKey);
+    }
+    return value;
+}</code></pre></div>
+        </div>
+
+        <div class="subsection-title">方案2：逻辑过期</div>
+        <p>设置Key永不过期（物理不过期），但在value中维护一个逻辑过期时间，过期后异步刷新。</p>
+      </div>
+
+      <div class="tab-content" id="avalanche">
+        <h4>缓存雪崩</h4>
+        <p><strong>问题描述</strong>：大量Key同时过期，或Redis宕机，导致大量请求打到数据库。</p>
+
+        <h4>解决方案</h4>
+        <div class="subsection-title">方案1：随机过期时间</div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>public void setWithRandomExpire(String key, Object value, int baseExpire) {
+    // 基础过期时间 + 随机时间（0-300秒）
+    int randomExpire = baseExpire + ThreadLocalRandom.current().nextInt(0, 300);
+    redis.set(key, value, randomExpire);
+}</code></pre></div>
+        </div>
+
+        <div class="subsection-title">方案2：多级缓存</div>
+        <div class="mermaid">flowchart LR
+    A[客户端] --> B[Nginx缓存]
+    B --> C[本地缓存<br/>Caffeine]
+    C --> D[Redis集群]
+    D --> E[数据库]</div>
+
+        <div class="subsection-title">方案3：熔断降级</div>
+        <p>使用熔断器（如Hystrix/Sentinel），当缓存或数据库压力过大时，降级返回默认值或从本地缓存读取。</p>
+
+        <div class="warning">缓存雪崩是最严重的缓存问题，可能导致数据库压力过大而宕机，建议结合多种方案进行防护。</div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

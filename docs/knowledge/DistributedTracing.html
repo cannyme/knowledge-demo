@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分布式追踪 - Java Knowledge Review</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+
+  :root {
+    --bg-deep: #0a0e17;
+    --bg-card: rgba(16, 22, 36, 0.7);
+    --bg-card-hover: rgba(22, 30, 50, 0.85);
+    --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12);
+    --border-card-hover: rgba(240, 180, 41, 0.4);
+    --amber: #f0b429;
+    --amber-light: #ffd166;
+    --amber-dim: rgba(240, 180, 41, 0.08);
+    --cyan: #4ecdc4;
+    --cyan-dim: rgba(78, 205, 196, 0.15);
+    --cyan-light: #6ee7df;
+    --text-primary: #e8e6e3;
+    --text-secondary: #8a8f98;
+    --text-dim: #4a5068;
+    --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+    --glow-cyan: 0 0 25px rgba(78, 205, 196, 0.12);
+    --font-code: 'JetBrains Mono', monospace;
+    --font-heading: 'Outfit', sans-serif;
+  }
+
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18);
+    --border-card-hover: rgba(160, 120, 20, 0.4);
+    --amber: #b8860b;
+    --amber-light: #996600;
+    --amber-dim: rgba(184, 134, 11, 0.06);
+    --cyan: #0d7377;
+    --cyan-dim: rgba(13, 115, 119, 0.12);
+    --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e;
+    --text-dim: #7a7a8e;
+    --glow-amber: 0 0 20px rgba(184, 134, 11, 0.08);
+    --glow-cyan: 0 0 20px rgba(13, 115, 119, 0.08);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-heading);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.4s ease, color 0.4s ease;
+    line-height: 1.7;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  [data-theme="light"] body::before {
+    background-image:
+      linear-gradient(rgba(160, 120, 20, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(160, 120, 20, 0.06) 1px, transparent 1px);
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 30%, rgba(78, 205, 196, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 60%, rgba(240, 180, 41, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 999;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border-card);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    box-shadow: var(--glow-amber);
+  }
+  .theme-toggle:hover {
+    border-color: var(--amber);
+    transform: scale(1.1);
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 32px;
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .breadcrumb a {
+    color: var(--cyan);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--amber);
+  }
+
+  .breadcrumb .sep {
+    color: var(--text-dim);
+  }
+
+  .kp-header {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 32px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kp-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber));
+  }
+
+  .kp-tag {
+    display: inline-block;
+    font-family: var(--font-code);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cyan);
+    background: var(--cyan-dim);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    border-radius: 6px;
+    padding: 4px 14px;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .kp-title {
+    font-weight: 800;
+    font-size: clamp(28px, 5vw, 42px);
+    line-height: 1.2;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--amber-light) 0%, var(--amber) 50%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .kp-package {
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .kp-desc {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .kp-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+  }
+
+  .kp-section:hover {
+    border-color: var(--border-card-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--glow-amber);
+  }
+
+  .section-title {
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-card);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(180deg, var(--amber), var(--cyan));
+    border-radius: 2px;
+  }
+
+  .section-content {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .section-content h3 {
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--text-primary);
+    margin: 24px 0 12px;
+  }
+
+  .section-content p {
+    margin-bottom: 12px;
+  }
+
+  .section-content ul, .section-content ol {
+    margin: 12px 0;
+    padding-left: 24px;
+  }
+
+  .section-content li {
+    margin-bottom: 8px;
+  }
+
+  .section-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-family: var(--font-code);
+    font-size: 13px;
+  }
+
+  .section-content th,
+  .section-content td {
+    padding: 12px 16px;
+    text-align: left;
+    border: 1px solid var(--border-card);
+  }
+
+  .section-content th {
+    background: var(--amber-dim);
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .section-content tr:hover {
+    background: rgba(240, 180, 41, 0.03);
+  }
+
+  .tip-box {
+    background: var(--cyan-dim);
+    border-left: 4px solid var(--cyan);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+
+  .tip-box strong {
+    color: var(--cyan);
+  }
+
+  .warning-box {
+    background: rgba(240, 180, 41, 0.1);
+    border-left: 4px solid var(--amber);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+
+  .warning-box strong {
+    color: var(--amber);
+  }
+
+  .highlight-box {
+    background: rgba(78, 205, 196, 0.08);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+  }
+
+  .highlight-box strong {
+    color: var(--cyan);
+  }
+
+  .code-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+
+  .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(240, 180, 41, 0.05);
+    border-bottom: 1px solid var(--border-card);
+  }
+
+  .code-title {
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .copy-btn {
+    font-family: var(--font-code);
+    font-size: 11px;
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid var(--border-card);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  .code-block pre {
+    padding: 20px;
+    overflow-x: auto;
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .code-block code {
+    color: var(--text-primary);
+    background: transparent;
+  }
+
+  .code-block .keyword { color: #c792ea; }
+  .code-block .string { color: #c3e88d; }
+  .code-block .comment { color: #676e95; font-style: italic; }
+  .code-block .number { color: #f78c6c; }
+  .code-block .class-name { color: #ffcb6b; }
+  .code-block .method { color: #82aaff; }
+
+  [data-theme="light"] .code-block .keyword { color: #7c4dff; }
+  [data-theme="light"] .code-block .string { color: #448c27; }
+  [data-theme="light"] .code-block .comment { color: #8e908c; }
+  [data-theme="light"] .code-block .number { color: #f5871f; }
+  [data-theme="light"] .code-block .class-name { color: #c99e00; }
+  [data-theme="light"] .code-block .method { color: #4271ae; }
+
+  .ascii-art {
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--bg-code);
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    color: var(--cyan);
+    margin: 16px 0;
+  }
+
+  .mermaid-container {
+    background: var(--bg-code);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+  }
+
+  .mermaid-title {
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--amber);
+    margin-bottom: 16px;
+    text-align: left;
+  }
+
+  .back-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border-card);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    z-index: 100;
+  }
+
+  .back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .back-to-top:hover {
+    border-color: var(--amber);
+    transform: translateY(-4px);
+    box-shadow: var(--glow-amber);
+  }
+
+  .kp-footer {
+    text-align: center;
+    margin-top: 60px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border-card);
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 24px 16px 60px; }
+    .kp-header { padding: 24px; }
+    .kp-section { padding: 20px; }
+    .code-block pre { padding: 16px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+
+<div class="container">
+  <nav class="breadcrumb">
+    <a href="../knowledge-map.html">📚 知识地图</a>
+    <span class="sep">/</span>
+    <span>DistributedTracing</span>
+  </nav>
+
+  <header class="kp-header">
+    <div class="kp-tag">architecture</div>
+    <h1 class="kp-title">分布式追踪</h1>
+    <div class="kp-package">DistributedTracing.java</div>
+    <p class="kp-desc">在微服务架构下，一个请求经过多个服务，需要追踪完整的调用链路，以便快速定位问题、分析性能瓶颈。</p>
+  </header>
+
+  <main class="kp-content">
+
+    <!-- Section 1: Why Need -->
+    <section class="kp-section">
+      <h2 class="section-title">为什么需要分布式追踪</h2>
+      <div class="section-content">
+        <p>微服务架构带来了系统解耦和独立部署的优势，但也带来了新的挑战：</p>
+        <ul>
+          <li><strong>调用链复杂</strong>：一个请求可能经过数十个服务</li>
+          <li><strong>问题定位困难</strong>：错误可能发生在任意环节</li>
+          <li><strong>性能分析困难</strong>：难以确定性能瓶颈在哪个服务</li>
+          <li><strong>日志分散</strong>：各服务日志独立存储，难以关联</li>
+        </ul>
+
+        <div class="mermaid-container">
+          <div class="mermaid-title">微服务调用链</div>
+          <pre class="mermaid">
+graph LR
+    User[用户] --> Gateway[API Gateway]
+    Gateway --> Auth[认证服务]
+    Gateway --> Order[订单服务]
+    Order --> Inventory[库存服务]
+    Order --> Account[账户服务]
+    Order --> Coupon[优惠券服务]
+    Inventory --> DB1[(库存DB)]
+    Account --> DB2[(账户DB)]
+    Coupon --> Redis[Redis缓存]
+
+    style User fill:#f0b429
+    style Gateway fill:#4ecdc4
+    style Order fill:#4ecdc4
+    style Inventory fill:#4ecdc4
+    style Account fill:#4ecdc4
+          </pre>
+        </div>
+
+        <div class="highlight-box">
+          <strong>调用链问题场景</strong>
+          <ul>
+            <li>订单创建失败，是库存不足还是余额不足？</li>
+            <li>接口响应慢，是哪个服务耗时最长？</li>
+            <li>服务报错，是从哪个服务传递过来的？</li>
+            <li>需要查看一次请求的完整处理过程</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Core Concepts -->
+    <section class="kp-section">
+      <h2 class="section-title">核心概念</h2>
+      <div class="section-content">
+        <h3>Trace（追踪）</h3>
+        <p>一个请求的完整调用链路，包含所有经过的服务。每个Trace有唯一的<strong>TraceId</strong>标识。</p>
+
+        <h3>Span（跨度）</h3>
+        <p>一次调用单元，表示在某个服务中的处理过程。Span包含：</p>
+        <ul>
+          <li><strong>SpanId</strong>：当前Span的唯一标识</li>
+          <li><strong>ParentId</strong>：父Span的ID，用于构建调用树</li>
+          <li><strong>Operation Name</strong>：操作名称（如HTTP方法+URL）</li>
+          <li><strong>Start Time / Duration</strong>：开始时间和持续时间</li>
+          <li><strong>Tags</strong>：标签（如http.method, http.status）</li>
+          <li><strong>Logs</strong>：日志事件（如数据库查询、缓存命中）</li>
+        </ul>
+
+        <div class="mermaid-container">
+          <div class="mermaid-title">Trace和Span关系</div>
+          <pre class="mermaid">
+graph TD
+    subgraph Trace[Trace: abc123]
+        S1[Span 1<br/>Gateway<br/>traceId=abc123<br/>spanId=1<br/>parentId=null]
+        S2[Span 2<br/>Order Service<br/>traceId=abc123<br/>spanId=2<br/>parentId=1]
+        S3[Span 3<br/>Inventory Service<br/>traceId=abc123<br/>spanId=3<br/>parentId=2]
+        S4[Span 4<br/>Account Service<br/>traceId=abc123<br/>spanId=4<br/>parentId=2]
+    end
+
+    S1 --> S2
+    S2 --> S3
+    S2 --> S4
+
+    style S1 fill:#f0b429,stroke:#4ecdc4
+    style S2 fill:#4ecdc4
+    style S3 fill:#4ecdc4
+    style S4 fill:#4ecdc4
+          </pre>
+        </div>
+
+        <h3>Annotation（标注）</h3>
+        <p>用于标记Span中关键事件的时间点：</p>
+        <ul>
+          <li><strong>cs (Client Send)</strong>：客户端发送请求</li>
+          <li><strong>sr (Server Receive)</strong>：服务端接收请求</li>
+          <li><strong>ss (Server Send)</strong>：服务端发送响应</li>
+          <li><strong>cr (Client Receive)</strong>：客户端接收响应</li>
+        </ul>
+
+        <div class="ascii-art">
+时间线示例：
+┌─────────────────────────────────────────────────────────────────┐
+│ Service A         │ [Span 1: 0ms ~ 200ms]                       │
+│                   │ traceId=abc123, spanId=1                    │
+├───────────────────┼─────────────────────────────────────────────┤
+│ Service B         │    [Span 2: 20ms ~ 180ms]                   │
+│                   │    traceId=abc123, spanId=2, parentId=1     │
+├───────────────────┼─────────────────────────────────────────────┤
+│ Service C         │        [Span 3: 40ms ~ 100ms]               │
+│                   │        traceId=abc123, spanId=3, parentId=2 │
+├───────────────────┼─────────────────────────────────────────────┤
+│ Service D         │        [Span 4: 60ms ~ 160ms]               │
+│                   │        traceId=abc123, spanId=4, parentId=2 │
+└───────────────────┴─────────────────────────────────────────────┘
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: OpenTelemetry -->
+    <section class="kp-section">
+      <h2 class="section-title">OpenTelemetry标准</h2>
+      <div class="section-content">
+        <p>OpenTelemetry是CNCF项目，提供标准化的可观测性数据（Metrics、Logs、Traces）收集规范。</p>
+
+        <div class="mermaid-container">
+          <div class="mermaid-title">OpenTelemetry架构</div>
+          <pre class="mermaid">
+graph LR
+    subgraph App["应用程序"]
+        SDK[OTel SDK<br/>Java/Go/Node.js]
+        Instrumentation[自动埋点]
+        Manual[手动埋点]
+    end
+
+    SDK --> Collector[OTel Collector]
+    Instrumentation --> SDK
+    Manual --> SDK
+
+    Collector --> Jaeger[Jaeger]
+    Collector --> Zipkin[Zipkin]
+    Collector --> Prometheus[Prometheus]
+    Collector --> OTLP[OTLP Backend]
+    Collector --> Logstash[ELK Stack]
+
+    style SDK fill:#f0b429
+    style Collector fill:#4ecdc4
+          </pre>
+        </div>
+
+        <div class="highlight-box">
+          <strong>OpenTelemetry核心特性</strong>
+          <ul>
+            <li><strong>统一标准</strong>：一套API/SDK覆盖Metrics、Logs、Traces</li>
+            <li><strong>自动埋点</strong>：支持主流框架自动埋点（Spring、gRPC等）</li>
+            <li><strong> exporter</strong>：支持导出到多种后端（Jaeger、Zipkin、Prometheus等）</li>
+            <li><strong>无侵入</strong>：Java Agent方式实现自动埋点</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: SkyWalking -->
+    <section class="kp-section">
+      <h2 class="section-title">SkyWalking</h2>
+      <div class="section-content">
+        <p>SkyWalking是Apache开源的国产APM系统，专为微服务、云原生架构设计。</p>
+
+        <h3>架构组件</h3>
+        <div class="mermaid-container">
+          <div class="mermaid-title">SkyWalking架构</div>
+          <pre class="mermaid">
+graph TB
+    subgraph Agent["SkyWalking Agent"]
+        A1[Service A<br/>-javaagent]
+        A2[Service B<br/>-javaagent]
+        A3[Service C<br/>-javaagent]
+    end
+
+    subgraph Backend["SkyWalking Backend"]
+        OAP[OAP Server<br/>Observability Analysis Platform]
+        Storage[(Storage<br/>ES/H2/MySQL/TiDB)]
+    end
+
+    subgraph UI["展示层"]
+        WebUI[SkyWalking UI]
+    end
+
+    A1 -->|gRPC| OAP
+    A2 -->|gRPC| OAP
+    A3 -->|gRPC| OAP
+    OAP --> Storage
+    WebUI --> OAP
+
+    style OAP fill:#f0b429,stroke:#4ecdc4
+    style Agent fill:#4ecdc4
+          </pre>
+        </div>
+
+        <div class="tip-box">
+          <strong>SkyWalking核心组件</strong>
+          <ul>
+            <li><strong>Agent（探针）</strong>：无侵入式采集数据，通过-javaagent启动</li>
+            <li><strong>OAP Server</strong>：接收数据、聚合分析、告警触发</li>
+            <li><strong>Storage</strong>：数据存储（推荐Elasticsearch）</li>
+            <li><strong>UI</strong>：可视化界面，展示拓扑、追踪、指标</li>
+          </ul>
+        </div>
+
+        <h3>Agent使用</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">SkyWalking Agent配置</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="comment"># 1. 下载Agent</span>
+wget https://archive.apache.org/dist/skywalking/java-agent/8.16.0/apache-skywalking-java-agent-8.16.0.tgz
+
+<span class="comment"># 2. 启动应用时添加-javaagent参数</span>
+java -javaagent:/path/to/skywalking-agent/skywalking-agent.jar \
+     -Dskywalking.agent.service_name=order-service \
+     -Dskywalking.collector.backend_service=localhost:11800 \
+     -jar order-service.jar
+
+<span class="comment"># 3. 可选配置： agent/config/agent.config</span>
+agent.service_name=${SW_AGENT_NAME:your-service-name}
+collector.backend_service=${SW_AGENT_COLLECTOR_BACKEND_SERVICES:127.0.0.1:11800}</code></pre>
+        </div>
+
+        <h3>自动埋点支持</h3>
+        <p>SkyWalking Agent支持自动埋点的技术栈：</p>
+        <table>
+          <tr>
+            <th>类型</th>
+            <th>支持技术</th>
+          </tr>
+          <tr>
+            <td>Web框架</td>
+            <td>Spring MVC, Spring WebFlux, Struts2</td>
+          </tr>
+          <tr>
+            <td>RPC框架</td>
+            <td>Dubbo, gRPC, Motan</td>
+          </tr>
+          <tr>
+            <td>HTTP客户端</td>
+            <td>Feign, OkHttp, HttpClient, RestTemplate</td>
+          </tr>
+          <tr>
+            <td>消息队列</td>
+            <td>RocketMQ, Kafka, ActiveMQ</td>
+          </tr>
+          <tr>
+            <td>数据库</td>
+            <td>MySQL, PostgreSQL, Oracle, Redis</td>
+          </tr>
+          <tr>
+            <td>缓存</td>
+            <td>Lettuce, Redisson, Jedis</td>
+          </tr>
+        </table>
+
+        <h3>性能剖析（Profile）</h3>
+        <p>SkyWalking支持对特定端点进行性能剖析，采集方法级别的执行耗时。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">性能剖析配置</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="comment">// 在skywalking-agent/config/agent.config中开启</span>
+<span class="comment"># 性能剖析开关</span>
+profile.active=true
+<span class="comment"># 最大线程监控数</span>
+profile.max_monitor_thread_count=300
+<span class="comment"># 监控持续时间（分钟）</span>
+profile.max_monitor_time_minutes=10
+
+<span class="comment">// 使用方式：</span>
+<span class="comment">// 1. 在SkyWalking UI中选择服务/端点</span>
+<span class="comment">// 2. 点击"Create New Profile Task"</span>
+<span class="comment">// 3. 设置监控时长和起始时间</span>
+<span class="comment">// 4. 触发请求后查看方法级别耗时</span></code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 5: Zipkin -->
+    <section class="kp-section">
+      <h2 class="section-title">Zipkin</h2>
+      <div class="section-content">
+        <p>Zipkin是Twitter开源的分布式追踪系统，架构简单，易于集成。</p>
+
+        <h3>Zipkin架构</h3>
+        <div class="mermaid-container">
+          <div class="mermaid-title">Zipkin架构</div>
+          <pre class="mermaid">
+graph TB
+    subgraph Instrumented["Instrumented App"]
+        Reporter[Reporter<br/>异步发送]
+    end
+
+    subgraph ZipkinServer["Zipkin Server"]
+        Collector[Collector]
+        Storage[(Storage<br/>In-Memory/MySQL/ES/Cassandra)]
+        Query[Query Service]
+        UI[Zipkin UI]
+    end
+
+    Reporter -->|HTTP/Kafka| Collector
+    Collector --> Storage
+    Query --> Storage
+    UI --> Query
+
+    style ZipkinServer fill:#f0b429,stroke:#4ecdc4
+          </pre>
+        </div>
+
+        <h3>Spring Cloud Sleuth + Zipkin</h3>
+        <p>Sleuth是Spring Cloud的分布式追踪组件，与Zipkin无缝集成。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">Spring Cloud Sleuth配置</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="comment">// 1. 添加依赖</span>
+&lt;<span class="keyword">dependency</span>&gt;
+    &lt;<span class="keyword">groupId</span>&gt;org.springframework.cloud&lt;/<span class="keyword">groupId</span>&gt;
+    &lt;<span class="keyword">artifactId</span>&gt;spring-cloud-starter-sleuth&lt;/<span class="keyword">artifactId</span>&gt;
+&lt;/<span class="keyword">dependency</span>&gt;
+&lt;<span class="keyword">dependency</span>&gt;
+    &lt;<span class="keyword">groupId</span>&gt;org.springframework.cloud&lt;/<span class="keyword">groupId</span>&gt;
+    &lt;<span class="keyword">artifactId</span>&gt;spring-cloud-sleuth-zipkin&lt;/<span class="keyword">artifactId</span>&gt;
+&lt;/<span class="keyword">dependency</span>&gt;
+
+<span class="comment">// 2. application.yml配置</span>
+<span class="keyword">spring</span>:
+  <span class="keyword">sleuth</span>:
+    <span class="keyword">sampler</span>:
+      <span class="comment"># 采样率：1.0表示100%采样</span>
+      <span class="keyword">probability</span>: 1.0
+    <span class="keyword">web</span>:
+      <span class="keyword">skipPattern</span>: /actuator.*,/health
+  <span class="keyword">zipkin</span>:
+    <span class="keyword">base-url</span>: http://localhost:9411
+    <span class="keyword">sender</span>:
+      <span class="keyword">type</span>: kafka  <span class="comment"># 或 rabbit/web</span></span>
+
+<span class="comment">// 3. 启动Zipkin Server</span>
+docker run -d -p 9411:9411 openzipkin/zipkin
+
+<span class="comment">// 4. 访问 http://localhost:9411</span></code></pre>
+        </div>
+
+        <h3>自定义Span</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">自定义Span和Tag</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="keyword">@Service</span>
+<span class="keyword">public class</span> <span class="class-name">OrderService</span> {
+
+    <span class="keyword">@Autowired</span>
+    <span class="keyword">private</span> Tracer tracer;
+
+    <span class="comment">// 方式1：编程式创建Span</span>
+    <span class="keyword">public</span> Order <span class="method">getOrder</span>(Long orderId) {
+        <span class="comment">// 创建新Span</span>
+        Span span = tracer.<span class="method">nextSpan</span>().<span class="method">name</span>(<span class="string">"db-query"</span>);
+        <span class="keyword">try</span> (Tracer.SpanInScope ws = tracer.<span class="method">withSpan</span>(span.<span class="method">start</span>())) {
+            <span class="comment">// 添加Tag</span>
+            span.<span class="method">tag</span>(<span class="string">"db.table"</span>, <span class="string">"order"</span>);
+            span.<span class="method">tag</span>(<span class="string">"db.orderId"</span>, orderId.<span class="method">toString</span>());
+
+            <span class="comment">// 执行业务</span>
+            <span class="keyword">return</span> orderRepository.<span class="method">findById</span>(orderId);
+        } <span class="keyword">finally</span> {
+            span.<span class="method">end</span>();
+        }
+    }
+
+    <span class="comment">// 方式2：使用注解</span>
+    <span class="keyword">@NewSpan</span>(<span class="string">"process-order"</span>)
+    <span class="keyword">public void</span> <span class="method">processOrder</span>(<span class="keyword">@SpanTag</span>(<span class="string">"order.id"</span>) Long orderId) {
+        <span class="comment">// 自动创建Span，参数作为Tag</span>
+        <span class="comment">// 方法执行时间自动记录</span>
+    }
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6: Sampling -->
+    <section class="kp-section">
+      <h2 class="section-title">追踪数据采样策略</h2>
+      <div class="section-content">
+        <p>全量采样在生产环境会带来巨大存储和性能开销，需要合理的采样策略。</p>
+
+        <h3>常见采样策略</h3>
+        <table>
+          <tr>
+            <th>策略</th>
+            <th>说明</th>
+            <th>适用场景</th>
+          </tr>
+          <tr>
+            <td><strong>概率采样</strong></td>
+            <td>按固定比例采样（如1%）</td>
+            <td>大流量场景</td>
+          </tr>
+          <tr>
+            <td><strong>限速采样</strong></td>
+            <td>每秒固定采样数（如100条/秒）</td>
+            <td>稳定流量场景</td>
+          </tr>
+          <tr>
+            <td><strong>自适应采样</strong></td>
+            <td>根据流量自动调整采样率</td>
+            <td>流量波动大场景</td>
+          </tr>
+          <tr>
+            <td><strong>错误优先采样</strong></td>
+            <td>错误请求100%采样</td>
+            <td>问题排查</td>
+          </tr>
+        </table>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">SkyWalking采样配置</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="comment"># agent/config/agent.config</span>
+<span class="comment"># 采样率：10000表示100%，1000表示10%</span>
+sampler.percentage.sample_rate=<span class="number">10000</span>
+
+<span class="comment"># 可选：使用自适应采样</span>
+sampler.adaptive.enabled=<span class="keyword">true</span>
+sampler.adaptive.sample_rate=<span class="number">10000</span>
+sampler.adaptive.minimal_sample_rate=<span class="number">100</span></code></pre>
+        </div>
+
+        <div class="tip-box">
+          <strong>采样策略建议</strong>
+          <ul>
+            <li><strong>开发环境</strong>：100%采样，便于调试</li>
+            <li><strong>测试环境</strong>：50%-100%采样</li>
+            <li><strong>生产环境</strong>：1%-10%采样，错误请求100%采样</li>
+            <li><strong>关键路径</strong>：支付、订单等核心链路可提高采样率</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 7: Best Practices -->
+    <section class="kp-section">
+      <h2 class="section-title">最佳实践</h2>
+      <div class="section-content">
+
+        <h3>1. TraceId传递</h3>
+        <p>确保TraceId在调用链中正确传递：</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">TraceId传递方式</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="comment">// 1. HTTP Header传递</span>
+<span class="keyword">@Component</span>
+<span class="keyword">public class</span> <span class="class-name">TraceFilter</span> <span class="keyword">implements</span> Filter {
+    <span class="keyword">private static final</span> String TRACE_ID_HEADER = <span class="string">"X-Trace-Id"</span>;
+
+    <span class="keyword">@Override</span>
+    <span class="keyword">public void</span> <span class="method">doFilter</span>(ServletRequest request, ServletResponse response,
+                        FilterChain chain) <span class="keyword">throws</span> IOException, ServletException {
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
+        HttpServletResponse httpResponse = (HttpServletResponse) response;
+
+        <span class="comment">// 从Header获取或生成TraceId</span>
+        String traceId = httpRequest.<span class="method">getHeader</span>(TRACE_ID_HEADER);
+        <span class="keyword">if</span> (StringUtils.<span class="method">isEmpty</span>(traceId)) {
+            traceId = UUID.<span class="method">randomUUID</span>().<span class="method">toString</span>().<span class="method">replace</span>(<span class="string">"-"</span>, <span class="string">""</span>);
+        }
+
+        <span class="comment">// 设置到MDC（日志中打印）</span>
+        MDC.<span class="method">put</span>(<span class="string">"traceId"</span>, traceId);
+
+        <span class="comment">// 设置响应Header</span>
+        httpResponse.<span class="method">setHeader</span>(TRACE_ID_HEADER, traceId);
+
+        <span class="keyword">try</span> {
+            chain.<span class="method">doFilter</span>(request, response);
+        } <span class="keyword">finally</span> {
+            MDC.<span class="method">clear</span>();
+        }
+    }
+}
+
+<span class="comment">// 2. Feign传递TraceId</span>
+<span class="keyword">@Bean</span>
+<span class="keyword">public</span> RequestInterceptor <span class="method">traceIdInterceptor</span>() {
+    <span class="keyword">return</span> template -> {
+        String traceId = MDC.<span class="method">get</span>(<span class="string">"traceId"</span>);
+        <span class="keyword">if</span> (traceId != <span class="keyword">null</span>) {
+            template.<span class="method">header</span>(<span class="string">"X-Trace-Id"</span>, traceId);
+        }
+    };
+}</code></pre>
+        </div>
+
+        <h3>2. 日志集成</h3>
+        <p>在日志中打印TraceId，便于问题定位：</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">Logback配置</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="comment">&lt;!-- logback-spring.xml --&gt;</span>
+&lt;<span class="keyword">appender</span> <span class="keyword">name</span>=<span class="string">"CONSOLE"</span> <span class="keyword">class</span>=<span class="string">"ch.qos.logback.core.ConsoleAppender"</span>&gt;
+    &lt;<span class="keyword">encoder</span>&gt;
+        &lt;<span class="keyword">pattern</span>&gt;
+            %d{yyyy-MM-dd HH:mm:ss} [%X{traceId}] [%thread] %-5level %logger{36} - %msg%n
+        &lt;/<span class="keyword">pattern</span>&gt;
+    &lt;/<span class="keyword">encoder</span>&gt;
+&lt;/<span class="keyword">appender</span>&gt;
+
+<span class="comment">&lt;!-- 输出示例 --&gt;</span>
+<span class="comment">&lt;!-- 2024-01-01 10:00:00 [abc123] [http-nio-8080-exec-1] INFO c.e.demo.OrderService - 查询用户 --&gt;</span>
+
+<span class="comment">&lt;!-- JSON格式（ELK使用） --&gt;</span>
+&lt;<span class="keyword">appender</span> <span class="keyword">name</span>=<span class="string">"JSON"</span> <span class="keyword">class</span>=<span class="string">"ch.qos.logback.core.rolling.RollingFileAppender"</span>&gt;
+    &lt;<span class="keyword">encoder</span> <span class="keyword">class</span>=<span class="string">"net.logstash.logback.encoder.LogstashEncoder"</span>&gt;
+        &lt;<span class="keyword">includeMdcKeyName</span>&gt;traceId&lt;/<span class="keyword">includeMdcKeyName</span>&gt;
+        &lt;<span class="keyword">includeMdcKeyName</span>&gt;spanId&lt;/<span class="keyword">includeMdcKeyName</span>&gt;
+    &lt;/<span class="keyword">encoder</span>&gt;
+&lt;/<span class="keyword">appender</span>&gt;</code></pre>
+        </div>
+
+        <h3>3. 监控告警</h3>
+        <div class="highlight-box">
+          <strong>建议配置的告警项</strong>
+          <ul>
+            <li><strong>慢调用告警</strong>：P99延迟超过阈值</li>
+            <li><strong>错误率告警</strong>：错误比例超过阈值</li>
+            <li><strong>服务不可用</strong>：服务调用失败率过高</li>
+            <li><strong>采集异常</strong>：Agent连接失败或上报异常</li>
+          </ul>
+        </div>
+
+        <h3>4. 性能优化</h3>
+        <ul>
+          <li><strong>异步上报</strong>：使用队列异步发送追踪数据，避免阻塞业务</li>
+          <li><strong>批量发送</strong>：将多条Span批量打包发送，减少网络开销</li>
+          <li><strong>合理设置Span数量</strong>：避免过度细粒度的Span导致数据膨胀</li>
+          <li><strong>采样率调整</strong>：生产环境适当降低采样率</li>
+        </ul>
+
+        <h3>5. 选型对比</h3>
+        <table>
+          <tr>
+            <th>特性</th>
+            <th>SkyWalking</th>
+            <th>Zipkin</th>
+            <th>Jaeger</th>
+          </tr>
+          <tr>
+            <td>语言</td>
+            <td>Java</td>
+            <td>Java</td>
+            <td>Go</td>
+          </tr>
+          <tr>
+            <td>侵入性</td>
+            <td>低（Agent）</td>
+            <td>中（依赖）</td>
+            <td>低（Agent）</td>
+          </tr>
+          <tr>
+            <td>指标监控</td>
+            <td>支持</td>
+            <td>不支持</td>
+            <td>支持</td>
+          </tr>
+          <tr>
+            <td>告警</td>
+            <td>内置</td>
+            <td>需集成</td>
+            <td>需集成</td>
+          </tr>
+          <tr>
+            <td>性能剖析</td>
+            <td>支持</td>
+            <td>不支持</td>
+            <td>不支持</td>
+          </tr>
+          <tr>
+            <td>推荐场景</td>
+            <td>Java微服务</td>
+            <td>Spring生态</td>
+            <td>云原生/K8s</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="kp-footer">
+    Java Knowledge Review Demo - 50 Knowledge Points<br>
+    <a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a>
+  </footer>
+</div>
+
+<button class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</button>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+(function() {
+  mermaid.initialize({
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#f0b429',
+      primaryTextColor: '#e8e6e3',
+      primaryBorderColor: '#4ecdc4',
+      lineColor: '#4ecdc4',
+      secondaryColor: '#1a1a2e',
+      tertiaryColor: '#0a0e17',
+      fontFamily: 'JetBrains Mono'
+    },
+    flowchart: { curve: 'basis' }
+  });
+
+  var themeToggle = document.getElementById('themeToggle');
+  function toggleTheme() {
+    var html = document.documentElement;
+    if (html.getAttribute('data-theme') === 'light') {
+      html.removeAttribute('data-theme');
+      themeToggle.textContent = '🌙';
+      localStorage.setItem('theme', 'dark');
+      mermaid.initialize({ theme: 'dark' });
+    } else {
+      html.setAttribute('data-theme', 'light');
+      themeToggle.textContent = '☀️';
+      localStorage.setItem('theme', 'light');
+      mermaid.initialize({ theme: 'default' });
+    }
+  }
+  themeToggle.addEventListener('click', toggleTheme);
+  if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = '☀️';
+    mermaid.initialize({ theme: 'default' });
+  }
+
+  var backToTop = document.getElementById('backToTop');
+  window.addEventListener('scroll', function() {
+    if (window.pageYOffset > 300) {
+      backToTop.classList.add('visible');
+    } else {
+      backToTop.classList.remove('visible');
+    }
+  });
+
+  window.scrollToTop = function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  window.copyCode = function(btn) {
+    var code = btn.closest('.code-block').querySelector('code').textContent;
+    navigator.clipboard.writeText(code).then(function() {
+      var original = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.style.color = '#4ecdc4';
+      setTimeout(function() {
+        btn.textContent = original;
+        btn.style.color = '';
+      }, 2000);
+    });
+  };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java集合框架 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Java基础</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📦 COLLECTIONS</div>
+    <h1 class="hero-title">Java集合框架</h1>
+    <p class="hero-desc">Java集合框架的详细解析和最佳实践</p>
+  </header>
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">整体架构</h2></div>
+    <div class="section-body">
+      <p>Java集合框架分为两大体系：</p>
+      <ul>
+        <li><strong>Collection（单值集合）</strong>：存储单个元素的集合</li>
+        <li><strong>Map（键值对）</strong>：存储键值对的映射关系</li>
+      </ul>
+      <div class="mermaid">classDiagram
+    class Iterable { <<interface>> }
+    class Collection { <<interface>> }
+    class List { <<interface>> }
+    class Set { <<interface>> }
+    class Queue { <<interface>> }
+    class Map { <<interface>> }
+    Iterable <|-- Collection
+    Collection <|-- List
+    Collection <|-- Set
+    Collection <|-- Queue
+    List <|.. ArrayList
+    List <|.. LinkedList
+    Set <|.. HashSet
+    Set <|.. LinkedHashSet
+    Set <|.. TreeSet
+    Queue <|.. PriorityQueue
+    Map <|.. HashMap
+    Map <|.. LinkedHashMap
+    Map <|.. TreeMap
+    Map <|.. ConcurrentHashMap</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📋</div><h2 class="section-title">ArrayList 详解</h2></div>
+    <div class="section-body">
+      <p><strong>底层实现：</strong>动态数组</p>
+      <p><strong>核心特点：</strong></p>
+      <ul>
+        <li>随机访问 O(1)，插入删除 O(n)</li>
+        <li>默认初始容量 10，扩容为原来的 1.5 倍</li>
+        <li>非线程安全</li>
+      </ul>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 指定初始容量，避免频繁扩容
+List&lt;Integer&gt; list = new ArrayList&lt;&gt;(100);
+
+// 批量添加
+list.addAll(Arrays.asList(1, 2, 3, 4, 5));
+
+// 四种遍历方式
+// 1. for-each
+for (Integer i : list) {
+    System.out.println(i);
+}
+
+// 2. 迭代器
+Iterator&lt;Integer&gt; it = list.iterator();
+while (it.hasNext()) {
+    System.out.println(it.next());
+}
+
+// 3. 索引遍历（适合随机访问）
+for (int i = 0; i &lt; list.size(); i++) {
+    System.out.println(list.get(i));
+}
+
+// 4. forEach + Lambda
+list.forEach(System.out::println);</code></pre></div>
+      </div>
+      <div class="tip" style="background: rgba(255, 123, 114, 0.1); border-left: 3px solid #ff7b72; padding: 16px; margin-top: 16px; border-radius: 0 8px 8px 0;">
+        <strong>⚠️ 注意事项：</strong>遍历时删除元素需要使用迭代器的 remove() 方法，或使用 removeIf()，直接使用集合的 remove() 会导致 ConcurrentModificationException。
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔗</div><h2 class="section-title">LinkedList 详解</h2></div>
+    <div class="section-body">
+      <p><strong>底层实现：</strong>双向链表</p>
+      <p><strong>核心特点：</strong></p>
+      <ul>
+        <li>插入删除 O(1)，随机访问 O(n)</li>
+        <li>内存开销比 ArrayList 大（需存储前后指针）</li>
+        <li>可作为队列、栈、双端队列使用</li>
+      </ul>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>LinkedList&lt;Integer&gt; list = new LinkedList&lt;&gt;();
+
+// 作为队列使用（FIFO）
+list.offer(1);      // 入队
+list.poll();        // 出队
+list.peek();        // 查看队首
+
+// 作为栈使用（LIFO）
+list.push(1);       // 入栈
+list.pop();         // 出栈
+
+// 作为双端队列使用
+list.addFirst(1);
+list.addLast(2);
+list.removeFirst();
+list.removeLast();</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🗺️</div><h2 class="section-title">HashMap 详解</h2></div>
+    <div class="section-body">
+      <p><strong>底层实现：</strong>哈希表（数组 + 链表/红黑树）</p>
+      <p><strong>核心特点：</strong></p>
+      <ul>
+        <li>基于哈希函数实现 O(1) 时间复杂度的增删改查</li>
+        <li>JDK 8 后，链表长度超过 8 时转为红黑树</li>
+        <li>非线程安全，允许 null 键和 null 值</li>
+      </ul>
+      <div class="tip" style="background: rgba(126, 231, 135, 0.1); border-left: 3px solid #7ee787; padding: 16px; margin: 16px 0; border-radius: 0 8px 8px 0;">
+        <strong>📚 深入学习：</strong>HashMap 的详细源码分析请参考 <a href="HashMapSource.html" style="color: var(--cyan);">HashMapSource</a> 页面。
+      </div>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>Map&lt;String, Integer&gt; map = new HashMap&lt;&gt;();
+
+map.put("a", 1);
+map.putIfAbsent("b", 2);              // 不存在才放入
+map.computeIfAbsent("c", k -&gt; 3);     // 不存在时计算
+map.compute("a", (k, v) -&gt; v + 1);    // 更新值
+map.merge("a", 1, Integer::sum);      // 合并值
+
+// 遍历
+map.forEach((k, v) -&gt; System.out.println(k + "=" + v));</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📝</div><h2 class="section-title">LinkedHashMap 详解</h2></div>
+    <div class="section-body">
+      <p><strong>核心特点：</strong>继承自 HashMap，使用双向链表维护插入顺序或访问顺序</p>
+      <p><strong>应用场景：</strong>LRU 缓存、需要保持顺序的 Map</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 访问顺序模式（accessOrder = true）
+LinkedHashMap&lt;String, Integer&gt; map = new LinkedHashMap&lt;&gt;(16, 0.75f, true);
+map.put("a", 1);
+map.put("b", 2);
+map.put("c", 3);
+
+map.get("a"); // 访问后，a 移到最后
+
+// LRU 缓存实现（超过容量删除最老的）
+LinkedHashMap&lt;String, Integer&gt; lru = new LinkedHashMap&lt;String, Integer&gt;(16, 0.75f, true) {
+    @Override
+    protected boolean removeEldestEntry(Map.Entry&lt;String, Integer&gt; eldest) {
+        return size() &gt; 100; // 超过 100 个删除最老的
+    }
+};</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🌳</div><h2 class="section-title">TreeMap 详解</h2></div>
+    <div class="section-body">
+      <p><strong>底层实现：</strong>红黑树</p>
+      <p><strong>核心特点：</strong></p>
+      <ul>
+        <li>按键的自然顺序或自定义比较器排序</li>
+        <li>查找、插入、删除都是 O(log n)</li>
+        <li>支持高效的范围查询</li>
+      </ul>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>TreeMap&lt;Integer, String&gt; map = new TreeMap&lt;&gt;();
+
+map.put(3, "c");
+map.put(1, "a");
+map.put(2, "b");
+
+// 自动排序后 keySet: [1, 2, 3]
+
+// 范围查询
+map.subMap(1, 3);      // [1, 2) - 包含 1，不包含 3
+map.headMap(2);        // 小于 2 的键
+map.tailMap(2);        // 大于等于 2 的键
+
+// 获取最值
+map.firstKey();        // 1
+map.lastKey();         // 3
+map.lowerKey(2);       // 1（小于 2 的最大 key）
+map.higherKey(2);      // 3（大于 2 的最小 key）</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">HashSet / TreeSet 详解</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="hashset">HashSet</button>
+        <button class="tab" data-tab="treeset">TreeSet</button>
+      </div>
+      <div id="hashset" class="tab-content active" style="padding: 28px;">
+        <p><strong>底层实现：</strong>HashMap（value 固定为一个 Object 占位符）</p>
+        <p><strong>核心特点：</strong></p>
+        <ul>
+          <li>不允许重复元素</li>
+          <li>无序存储</li>
+          <li>可以存储 null</li>
+          <li>contains 操作 O(1)</li>
+        </ul>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>Set&lt;String&gt; set = new HashSet&lt;&gt;();
+set.add("a");
+set.add("b");
+set.contains("a");  // O(1)
+
+// 去重操作
+List&lt;Integer&gt; list = Arrays.asList(1, 2, 2, 3, 3, 3);
+Set&lt;Integer&gt; unique = new HashSet&lt;&gt;(list);  // [1, 2, 3]</code></pre></div>
+        </div>
+      </div>
+      <div id="treeset" class="tab-content" style="padding: 28px;">
+        <p><strong>底层实现：</strong>TreeMap（红黑树）</p>
+        <p><strong>核心特点：</strong></p>
+        <ul>
+          <li>元素有序（自然顺序或自定义比较器）</li>
+          <li>不允许重复元素</li>
+          <li>不支持 null 元素</li>
+        </ul>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>TreeSet&lt;Integer&gt; set = new TreeSet&lt;&gt;();
+set.add(3);
+set.add(1);
+set.add(2);
+
+// 有序遍历
+set.first();           // 1
+set.last();            // 3
+set.lower(2);          // 1
+set.higher(2);         // 3
+set.subSet(1, 3);      // [1, 2]</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⏫</div><h2 class="section-title">PriorityQueue 详解</h2></div>
+    <div class="section-body">
+      <p><strong>底层实现：</strong>最小堆（完全二叉树）</p>
+      <p><strong>核心特点：</strong></p>
+      <ul>
+        <li>最小元素在队首（默认）</li>
+        <li>入队出队 O(log n)</li>
+        <li>不支持 null 元素</li>
+      </ul>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 默认最小堆
+PriorityQueue&lt;Integer&gt; minHeap = new PriorityQueue&lt;&gt;();
+minHeap.offer(3);
+minHeap.offer(1);
+minHeap.offer(2);
+minHeap.poll(); // 返回 1
+
+// 最大堆（使用反向比较器）
+PriorityQueue&lt;Integer&gt; maxHeap = new PriorityQueue&lt;&gt;((a, b) -&gt; b - a);
+maxHeap.offer(3);
+maxHeap.offer(1);
+maxHeap.offer(2);
+maxHeap.poll(); // 返回 3
+
+// Top K 问题：找出数组中最大的 K 个数
+int[] arr = {1, 5, 2, 8, 3};
+PriorityQueue&lt;Integer&gt; heap = new PriorityQueue&lt;&gt;();
+for (int num : arr) {
+    heap.offer(num);
+    if (heap.size() &gt; 3) {
+        heap.poll(); // 移除最小的，保留最大的 3 个
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔒</div><h2 class="section-title">ConcurrentHashMap 详解</h2></div>
+    <div class="section-body">
+      <p><strong>线程安全的 HashMap</strong></p>
+      <p><strong>并发实现演进：</strong></p>
+      <ul>
+        <li><strong>JDK 1.7：</strong>分段锁（Segment），每个 Segment 是一个独立的哈希表</li>
+        <li><strong>JDK 1.8：</strong>CAS + synchronized，锁链表头节点或红黑树根节点</li>
+      </ul>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>ConcurrentHashMap&lt;String, Integer&gt; map = new ConcurrentHashMap&lt;&gt;();
+
+// 原子操作
+map.putIfAbsent("a", 1);
+map.computeIfAbsent("b", k -&gt; 2);
+map.merge("a", 1, Integer::sum);
+
+// 批量操作
+map.forEach((k, v) -&gt; System.out.println(k + "=" + v));
+
+// 并发计数
+map.reduceValues(1, Integer::sum);</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📄</div><h2 class="section-title">CopyOnWriteArrayList 详解</h2></div>
+    <div class="section-body">
+      <p><strong>核心机制：</strong>写时复制（Copy-On-Write）</p>
+      <p><strong>实现原理：</strong></p>
+      <ul>
+        <li>写操作时，复制一份新数组，在新数组上修改</li>
+        <li>读操作不需要加锁，性能极高</li>
+        <li>修改完成后，将引用指向新数组</li>
+      </ul>
+      <p><strong>适用场景：</strong>读多写少的并发场景，遍历操作远多于修改操作</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>CopyOnWriteArrayList&lt;Integer&gt; list = new CopyOnWriteArrayList&lt;&gt;();
+list.add(1);
+
+// 遍历时可以修改，不会抛出 ConcurrentModificationException
+for (Integer i : list) {
+    list.add(2); // 允许，但遍历时看不到新添加的元素
+}</code></pre></div>
+      </div>
+      <div class="tip" style="background: rgba(240, 180, 41, 0.1); border-left: 3px solid #f0b429; padding: 16px; margin-top: 16px; border-radius: 0 8px 8px 0;">
+        <strong>💡 注意：</strong>CopyOnWriteArrayList 的写操作开销较大（需要复制整个数组），适合读多写少的场景，不适合频繁写入的场景。
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">集合选择指南</h2></div>
+    <div class="section-body">
+      <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+        <thead>
+          <tr style="background: rgba(240, 180, 41, 0.1);">
+            <th style="padding: 14px 16px; text-align: left; border: 1px solid var(--border-card); color: var(--amber);">使用场景</th>
+            <th style="padding: 14px 16px; text-align: left; border: 1px solid var(--border-card); color: var(--amber);">推荐集合</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);">随机访问频繁</td>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);"><code style="background: var(--bg-code); padding: 2px 6px; border-radius: 4px;">ArrayList</code></td>
+          </tr>
+          <tr style="background: rgba(128, 128, 128, 0.05);">
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);">头部/中间频繁增删</td>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);"><code style="background: var(--bg-code); padding: 2px 6px; border-radius: 4px;">LinkedList</code></td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);">去重（无序）</td>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);"><code style="background: var(--bg-code); padding: 2px 6px; border-radius: 4px;">HashSet</code></td>
+          </tr>
+          <tr style="background: rgba(128, 128, 128, 0.05);">
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);">去重且有序</td>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);"><code style="background: var(--bg-code); padding: 2px 6px; border-radius: 4px;">LinkedHashSet</code> / <code style="background: var(--bg-code); padding: 2px 6px; border-radius: 4px;">TreeSet</code></td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);">键值对存储（无序）</td>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);"><code style="background: var(--bg-code); padding: 2px 6px; border-radius: 4px;">HashMap</code></td>
+          </tr>
+          <tr style="background: rgba(128, 128, 128, 0.05);">
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);">键值对且有序</td>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);"><code style="background: var(--bg-code); padding: 2px 6px; border-radius: 4px;">LinkedHashMap</code> / <code style="background: var(--bg-code); padding: 2px 6px; border-radius: 4px;">TreeMap</code></td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);">多线程键值对</td>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);"><code style="background: var(--bg-code); padding: 2px 6px; border-radius: 4px;">ConcurrentHashMap</code></td>
+          </tr>
+          <tr style="background: rgba(128, 128, 128, 0.05);">
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);">读多写少的并发场景</td>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);"><code style="background: var(--bg-code); padding: 2px 6px; border-radius: 4px;">CopyOnWriteArrayList</code></td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);">优先级队列 / Top K</td>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);"><code style="background: var(--bg-code); padding: 2px 6px; border-radius: 4px;">PriorityQueue</code></td>
+          </tr>
+          <tr style="background: rgba(128, 128, 128, 0.05);">
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);">LRU 缓存</td>
+            <td style="padding: 12px 16px; border: 1px solid var(--border-card);"><code style="background: var(--bg-code); padding: 2px 6px; border-radius: 4px;">LinkedHashMap</code>（accessOrder = true）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

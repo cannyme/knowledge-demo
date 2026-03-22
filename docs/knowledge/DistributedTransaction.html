@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分布式事务 - Java Knowledge Review</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+
+  :root {
+    --bg-deep: #0a0e17;
+    --bg-card: rgba(16, 22, 36, 0.7);
+    --bg-card-hover: rgba(22, 30, 50, 0.85);
+    --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12);
+    --border-card-hover: rgba(240, 180, 41, 0.4);
+    --amber: #f0b429;
+    --amber-light: #ffd166;
+    --amber-dim: rgba(240, 180, 41, 0.08);
+    --cyan: #4ecdc4;
+    --cyan-dim: rgba(78, 205, 196, 0.15);
+    --cyan-light: #6ee7df;
+    --text-primary: #e8e6e3;
+    --text-secondary: #8a8f98;
+    --text-dim: #4a5068;
+    --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+    --glow-cyan: 0 0 25px rgba(78, 205, 196, 0.12);
+    --font-code: 'JetBrains Mono', monospace;
+    --font-heading: 'Outfit', sans-serif;
+  }
+
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18);
+    --border-card-hover: rgba(160, 120, 20, 0.4);
+    --amber: #b8860b;
+    --amber-light: #996600;
+    --amber-dim: rgba(184, 134, 11, 0.06);
+    --cyan: #0d7377;
+    --cyan-dim: rgba(13, 115, 119, 0.12);
+    --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e;
+    --text-dim: #7a7a8e;
+    --glow-amber: 0 0 20px rgba(184, 134, 11, 0.08);
+    --glow-cyan: 0 0 20px rgba(13, 115, 119, 0.08);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-heading);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.4s ease, color 0.4s ease;
+    line-height: 1.7;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  [data-theme="light"] body::before {
+    background-image:
+      linear-gradient(rgba(160, 120, 20, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(160, 120, 20, 0.06) 1px, transparent 1px);
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 30%, rgba(78, 205, 196, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 60%, rgba(240, 180, 41, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 999;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border-card);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    box-shadow: var(--glow-amber);
+  }
+  .theme-toggle:hover {
+    border-color: var(--amber);
+    transform: scale(1.1);
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 32px;
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .breadcrumb a {
+    color: var(--cyan);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--amber);
+  }
+
+  .breadcrumb .sep {
+    color: var(--text-dim);
+  }
+
+  .kp-header {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 32px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kp-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber));
+  }
+
+  .kp-tag {
+    display: inline-block;
+    font-family: var(--font-code);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cyan);
+    background: var(--cyan-dim);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    border-radius: 6px;
+    padding: 4px 14px;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .kp-title {
+    font-weight: 800;
+    font-size: clamp(28px, 5vw, 42px);
+    line-height: 1.2;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--amber-light) 0%, var(--amber) 50%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .kp-package {
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .kp-desc {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .kp-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+  }
+
+  .kp-section:hover {
+    border-color: var(--border-card-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--glow-amber);
+  }
+
+  .section-title {
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-card);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(180deg, var(--amber), var(--cyan));
+    border-radius: 2px;
+  }
+
+  .section-content {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .section-content h3 {
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--text-primary);
+    margin: 24px 0 12px;
+  }
+
+  .section-content p {
+    margin-bottom: 12px;
+  }
+
+  .section-content ul, .section-content ol {
+    margin: 12px 0;
+    padding-left: 24px;
+  }
+
+  .section-content li {
+    margin-bottom: 8px;
+  }
+
+  .section-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-family: var(--font-code);
+    font-size: 13px;
+  }
+
+  .section-content th,
+  .section-content td {
+    padding: 12px 16px;
+    text-align: left;
+    border: 1px solid var(--border-card);
+  }
+
+  .section-content th {
+    background: var(--amber-dim);
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .section-content tr:hover {
+    background: rgba(240, 180, 41, 0.03);
+  }
+
+  .tip-box {
+    background: var(--cyan-dim);
+    border-left: 4px solid var(--cyan);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+
+  .tip-box strong {
+    color: var(--cyan);
+  }
+
+  .warning-box {
+    background: rgba(240, 180, 41, 0.1);
+    border-left: 4px solid var(--amber);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+
+  .warning-box strong {
+    color: var(--amber);
+  }
+
+  .highlight-box {
+    background: rgba(78, 205, 196, 0.08);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+  }
+
+  .highlight-box strong {
+    color: var(--cyan);
+  }
+
+  .code-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+
+  .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(240, 180, 41, 0.05);
+    border-bottom: 1px solid var(--border-card);
+  }
+
+  .code-title {
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .copy-btn {
+    font-family: var(--font-code);
+    font-size: 11px;
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid var(--border-card);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  .code-block pre {
+    padding: 20px;
+    overflow-x: auto;
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .code-block code {
+    color: var(--text-primary);
+    background: transparent;
+  }
+
+  .code-block .keyword { color: #c792ea; }
+  .code-block .string { color: #c3e88d; }
+  .code-block .comment { color: #676e95; font-style: italic; }
+  .code-block .number { color: #f78c6c; }
+  .code-block .class-name { color: #ffcb6b; }
+  .code-block .method { color: #82aaff; }
+
+  [data-theme="light"] .code-block .keyword { color: #7c4dff; }
+  [data-theme="light"] .code-block .string { color: #448c27; }
+  [data-theme="light"] .code-block .comment { color: #8e908c; }
+  [data-theme="light"] .code-block .number { color: #f5871f; }
+  [data-theme="light"] .code-block .class-name { color: #c99e00; }
+  [data-theme="light"] .code-block .method { color: #4271ae; }
+
+  .ascii-art {
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--bg-code);
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    color: var(--cyan);
+    margin: 16px 0;
+  }
+
+  .mermaid-container {
+    background: var(--bg-code);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+  }
+
+  .mermaid-title {
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--amber);
+    margin-bottom: 16px;
+    text-align: left;
+  }
+
+  .back-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border-card);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    z-index: 100;
+  }
+
+  .back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .back-to-top:hover {
+    border-color: var(--amber);
+    transform: translateY(-4px);
+    box-shadow: var(--glow-amber);
+  }
+
+  .kp-footer {
+    text-align: center;
+    margin-top: 60px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border-card);
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 24px 16px 60px; }
+    .kp-header { padding: 24px; }
+    .kp-section { padding: 20px; }
+    .code-block pre { padding: 16px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+
+<div class="container">
+  <nav class="breadcrumb">
+    <a href="../knowledge-map.html">📚 知识地图</a>
+    <span class="sep">/</span>
+    <span>DistributedTransaction</span>
+  </nav>
+
+  <header class="kp-header">
+    <div class="kp-tag">database.distributed</div>
+    <h1 class="kp-title">分布式事务</h1>
+    <div class="kp-package">DistributedTransaction.java</div>
+    <p class="kp-desc">在分布式系统中，如何保证多个服务、多个数据库之间的数据一致性，是分布式事务需要解决的核心问题。</p>
+  </header>
+
+  <main class="kp-content">
+
+    <!-- Section 1: CAP and BASE -->
+    <section class="kp-section">
+      <h2 class="section-title">CAP定理与BASE理论</h2>
+      <div class="section-content">
+        <h3>CAP定理</h3>
+        <p>分布式系统的三个基本需求，最多只能同时满足两个：</p>
+        <ul>
+          <li><strong>C - Consistency（一致性）</strong>：所有节点在同一时刻看到相同的数据</li>
+          <li><strong>A - Availability（可用性）</strong>：每个请求都能在有限时间内得到响应</li>
+          <li><strong>P - Partition Tolerance（分区容错性）</strong>：网络分区时系统仍能正常运行</li>
+        </ul>
+
+        <div class="mermaid-container">
+          <div class="mermaid-title">CAP定理</div>
+          <pre class="mermaid">
+graph TD
+    CAP[CAP定理] --> C[Consistency<br/>一致性]
+    CAP --> A[Availability<br/>可用性]
+    CAP --> P[Partition Tolerance<br/>分区容错性]
+
+    subgraph 组合
+    CA[CA系统<br/>单机数据库<br/>MySQL/Oracle]
+    CP[CP系统<br/>ZooKeeper<br/>HBase]
+    AP[AP系统<br/>Cassandra<br/>Eureka]
+    end
+
+    C --> CA
+    A --> CA
+    C --> CP
+    P --> CP
+    A --> AP
+    P --> AP
+
+    style CAP fill:#f0b429,stroke:#4ecdc4
+    style C fill:#4ecdc4,stroke:#f0b429
+    style A fill:#4ecdc4,stroke:#f0b429
+    style P fill:#4ecdc4,stroke:#f0b429
+          </pre>
+        </div>
+
+        <div class="warning-box">
+          <strong>CAP选择原则</strong><br>
+          由于网络分区（P）在分布式系统中不可避免，因此实际只能在 <strong>CP</strong> 和 <strong>AP</strong> 之间选择：
+          <ul>
+            <li><strong>CP</strong>：金融交易系统，强一致性优先</li>
+            <li><strong>AP</strong>：互联网应用，可用性优先</li>
+          </ul>
+        </div>
+
+        <h3>BASE理论</h3>
+        <p>BASE是对CAP中AP的延伸，强调<strong>最终一致性</strong>：</p>
+        <ul>
+          <li><strong>BA - Basically Available（基本可用）</strong>：系统出现不可预知故障时，允许损失部分可用性</li>
+          <li><strong>S - Soft State（软状态）</strong>：允许系统存在中间状态，不影响整体可用性</li>
+          <li><strong>E - Eventually Consistent（最终一致性）</strong>：所有数据副本经过一段时间后最终达到一致</li>
+        </ul>
+
+        <div class="tip-box">
+          <strong>ACID vs BASE</strong>
+          <table>
+            <tr>
+              <th>特性</th>
+              <th>ACID</th>
+              <th>BASE</th>
+            </tr>
+            <tr>
+              <td>一致性</td>
+              <td>强一致性</td>
+              <td>最终一致性</td>
+            </tr>
+            <tr>
+              <td>可用性</td>
+              <td>优先保证一致性</td>
+              <td>优先保证可用性</td>
+            </tr>
+            <tr>
+              <td>适用</td>
+              <td>传统关系型数据库</td>
+              <td>NoSQL、分布式系统</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Solutions Overview -->
+    <section class="kp-section">
+      <h2 class="section-title">分布式事务解决方案</h2>
+      <div class="section-content">
+        <div class="mermaid-container">
+          <div class="mermaid-title">分布式事务解决方案概览</div>
+          <pre class="mermaid">
+graph LR
+    DT[分布式事务] --> Strong[强一致性]
+    DT --> Eventual[最终一致性]
+
+    Strong --> XA[XA/2PC<br/>两阶段提交]
+    Strong --> 3PC[3PC<br/>三阶段提交]
+
+    Eventual --> TCC[TCC<br/>Try-Confirm-Cancel]
+    Eventual --> Saga[Saga<br/>长事务]
+    Eventual --> LocalMsg[本地消息表]
+    Eventual --> Msg[事务消息<br/>RocketMQ]
+    Eventual --> BestEffort[最大努力通知]
+    Eventual --> Seata[Seata<br/>AT/TCC/Saga/XA]
+
+    style DT fill:#f0b429
+    style Strong fill:#4ecdc4
+    style Eventual fill:#4ecdc4
+          </pre>
+        </div>
+
+        <h3>1. XA两阶段提交（2PC）</h3>
+        <p>XA是X/Open组织提出的分布式事务规范，基于两阶段提交协议。</p>
+
+        <div class="mermaid-container">
+          <div class="mermaid-title">2PC流程</div>
+          <pre class="mermaid">
+sequenceDiagram
+    participant TM as 事务管理器(TM)
+    participant RM1 as 资源管理器1(RM)
+    participant RM2 as 资源管理器2(RM)
+
+    Note over TM,RM2: 阶段一：准备阶段
+    TM->>RM1: Prepare
+    TM->>RM2: Prepare
+    RM1-->>TM: Vote Yes/No
+    RM2-->>TM: Vote Yes/No
+
+    Note over TM,RM2: 阶段二：提交阶段
+    alt 所有RM返回Yes
+        TM->>RM1: Commit
+        TM->>RM2: Commit
+        RM1-->>TM: ACK
+        RM2-->>TM: ACK
+    else 任一RM返回No
+        TM->>RM1: Rollback
+        TM->>RM2: Rollback
+        RM1-->>TM: ACK
+        RM2-->>TM: ACK
+    end
+          </pre>
+        </div>
+
+        <div class="warning-box">
+          <strong>2PC问题</strong>
+          <ul>
+            <li><strong>同步阻塞</strong>：参与者在等待期间锁定资源</li>
+            <li><strong>单点故障</strong>：协调者宕机导致事务挂起</li>
+            <li><strong>数据不一致</strong>：Commit阶段部分参与者失败</li>
+          </ul>
+        </div>
+
+        <h3>2. TCC（Try-Confirm-Cancel）</h3>
+        <p>TCC是一种补偿型事务，将业务逻辑分为三个阶段：</p>
+        <ul>
+          <li><strong>Try</strong>：尝试执行，预留资源</li>
+          <li><strong>Confirm</strong>：确认执行，真正提交</li>
+          <li><strong>Cancel</strong>：取消执行，释放资源</li>
+        </ul>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">TCC转账示例</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="keyword">public class</span> <span class="class-name">TCCAccountService</span> {
+
+    <span class="comment">// Try阶段：预留资源</span>
+    <span class="keyword">public boolean</span> <span class="method">tryTransfer</span>(String from, String to, BigDecimal amount) {
+        <span class="comment">// 1. 检查余额</span>
+        Account fromAcc = accountMapper.<span class="method">selectForUpdate</span>(from);
+        <span class="keyword">if</span> (fromAcc.<span class="method">getBalance</span>().<span class="method">compareTo</span>(amount) < 0) {
+            <span class="keyword">throw new</span> BusinessException(<span class="string">"余额不足"</span>);
+        }
+
+        <span class="comment">// 2. 冻结金额</span>
+        accountMapper.<span class="method">freeze</span>(from, amount);
+        <span class="comment">// UPDATE account SET balance = balance - ?, frozen = frozen + ?</span>
+
+        <span class="comment">// 3. 记录事务日志</span>
+        transactionLogMapper.<span class="method">insert</span>(<span class="keyword">new</span> TransactionLog(
+            transactionId, from, to, amount, <span class="string">"TRY"</span>
+        ));
+        <span class="keyword">return true</span>;
+    }
+
+    <span class="comment">// Confirm阶段：确认提交</span>
+    <span class="keyword">public boolean</span> <span class="method">confirmTransfer</span>(String transactionId) {
+        TransactionLog log = transactionLogMapper.<span class="method">selectById</span>(transactionId);
+
+        <span class="comment">// 幂等性检查</span>
+        <span class="keyword">if</span> (<span class="string">"CONFIRMED"</span>.<span class="method">equals</span>(log.<span class="method">getStatus</span>())) {
+            <span class="keyword">return true</span>;
+        }
+
+        <span class="comment">// 1. 扣减冻结金额</span>
+        accountMapper.<span class="method">deductFrozen</span>(log.<span class="method">getFromAccount</span>(), log.<span class="method">getAmount</span>());
+
+        <span class="comment">// 2. 增加目标账户余额</span>
+        accountMapper.<span class="method">addBalance</span>(log.<span class="method">getToAccount</span>(), log.<span class="method">getAmount</span>());
+
+        <span class="comment">// 3. 更新事务状态</span>
+        transactionLogMapper.<span class="method">updateStatus</span>(transactionId, <span class="string">"CONFIRMED"</span>);
+        <span class="keyword">return true</span>;
+    }
+
+    <span class="comment">// Cancel阶段：回滚</span>
+    <span class="keyword">public boolean</span> <span class="method">cancelTransfer</span>(String transactionId) {
+        TransactionLog log = transactionLogMapper.<span class="method">selectById</span>(transactionId);
+
+        <span class="comment">// 幂等性检查</span>
+        <span class="keyword">if</span> (<span class="string">"CANCELLED"</span>.<span class="method">equals</span>(log.<span class="method">getStatus</span>())) {
+            <span class="keyword">return true</span>;
+        }
+
+        <span class="comment">// 1. 解冻金额</span>
+        accountMapper.<span class="method">unfreeze</span>(log.<span class="method">getFromAccount</span>(), log.<span class="method">getAmount</span>());
+
+        <span class="comment">// 2. 更新事务状态</span>
+        transactionLogMapper.<span class="method">updateStatus</span>(transactionId, <span class="string">"CANCELLED"</span>);
+        <span class="keyword">return true</span>;
+    }
+}</code></pre>
+        </div>
+
+        <h3>3. SAGA模式</h3>
+        <p>Saga将长事务拆分为多个本地事务，每个本地事务执行成功后触发下一个。</p>
+
+        <div class="mermaid-container">
+          <div class="mermaid-title">SAGA模式流程</div>
+          <pre class="mermaid">
+sequenceDiagram
+    participant O as OrderService
+    participant I as InventoryService
+    participant A as AccountService
+
+    Note over O,A: 正向流程（正常执行）
+    O->>O: T1: 创建订单
+    O->>I: T2: 扣减库存
+    I-->>O: 成功
+    O->>A: T3: 扣减余额
+    A-->>O: 成功
+    Note over O,A: 订单创建成功
+
+    Note over O,A: 补偿流程（某步失败）
+    O->>O: T1: 创建订单
+    O->>I: T2: 扣减库存（失败）
+    I-->>O: 失败
+    O->>O: C1: 取消订单
+    Note over O,A: 订单创建失败
+          </pre>
+        </div>
+
+        <h3>4. 本地消息表</h3>
+        <p>将消息和业务操作放在同一事务中，通过定时任务发送消息。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">本地消息表实现</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="comment">-- 消息表结构</span>
+<span class="keyword">CREATE TABLE</span> <span class="class-name">local_message</span> (
+    id <span class="class-name">BIGINT PRIMARY KEY AUTO_INCREMENT</span>,
+    message_id <span class="class-name">VARCHAR</span>(64) <span class="keyword">UNIQUE</span>,
+    target_service <span class="class-name">VARCHAR</span>(64),
+    content <span class="class-name">TEXT</span>,
+    status <span class="class-name">TINYINT DEFAULT</span> 0,  <span class="comment">-- 0待发送 1已发送 2已消费</span>
+    retry_count <span class="class-name">INT DEFAULT</span> 0,
+    create_time <span class="class-name">DATETIME</span>,
+    update_time <span class="class-name">DATETIME</span>
+);
+
+<span class="comment">// 业务操作 + 保存消息（同一事务）</span>
+<span class="keyword">@Transactional</span>
+<span class="keyword">public void</span> <span class="method">doBusinessAndSaveMessage</span>(Order order) {
+    <span class="comment">// 1. 执行业务操作</span>
+    orderMapper.<span class="method">insert</span>(order);
+
+    <span class="comment">// 2. 保存消息（同一事务）</span>
+    LocalMessage message = <span class="keyword">new</span> LocalMessage();
+    message.<span class="method">setMessageId</span>(UUID.<span class="method">randomUUID</span>().<span class="method">toString</span>());
+    message.<span class="method">setTargetService</span>(<span class="string">"inventory-service"</span>);
+    message.<span class="method">setContent</span>(JSON.<span class="method">toJSONString</span>(order));
+    message.<span class="method">setStatus</span>(0);
+    localMessageMapper.<span class="method">insert</span>(message);
+}</code></pre>
+        </div>
+
+        <h3>5. 最大努力通知</h3>
+        <p>通过消息通知对方，允许消息丢失，由接收方主动查询补偿。</p>
+        <ul>
+          <li>适用于对一致性要求不高的场景</li>
+          <li>如支付回调、短信发送等</li>
+          <li>接收方需要实现幂等和查询接口</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Section 3: Seata -->
+    <section class="kp-section">
+      <h2 class="section-title">Seata分布式事务框架</h2>
+      <div class="section-content">
+        <p>Seata是阿里巴巴开源的分布式事务框架，支持多种事务模式。</p>
+
+        <h3>Seata架构</h3>
+        <div class="mermaid-container">
+          <div class="mermaid-title">Seata架构</div>
+          <pre class="mermaid">
+graph TB
+    subgraph Client["业务应用"]
+        TM[Transaction Manager<br/>事务管理器]
+        RM1[Resource Manager<br/>订单服务]
+        RM2[Resource Manager<br/>库存服务]
+        RM3[Resource Manager<br/>账户服务]
+    end
+
+    subgraph Server["Seata Server"]
+        TC[Transaction Coordinator<br/>事务协调器]
+    end
+
+    subgraph Storage["存储"]
+        DB1[(订单DB)]
+        DB2[(库存DB)]
+        DB3[(账户DB)]
+    end
+
+    TM -->|注册/发起全局事务| TC
+    RM1 -->|注册分支事务| TC
+    RM2 -->|注册分支事务| TC
+    RM3 -->|注册分支事务| TC
+
+    RM1 --> DB1
+    RM2 --> DB2
+    RM3 --> DB3
+
+    style TC fill:#f0b429,stroke:#4ecdc4
+    style TM fill:#4ecdc4
+          </pre>
+        </div>
+
+        <div class="highlight-box">
+          <strong>三大核心组件</strong>
+          <ul>
+            <li><strong>TC (Transaction Coordinator)</strong>：事务协调器，维护全局事务状态，驱动全局提交或回滚</li>
+            <li><strong>TM (Transaction Manager)</strong>：事务管理器，定义全局事务范围，开启/提交/回滚全局事务</li>
+            <li><strong>RM (Resource Manager)</strong>：资源管理器，管理分支事务，向TC注册分支并报告状态</li>
+          </ul>
+        </div>
+
+        <h3>Seata四种模式对比</h3>
+        <table>
+          <tr>
+            <th>模式</th>
+            <th>侵入性</th>
+            <th>性能</th>
+            <th>一致性</th>
+            <th>适用场景</th>
+          </tr>
+          <tr>
+            <td><strong>AT</strong></td>
+            <td>低（自动代理）</td>
+            <td>中</td>
+            <td>最终一致</td>
+            <td>一般业务（推荐）</td>
+          </tr>
+          <tr>
+            <td><strong>TCC</strong></td>
+            <td>高（需写补偿）</td>
+            <td>高</td>
+            <td>最终一致</td>
+            <td>高并发场景</td>
+          </tr>
+          <tr>
+            <td><strong>Saga</strong></td>
+            <td>中（需写补偿）</td>
+            <td>高</td>
+            <td>最终一致</td>
+            <td>长事务流程</td>
+          </tr>
+          <tr>
+            <td><strong>XA</strong></td>
+            <td>低</td>
+            <td>低</td>
+            <td>强一致</td>
+            <td>传统业务迁移</td>
+          </tr>
+        </table>
+
+        <h3>Seata AT模式原理</h3>
+        <p>AT模式基于SQL解析生成反向SQL，实现自动补偿。</p>
+
+        <div class="mermaid-container">
+          <div class="mermaid-title">AT模式执行流程</div>
+          <pre class="mermaid">
+sequenceDiagram
+    participant TM as TM
+    participant RM as RM
+    participant TC as TC
+    participant DB as 业务DB
+    participant UL as UndoLog表
+
+    Note over TM,UL: 一阶段（业务执行）
+    TM->>TC: begin全局事务
+    TC-->>TM: 返回XID
+
+    TM->>RM: 执行业务
+    RM->>DB: 解析SQL，查询前镜像
+    DB-->>RM: 返回前镜像数据
+    RM->>DB: 执行业务SQL
+    RM->>DB: 查询后镜像
+    DB-->>RM: 返回后镜像数据
+    RM->>UL: INSERT UndoLog
+    RM->>TC: 注册分支事务
+
+    Note over TM,UL: 二阶段（提交/回滚）
+    alt 全局提交
+        TM->>TC: commit
+        TC->>RM: 异步删除UndoLog
+    else 全局回滚
+        TM->>TC: rollback
+        TC->>RM: 回滚请求
+        RM->>UL: 查询UndoLog
+        UL-->>RM: 返回前镜像
+        RM->>DB: 执行反向SQL
+        RM->>UL: 删除UndoLog
+    end
+          </pre>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">Seata AT模式使用</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="comment">// 1. 添加依赖</span>
+<span class="comment">// &lt;dependency&gt;</span>
+<span class="comment">//     &lt;groupId&gt;com.alibaba.cloud&lt;/groupId&gt;</span>
+<span class="comment">//     &lt;artifactId&gt;spring-cloud-starter-alibaba-seata&lt;/artifactId&gt;</span>
+<span class="comment">// &lt;/dependency&gt;</span>
+
+<span class="comment">// 2. 配置seata</span>
+seata:
+  enabled: <span class="keyword">true</span>
+  application-id: order-service
+  tx-service-group: my_tx_group
+  registry:
+    type: nacos
+    nacos:
+      server-addr: localhost:8848
+
+<span class="comment">// 3. 业务代码中使用 @GlobalTransactional</span>
+<span class="keyword">@Service</span>
+<span class="keyword">public class</span> <span class="class-name">OrderService</span> {
+
+    <span class="keyword">@Autowired</span>
+    <span class="keyword">private</span> OrderMapper orderMapper;
+    <span class="keyword">@Autowired</span>
+    <span class="keyword">private</span> InventoryClient inventoryClient;
+    <span class="keyword">@Autowired</span>
+    <span class="keyword">private</span> AccountClient accountClient;
+
+    <span class="keyword">@GlobalTransactional</span>
+    <span class="keyword">public void</span> <span class="method">createOrder</span>(Order order) {
+        <span class="comment">// 1. 创建订单</span>
+        orderMapper.<span class="method">insert</span>(order);
+
+        <span class="comment">// 2. 扣减库存（远程调用）</span>
+        inventoryClient.<span class="method">deduct</span>(order.<span class="method">getProductId</span>(), order.<span class="method">getCount</span>());
+
+        <span class="comment">// 3. 扣减余额（远程调用）</span>
+        accountClient.<span class="method">deduct</span>(order.<span class="method">getUserId</span>(), order.<span class="method">getAmount</span>());
+
+        <span class="comment">// 任意一步失败，自动回滚</span>
+    }
+}</code></pre>
+        </div>
+
+        <div class="tip-box">
+          <strong>UndoLog表结构</strong>
+          <p>每个参与分布式事务的数据库都需要创建undo_log表：</p>
+          <pre><code>CREATE TABLE undo_log (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    branch_id BIGINT,
+    xid VARCHAR(100),
+    context VARCHAR(128),
+    rollback_info LONGBLOB,  -- 前后镜像数据
+    log_status INT,
+    log_created DATETIME,
+    log_modified DATETIME
+);</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Comparison Table -->
+    <section class="kp-section">
+      <h2 class="section-title">各方案对比表</h2>
+      <div class="section-content">
+        <table>
+          <tr>
+            <th>方案</th>
+            <th>一致性</th>
+            <th>性能</th>
+            <th>复杂度</th>
+            <th>适用场景</th>
+          </tr>
+          <tr>
+            <td>XA/2PC</td>
+            <td>强一致</td>
+            <td>低</td>
+            <td>低</td>
+            <td>传统数据库事务</td>
+          </tr>
+          <tr>
+            <td>TCC</td>
+            <td>最终一致</td>
+            <td>高</td>
+            <td>高</td>
+            <td>高并发金融场景</td>
+          </tr>
+          <tr>
+            <td>Saga</td>
+            <td>最终一致</td>
+            <td>高</td>
+            <td>中</td>
+            <td>长事务业务流程</td>
+          </tr>
+          <tr>
+            <td>本地消息表</td>
+            <td>最终一致</td>
+            <td>中</td>
+            <td>中</td>
+            <td>异步消息场景</td>
+          </tr>
+          <tr>
+            <td>事务消息</td>
+            <td>最终一致</td>
+            <td>高</td>
+            <td>中</td>
+            <td>RocketMQ集成</td>
+          </tr>
+          <tr>
+            <td>最大努力通知</td>
+            <td>弱一致</td>
+            <td>高</td>
+            <td>低</td>
+            <td>对账/通知类场景</td>
+          </tr>
+          <tr>
+            <td>Seata AT</td>
+            <td>最终一致</td>
+            <td>中</td>
+            <td>低</td>
+            <td>一般业务（推荐）</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 5: Best Practices -->
+    <section class="kp-section">
+      <h2 class="section-title">分布式事务最佳实践</h2>
+      <div class="section-content">
+
+        <h3>选型建议</h3>
+        <table>
+          <tr>
+            <th>场景</th>
+            <th>推荐方案</th>
+            <th>说明</th>
+          </tr>
+          <tr>
+            <td>单体应用多数据源</td>
+            <td><strong>XA/2PC</strong></td>
+            <td>简单直接，强一致性</td>
+          </tr>
+          <tr>
+            <td>微服务一般业务</td>
+            <td><strong>Seata AT</strong></td>
+            <td>低侵入，易维护</td>
+          </tr>
+          <tr>
+            <td>高并发金融交易</td>
+            <td><strong>Seata TCC</strong></td>
+            <td>性能高，需自行实现补偿</td>
+          </tr>
+          <tr>
+            <td>异步消息场景</td>
+            <td><strong>事务消息</strong></td>
+            <td>RocketMQ事务消息</td>
+          </tr>
+          <tr>
+            <td>流程编排类</td>
+            <td><strong>Saga</strong></td>
+            <td>状态机或注解方式</td>
+          </tr>
+        </table>
+
+        <h3>关键注意事项</h3>
+        <div class="highlight-box">
+          <strong>1. 幂等性设计</strong>
+          <p>所有补偿操作必须是幂等的，因为可能重复执行：</p>
+          <ul>
+            <li>使用唯一事务ID识别重复请求</li>
+            <li>数据库状态机判断（如status字段）</li>
+            <li>Redis去重缓存</li>
+          </ul>
+        </div>
+
+        <div class="warning-box">
+          <strong>2. 空回滚与悬挂问题</strong>
+          <ul>
+            <li><strong>空回滚</strong>：Try未执行，Cancel先执行 - 需要记录事务状态</li>
+            <li><strong>悬挂</strong>：Cancel先于Try执行 - Try执行前检查事务状态</li>
+          </ul>
+        </div>
+
+        <div class="tip-box">
+          <strong>3. 监控与告警</strong>
+          <ul>
+            <li>监控全局事务执行时间，超过阈值告警</li>
+            <li>监控回滚比例，异常时触发告警</li>
+            <li>定期对账，发现并处理不一致</li>
+          </ul>
+        </div>
+
+        <h3>避免分布式事务的设计</h3>
+        <p>最好的分布式事务是<strong>没有分布式事务</strong>：</p>
+        <ul>
+          <li><strong>业务拆分</strong>：将需要事务的操作放在同一服务内</li>
+          <li><strong>最终一致性</strong>：接受异步最终一致，而非强一致</li>
+          <li><strong>状态机</strong>：通过业务状态流转保证最终一致</li>
+          <li><strong>对账补偿</strong>：定期对账，发现差异后补偿</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="kp-footer">
+    Java Knowledge Review Demo - 50 Knowledge Points<br>
+    <a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a>
+  </footer>
+</div>
+
+<button class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</button>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+(function() {
+  mermaid.initialize({
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#f0b429',
+      primaryTextColor: '#e8e6e3',
+      primaryBorderColor: '#4ecdc4',
+      lineColor: '#4ecdc4',
+      secondaryColor: '#1a1a2e',
+      tertiaryColor: '#0a0e17',
+      fontFamily: 'JetBrains Mono'
+    },
+    flowchart: { curve: 'basis' }
+  });
+
+  var themeToggle = document.getElementById('themeToggle');
+  function toggleTheme() {
+    var html = document.documentElement;
+    if (html.getAttribute('data-theme') === 'light') {
+      html.removeAttribute('data-theme');
+      themeToggle.textContent = '🌙';
+      localStorage.setItem('theme', 'dark');
+      mermaid.initialize({ theme: 'dark' });
+    } else {
+      html.setAttribute('data-theme', 'light');
+      themeToggle.textContent = '☀️';
+      localStorage.setItem('theme', 'light');
+      mermaid.initialize({ theme: 'default' });
+    }
+  }
+  themeToggle.addEventListener('click', toggleTheme);
+  if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = '☀️';
+    mermaid.initialize({ theme: 'default' });
+  }
+
+  var backToTop = document.getElementById('backToTop');
+  window.addEventListener('scroll', function() {
+    if (window.pageYOffset > 300) {
+      backToTop.classList.add('visible');
+    } else {
+      backToTop.classList.remove('visible');
+    }
+  });
+
+  window.scrollToTop = function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  window.copyCode = function(btn) {
+    var code = btn.closest('.code-block').querySelector('code').textContent;
+    navigator.clipboard.writeText(code).then(function() {
+      var original = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.style.color = '#4ecdc4';
+      setTimeout(function() {
+        btn.textContent = original;
+        btn.style.color = '';
+      }, 2000);
+    });
+  };
+})();
+</script>
+</body>
+</html>

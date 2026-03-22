@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JVM内存模型与垃圾回收 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .tip { background: rgba(126, 231, 135, 0.1); border-left: 4px solid var(--green); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+  .tip-title { color: var(--green); font-weight: 600; margin-bottom: 8px; }
+  .warning { background: rgba(255, 123, 114, 0.1); border-left: 4px solid var(--red); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+  .warning-title { color: var(--red); font-weight: 600; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+  th { background: rgba(240, 180, 41, 0.1); padding: 12px 16px; text-align: left; font-weight: 600; color: var(--amber); border-bottom: 1px solid var(--border-card); }
+  td { padding: 12px 16px; border-bottom: 1px solid var(--border-card); }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-secondary); }
+  .sub-section { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-card); }
+  .sub-title { font-weight: 600; font-size: 16px; color: var(--cyan); margin-bottom: 12px; }
+  .ascii-diagram { background: var(--bg-code); padding: 20px; border-radius: 8px; font-family: var(--font-code); font-size: 13px; line-height: 1.6; overflow-x: auto; margin: 16px 0; }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">JVM内存模型与垃圾回收</h1>
+    <p class="hero-desc">深入理解JVM内存结构、垃圾回收机制、GC收集器及调优策略，掌握JVM性能优化核心技术。</p>
+  </header>
+
+  <!-- 1. JVM内存结构 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">JVM内存结构</h2></div>
+    <div class="section-body">
+      <p>JVM运行时数据区主要分为两大区域：<strong>线程共享区域</strong>（堆、方法区/元空间）和<strong>线程私有区域</strong>（虚拟机栈、本地方法栈、程序计数器）。</p>
+      <div class="mermaid">flowchart TD
+    subgraph 运行时数据区
+    A[堆 Heap<br/>所有线程共享] --> B[年轻代 Young]
+    A --> C[老年代 Old]
+    D[元空间 Metaspace<br/>本地内存]
+    E[虚拟机栈<br/>线程私有]
+    F[本地方法栈<br/>线程私有]
+    G[程序计数器<br/>线程私有]
+    end
+    style A fill:#f0b429,stroke:#f0b429,color:#0a0e17
+    style D fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17
+    style E fill:#7ee787,stroke:#7ee787,color:#0a0e17</div>
+
+      <div class="sub-section">
+        <div class="sub-title">各区域详解</div>
+        <ul>
+          <li><strong>堆（Heap）</strong>：存储对象实例，所有线程共享，是垃圾回收的主要区域</li>
+          <li><strong>元空间（Metaspace）</strong>：存储类元数据、常量池、静态变量（JDK8后从方法区移到本地内存）</li>
+          <li><strong>虚拟机栈</strong>：线程私有，每个方法调用创建一个栈帧，包含局部变量表、操作数栈、动态链接、返回地址</li>
+          <li><strong>本地方法栈</strong>：为Native方法服务</li>
+          <li><strong>程序计数器</strong>：记录当前线程执行的字节码指令地址，唯一不会发生OOM的区域</li>
+        </ul>
+      </div>
+
+      <div class="tip">
+        <div class="tip-title">💡 Metaspace演进</div>
+        <p>JDK 1.6：字符串常量池在方法区（永久代）<br/>
+        JDK 1.7：字符串常量池移到堆中<br/>
+        JDK 1.8：方法区改为元空间，使用本地内存，无默认上限</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 堆内存详解 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🗂️</div><h2 class="section-title">堆内存详解</h2></div>
+    <div class="section-body">
+      <p>堆是JVM内存中最大的一块，用于存储对象实例。现代JVM采用<strong>分代收集</strong>策略，将堆划分为年轻代和老年代。</p>
+
+      <div class="ascii-diagram">
+┌─────────────────────────────────────────────────────────┐
+│                       堆 (Heap)                          │
+├──────────────────────────┬──────────────────────────────┤
+│      年轻代 (Young)       │        老年代 (Old)          │
+│       约占 1/3            │         约占 2/3              │
+├───────┬────────┬─────────┤                              │
+│ Eden  │  S0    │   S1    │                              │
+│  8/10 │  1/10  │  1/10   │                              │
+│  (From)        │  (To)   │                              │
+└───────┴────────┴─────────┴──────────────────────────────┘
+      </div>
+
+      <div class="sub-section">
+        <div class="sub-title">对象分配流程</div>
+        <ol style="padding-left: 24px; margin: 12px 0;">
+          <li>新对象首先在Eden区分配</li>
+          <li>Eden区满时，触发Minor GC</li>
+          <li>存活对象复制到Survivor区（S0或S1），年龄+1</li>
+          <li>Survivor区对象年龄达到阈值（默认15），晋升到老年代</li>
+          <li>大对象（超过阈值）直接进入老年代</li>
+        </ol>
+      </div>
+
+      <table>
+        <tr><th>内存区域</th><th>默认比例</th><th>说明</th></tr>
+        <tr><td>Eden区</td><td>80%年轻代</td><td>新对象分配区域</td></tr>
+        <tr><td>Survivor S0</td><td>10%年轻代</td><td>Minor GC后存活对象存放</td></tr>
+        <tr><td>Survivor S1</td><td>10%年轻代</td><td>备用Survivor区</td></tr>
+        <tr><td>老年代</td><td>约占堆2/3</td><td>存放长期存活对象</td></tr>
+      </table>
+
+      <div class="tip">
+        <div class="tip-title">💡 空间分配担保</div>
+        <p>Minor GC前，JVM会检查老年代最大连续可用空间是否大于年轻代所有对象总空间。如果不足，会触发一次Full GC或等待担保失败后再执行Full GC。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 垃圾回收算法 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">垃圾回收算法</h2></div>
+    <div class="section-body">
+      <div class="sub-section">
+        <div class="sub-title">判断对象是否存活</div>
+        <p><strong>引用计数法</strong>（Python使用）：存在循环引用问题<br/>
+        <strong>可达性分析</strong>（Java使用）：从GC Roots出发遍历引用链，不可达的对象标记为垃圾</p>
+        <p>GC Roots包括：</p>
+        <ul>
+          <li>虚拟机栈中的引用</li>
+          <li>方法区静态属性引用</li>
+          <li>方法区常量引用</li>
+          <li>本地方法栈JNI引用</li>
+          <li>同步锁持有的对象</li>
+        </ul>
+      </div>
+
+      <div class="sub-section">
+        <div class="sub-title">三种基本算法</div>
+        <table>
+          <tr><th>算法</th><th>原理</th><th>优点</th><th>缺点</th></tr>
+          <tr>
+            <td><strong>标记-清除</strong><br/>Mark-Sweep</td>
+            <td>标记存活对象，清除未标记对象</td>
+            <td>简单，不移动对象</td>
+            <td>效率低，产生内存碎片</td>
+          </tr>
+          <tr>
+            <td><strong>标记-复制</strong><br/>Mark-Copy</td>
+            <td>将存活对象复制到另一半空间，清空当前空间</td>
+            <td>无内存碎片，速度快</td>
+            <td>浪费一半内存空间</td>
+          </tr>
+          <tr>
+            <td><strong>标记-整理</strong><br/>Mark-Compact</td>
+            <td>标记存活对象，将它们向一端移动，清理边界外空间</td>
+            <td>无内存碎片</td>
+            <td>需要移动对象，效率较低</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="tip">
+        <div class="tip-title">💡 分代收集策略</div>
+        <p>新生代：对象朝生夕死，采用<strong>标记-复制</strong>算法<br/>
+        老年代：对象存活率高，采用<strong>标记-清除</strong>或<strong>标记-整理</strong>算法</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 垃圾收集器对比 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🚜</div><h2 class="section-title">垃圾收集器对比</h2></div>
+    <div class="section-body">
+      <table>
+        <tr>
+          <th>收集器</th>
+          <th>工作区域</th>
+          <th>线程模式</th>
+          <th>算法</th>
+          <th>特点</th>
+          <th>适用场景</th>
+        </tr>
+        <tr>
+          <td><strong>Serial</strong></td>
+          <td>新生代/老年代</td>
+          <td>单线程</td>
+          <td>复制/整理</td>
+          <td>简单高效</td>
+          <td>客户端模式</td>
+        </tr>
+        <tr>
+          <td><strong>ParNew</strong></td>
+          <td>新生代</td>
+          <td>多线程</td>
+          <td>复制</td>
+          <td>Serial的多线程版</td>
+          <td>配合CMS使用</td>
+        </tr>
+        <tr>
+          <td><strong>Parallel<br/>Scavenge</strong></td>
+          <td>新生代</td>
+          <td>多线程</td>
+          <td>复制</td>
+          <td>吞吐量优先</td>
+          <td>后台计算任务</td>
+        </tr>
+        <tr>
+          <td><strong>CMS</strong></td>
+          <td>老年代</td>
+          <td>多线程</td>
+          <td>标记清除</td>
+          <td>低停顿</td>
+          <td>互联网应用（已废弃）</td>
+        </tr>
+        <tr>
+          <td><strong>G1</strong></td>
+          <td>整堆</td>
+          <td>多线程</td>
+          <td>分区+复制/整理</td>
+          <td>可预测停顿，无碎片</td>
+          <td>大内存服务端（推荐）</td>
+        </tr>
+        <tr>
+          <td><strong>ZGC</strong></td>
+          <td>整堆</td>
+          <td>多线程</td>
+          <td>分区</td>
+          <td>超低延迟</td>
+          <td>JDK 15+生产可用</td>
+        </tr>
+      </table>
+
+      <div class="sub-section">
+        <div class="sub-title">G1收集器详解</div>
+        <p>G1（Garbage First）将堆划分为多个大小相等的Region（默认1~32MB），每个Region可以扮演Eden、Survivor或Old角色。</p>
+        <div class="ascii-diagram">
+┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+│ E │ E │ S │ S │ O │ O │ O │ O │ H │ O │  ...
+└───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+ E: Eden    S: Survivor    O: Old    H: Humongous(大对象)
+        </div>
+        <p><strong>工作模式：</strong></p>
+        <ul>
+          <li><strong>Young GC</strong>：Eden区满时触发，回收新生代Region</li>
+          <li><strong>并发标记</strong>：老年代占用率达到阈值时启动</li>
+          <li><strong>Mixed GC</strong>：回收新生代和部分老年代Region</li>
+          <li><strong>Full GC</strong>：兜底机制（应避免触发）</li>
+        </ul>
+      </div>
+
+      <div class="sub-section">
+        <div class="sub-title">ZGC收集器</div>
+        <p>ZGC目标：停顿时间不超过10ms，且不随堆大小增加而增加。核心技术包括：</p>
+        <ul>
+          <li><strong>着色指针（Colored Pointer）</strong>：在指针中存储元数据</li>
+          <li><strong>读屏障（Load Barrier）</strong>：运行时检测指针状态</li>
+          <li><strong>多重映射（Multi-Mapping）</strong>：优化内存访问</li>
+        </ul>
+        <p>ZGC支持TB级堆内存，适合对延迟敏感的大型应用。</p>
+      </div>
+
+      <div class="warning">
+        <div class="warning-title">⚠️ CMS已废弃</div>
+        <p>CMS在JDK 14中被标记为废弃，JDK 17中正式移除。建议迁移至G1或ZGC收集器。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. GC日志分析 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">GC日志分析</h2></div>
+    <div class="section-body">
+      <div class="sub-title">启用GC日志</div>
+      <div class="code-container">
+        <div class="code-header">
+          <span class="code-lang">JVM参数</span>
+          <button class="code-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <div class="code-body">
+          <pre><code># JDK 8及之前
+-XX:+PrintGCDetails
+-XX:+PrintGCDateStamps
+-XX:+PrintTenuringDistribution
+-Xloggc:gc.log
+
+# JDK 9+ 统一日志格式
+-Xlog:gc*:file=gc.log:time,uptime:filecount=5,filesize=10m</code></pre>
+        </div>
+      </div>
+
+      <div class="sub-section">
+        <div class="sub-title">GC日志解读</div>
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-lang">GC日志示例</span>
+            <button class="code-btn" onclick="copyCode(this)">📋 复制</button>
+          </div>
+          <div class="code-body">
+            <pre><code>[GC (Allocation Failure) [PSYoungGen: 6144K->512K(7168K)]
+ 6144K->1024K(25600K), 0.0012345 secs]
+
+[Full GC (Metadata GC Threshold) [PSYoungGen: 512K->0K(7168K)]
+ [ParOldGen: 2048K->1536K(18432K)] 2560K->1536K(25600K),
+ [Metaspace: 3456K->3456K(1056768K)], 0.0156789 secs]</code></pre>
+          </div>
+        </div>
+        <table>
+          <tr><th>字段</th><th>说明</th></tr>
+          <tr><td>GC类型</td><td>GC=Minor GC, Full GC=完整GC</td></tr>
+          <tr><td>触发原因</td><td>Allocation Failure（分配失败）、Metadata GC Threshold（元空间阈值）</td></tr>
+          <tr><td>6144K->512K</td><td>GC前内存占用 -> GC后内存占用</td></tr>
+          <tr><td>(7168K)</td><td>该区域总容量</td></tr>
+          <tr><td>0.0012345 secs</td><td>GC耗时</td></tr>
+        </table>
+      </div>
+
+      <div class="tip">
+        <div class="tip-title">💡 关键指标</div>
+        <p><strong>吞吐量</strong> = 用户代码运行时间 / (用户代码运行时间 + GC时间)<br/>
+        <strong>停顿时间</strong>：单次GC暂停应用的时间<br/>
+        <strong>GC频率</strong>：单位时间内GC发生的次数</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. 内存泄漏排查 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔍</div><h2 class="section-title">内存泄漏排查</h2></div>
+    <div class="section-body">
+      <div class="sub-title">常见内存泄漏场景</div>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span class="code-lang">Java</span>
+          <span style="color: var(--red);">❌ 错误示例</span>
+        </div>
+        <div class="code-body">
+          <pre><code>// 场景1：静态集合持续增长
+private static final Map<String, Object> CACHE = new HashMap<>();
+
+// 场景2：ThreadLocal未清理
+private static final ThreadLocal<byte[]> THREAD_LOCAL = new ThreadLocal<>();
+public void process() {
+    THREAD_LOCAL.set(new byte[1024 * 1024]);
+    // 忘记调用 THREAD_LOCAL.remove()
+}
+
+// 场景3：未关闭的资源
+Scanner scanner = new Scanner(new File("data.txt"));
+// 忘记关闭，导致内存泄漏</code></pre>
+        </div>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span class="code-lang">Java</span>
+          <span style="color: var(--green);">✅ 正确做法</span>
+        </div>
+        <div class="code-body">
+          <pre><code>// 使用WeakHashMap或设置过期时间
+private static final Map<String, Object> CACHE = new WeakHashMap<>();
+
+// 使用try-with-resources自动关闭资源
+try (Scanner scanner = new Scanner(new File("data.txt"))) {
+    // 处理数据
+}
+
+// ThreadLocal使用后及时清理
+THREAD_LOCAL.set(new byte[1024 * 1024]);
+try {
+    // 业务逻辑
+} finally {
+    THREAD_LOCAL.remove();
+}</code></pre>
+        </div>
+      </div>
+
+      <div class="sub-section">
+        <div class="sub-title">排查工具与命令</div>
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-lang">Shell</span>
+            <button class="code-btn" onclick="copyCode(this)">📋 复制</button>
+          </div>
+          <div class="code-body">
+            <pre><code># 查看Java进程
+jps -l
+
+# 查看GC统计（每秒输出一次）
+jstat -gcutil <pid> 1000
+
+# 查看对象统计（前20类）
+jmap -histo <pid> | head -20
+
+# 生成堆转储文件
+jmap -dump:format=b,file=heap.hprof <pid>
+
+# 打印线程栈
+jstack <pid> > thread.txt</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <table>
+        <tr><th>工具</th><th>类型</th><th>功能</th></tr>
+        <tr><td>JConsole</td><td>JDK自带</td><td>可视化监控JVM各项指标</td></tr>
+        <tr><td>VisualVM</td><td>JDK自带</td><td>性能分析、堆转储分析</td></tr>
+        <tr><td>JMC</td><td>JDK自带</td><td>Java Mission Control，飞行记录器</td></tr>
+        <tr><td>Arthas</td><td>阿里开源</td><td>在线诊断、实时分析</td></tr>
+        <tr><td>MAT</td><td>Eclipse插件</td><td>内存分析工具，分析.hprof文件</td></tr>
+      </table>
+
+      <div class="warning">
+        <div class="warning-title">⚠️ 引用类型</div>
+        <p><strong>强引用</strong>：永不回收（除非不可达）<br/>
+        <strong>软引用</strong>（SoftReference）：内存不足时回收，适合缓存<br/>
+        <strong>弱引用</strong>（WeakReference）：下次GC时回收，适合WeakHashMap<br/>
+        <strong>虚引用</strong>（PhantomReference）：无法获取对象，用于跟踪GC</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. JVM调优参数 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚙️</div><h2 class="section-title">JVM调优参数</h2></div>
+    <div class="section-body">
+      <div class="sub-title">内存设置参数</div>
+      <table>
+        <tr><th>参数</th><th>说明</th><th>示例</th></tr>
+        <tr><td>-Xms</td><td>初始堆大小</td><td>-Xms2g</td></tr>
+        <tr><td>-Xmx</td><td>最大堆大小</td><td>-Xmx2g</td></tr>
+        <tr><td>-Xmn</td><td>新生代大小</td><td>-Xmn512m</td></tr>
+        <tr><td>-XX:MetaspaceSize</td><td>元空间初始大小</td><td>-XX:MetaspaceSize=128m</td></tr>
+        <tr><td>-XX:MaxMetaspaceSize</td><td>元空间最大大小</td><td>-XX:MaxMetaspaceSize=256m</td></tr>
+        <tr><td>-XX:SurvivorRatio</td><td>Eden:Survivor比例</td><td>-XX:SurvivorRatio=8</td></tr>
+        <tr><td>-XX:NewRatio</td><td>新生代:老年代比例</td><td>-XX:NewRatio=2</td></tr>
+      </table>
+
+      <div class="sub-section">
+        <div class="sub-title">GC选择参数</div>
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-lang">JVM参数</span>
+            <button class="code-btn" onclick="copyCode(this)">📋 复制</button>
+          </div>
+          <div class="code-body">
+            <pre><code># 使用Parallel GC（JDK 8默认）
+-XX:+UseParallelGC
+
+# 使用G1收集器（JDK 9+默认，推荐）
+-XX:+UseG1GC
+
+# 使用ZGC（JDK 15+）
+-XX:+UseZGC
+
+# G1调优参数
+-XX:MaxGCPauseMillis=200
+-XX:G1HeapRegionSize=4m
+-XX:InitiatingHeapOccupancyPercent=45</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-section">
+        <div class="sub-title">OOM处理参数</div>
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-lang">JVM参数</span>
+            <button class="code-btn" onclick="copyCode(this)">📋 复制</button>
+          </div>
+          <div class="code-body">
+            <pre><code># OOM时自动生成堆转储
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/var/log/java/heap.hprof
+
+# OOM时执行脚本
+-XX:OnOutOfMemoryError="sh /scripts/cleanup.sh"
+
+# 设置GC时打印详细日志
+-XX:+PrintGCDetails
+-XX:+PrintGCDateStamps
+-Xloggc:/var/log/java/gc.log</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip">
+        <div class="tip-title">💡 调优建议</div>
+        <ul>
+          <li><strong>设置相同Xms和Xmx</strong>：避免运行时动态扩容/缩容带来的性能损耗</li>
+          <li><strong>合理设置新生代大小</strong>：过小导致频繁Minor GC，过大会导致老年代紧张</li>
+          <li><strong>避免大对象</strong>：大对象直接进入老年代，增加Full GC频率</li>
+          <li><strong>监控GC日志</strong>：及时发现GC异常（如频繁Full GC）</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

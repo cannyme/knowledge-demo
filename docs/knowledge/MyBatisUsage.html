@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyBatis核心知识点 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+    --text-dim: #4a5068; --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e; --text-dim: #7a7a8e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .highlight { background: linear-gradient(135deg, rgba(240, 180, 41, 0.2), rgba(78, 205, 196, 0.15)); padding: 16px; border-radius: 8px; border-left: 3px solid var(--amber); margin: 16px 0; }
+  .tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .tip-title { color: var(--green); font-weight: 600; margin-bottom: 8px; }
+  .warning { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .warning-title { color: var(--red); font-weight: 600; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Framework</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🗄️ FRAMEWORK</div>
+    <h1 class="hero-title">MyBatis核心知识点</h1>
+    <p class="hero-desc">MyBatis是一款优秀的半自动ORM框架，通过XML或注解方式将Java对象与SQL语句映射，提供灵活的SQL控制和强大的动态SQL支持。</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">MyBatis vs Hibernate/JPA</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>特性</th><th>MyBatis</th><th>Hibernate/JPA</th></tr>
+        <tr><td>ORM类型</td><td>半自动ORM</td><td>全自动ORM</td></tr>
+        <tr><td>SQL控制</td><td>完全控制，手写SQL</td><td>自动生成，HQL/JPQL</td></tr>
+        <tr><td>学习曲线</td><td>较低，SQL开发者友好</td><td>较高，需要理解ORM概念</td></tr>
+        <tr><td>复杂查询</td><td>优秀，原生SQL支持</td><td>一般，需要多表关联配置</td></tr>
+        <tr><td>缓存机制</td><td>一级、二级缓存</td><td>一级、二级、查询缓存</td></tr>
+        <tr><td>适用场景</td><td>复杂查询、遗留系统</td><td>快速开发、简单CRUD</td></tr>
+      </table>
+      <div class="highlight">
+        <strong>选型建议：</strong>
+        <ul>
+          <li>需要优化SQL、复杂查询、遗留数据库 → 选择MyBatis</li>
+          <li>快速开发、对象驱动、简单CRUD → 选择JPA/Hibernate</li>
+          <li>混合使用：MyBatis处理复杂查询，JPA处理简单CRUD</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">核心组件架构</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+graph TD
+    A[SqlSessionFactoryBuilder] -->|build| B[SqlSessionFactory]
+    B -->|openSession| C[SqlSession]
+    C -->|getMapper| D[Mapper接口]
+    D -->|绑定| E[XML/注解SQL]
+    C -->|直接执行| F[执行SQL]
+    F --> G[ResultHandler]
+    G --> H[返回结果]
+      </div>
+      <table>
+        <tr><th>组件</th><th>说明</th><th>生命周期</th></tr>
+        <tr><td>SqlSessionFactoryBuilder</td><td>用于构建SqlSessionFactory</td><td>方法级，用完即弃</td></tr>
+        <tr><td>SqlSessionFactory</td><td>创建SqlSession的工厂类</td><td>应用级，单例</td></tr>
+        <tr><td>SqlSession</td><td>执行SQL的会话，线程不安全</td><td>请求级，用完关闭</td></tr>
+        <tr><td>Mapper</td><td>接口与SQL的绑定</td><td>代理对象，随SqlSession</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📝</div><h2 class="section-title">Mapper XML配置</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="resultmap">resultMap</button>
+        <button class="tab" data-tab="dynamic">动态SQL</button>
+        <button class="tab" data-tab="association">关联映射</button>
+      </div>
+
+      <div id="resultmap" class="tab-content active">
+        <p><strong>resultMap</strong>用于自定义结果集映射，解决列名与属性名不一致问题</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">XML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>&lt;resultMap id="UserResultMap" type="com.example.entity.User"&gt;
+    &lt;id property="id" column="user_id"/&gt;
+    &lt;result property="name" column="user_name"/&gt;
+    &lt;result property="email" column="user_email"/&gt;
+    &lt;result property="createTime" column="create_time"/&gt;
+&lt;/resultMap&gt;
+
+&lt;select id="selectById" resultMap="UserResultMap"&gt;
+    SELECT user_id, user_name, user_email, create_time
+    FROM user WHERE user_id = #{id}
+&lt;/select&gt;</code></pre></div>
+        </div>
+        <div class="tip">
+          <div class="tip-title">💡 开启驼峰映射</div>
+          <p>在mybatis-config.xml中配置：<code>&lt;setting name="mapUnderscoreToCamelCase" value="true"/&gt;</code></p>
+          <p>可自动将create_time映射为createTime，简化resultMap配置</p>
+        </div>
+      </div>
+
+      <div id="dynamic" class="tab-content">
+        <p><strong>动态SQL</strong>标签：if、where、foreach、choose、set</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">XML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>&lt;!-- where标签自动处理AND/OR --&gt;
+&lt;select id="selectByCondition" resultType="User"&gt;
+    SELECT * FROM user
+    &lt;where&gt;
+        &lt;if test="name != null and name != ''"&gt;
+            AND name LIKE CONCAT('%', #{name}, '%')
+        &lt;/if&gt;
+        &lt;if test="email != null"&gt;
+            AND email = #{email}
+        &lt;/if&gt;
+        &lt;if test="status != null"&gt;
+            AND status = #{status}
+        &lt;/if&gt;
+    &lt;/where&gt;
+&lt;/select&gt;
+
+&lt;!-- foreach批量操作 --&gt;
+&lt;select id="selectByIds" resultType="User"&gt;
+    SELECT * FROM user WHERE id IN
+    &lt;foreach collection="ids" item="id" open="(" separator="," close=")"&gt;
+        #{id}
+    &lt;/foreach&gt;
+&lt;/select&gt;
+
+&lt;!-- choose多条件选择 --&gt;
+&lt;select id="selectByPriority" resultType="User"&gt;
+    SELECT * FROM user WHERE 1=1
+    &lt;choose&gt;
+        &lt;when test="id != null"&gt;AND id = #{id}&lt;/when&gt;
+        &lt;when test="name != null"&gt;AND name = #{name}&lt;/when&gt;
+        &lt;otherwise&gt;AND status = 1&lt;/otherwise&gt;
+    &lt;/choose&gt;
+&lt;/select&gt;
+
+&lt;!-- set标签自动处理逗号 --&gt;
+&lt;update id="updateSelective"&gt;
+    UPDATE user
+    &lt;set&gt;
+        &lt;if test="name != null"&gt;name = #{name},&lt;/if&gt;
+        &lt;if test="email != null"&gt;email = #{email},&lt;/if&gt;
+        &lt;if test="phone != null"&gt;phone = #{phone},&lt;/if&gt;
+    &lt;/set&gt;
+    WHERE id = #{id}
+&lt;/update&gt;</code></pre></div>
+        </div>
+      </div>
+
+      <div id="association" class="tab-content">
+        <p><strong>association</strong>一对一，<strong>collection</strong>一对多</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">XML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>&lt;resultMap id="UserWithDeptMap" type="User"&gt;
+    &lt;id property="id" column="user_id"/&gt;
+    &lt;result property="name" column="user_name"/&gt;
+    &lt;!-- 一对一关联 --&gt;
+    &lt;association property="department" javaType="Department"&gt;
+        &lt;id property="deptId" column="dept_id"/&gt;
+        &lt;result property="deptName" column="dept_name"/&gt;
+    &lt;/association&gt;
+&lt;/resultMap&gt;
+
+&lt;resultMap id="UserWithOrdersMap" type="User"&gt;
+    &lt;id property="id" column="user_id"/&gt;
+    &lt;result property="name" column="user_name"/&gt;
+    &lt;!-- 一对多关联 --&gt;
+    &lt;collection property="orders" ofType="Order"&gt;
+        &lt;id property="orderId" column="order_id"/&gt;
+        &lt;result property="orderNo" column="order_no"/&gt;
+        &lt;result property="amount" column="amount"/&gt;
+    &lt;/collection&gt;
+&lt;/resultMap&gt;</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏷️</div><h2 class="section-title">注解方式</h2></div>
+    <div class="section-body">
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Mapper
+public interface UserMapper {
+
+    @Select("SELECT * FROM user WHERE id = #{id}")
+    User selectById(Long id);
+
+    @Select("SELECT * FROM user WHERE name = #{name}")
+    @Results({
+        @Result(property = "id", column = "id"),
+        @Result(property = "name", column = "name"),
+        @Result(property = "orders", column = "id",
+                many = @Many(select = "selectOrdersByUserId"))
+    })
+    User selectWithOrders(String name);
+
+    @Insert("INSERT INTO user(name, email) VALUES(#{name}, #{email})")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    int insert(User user);
+
+    @Update("UPDATE user SET name = #{name} WHERE id = #{id}")
+    int update(User user);
+
+    @Delete("DELETE FROM user WHERE id = #{id}")
+    int delete(Long id);
+
+    @SelectProvider(type = UserSqlProvider.class, method = "selectByCondition")
+    List&lt;User&gt; selectByCondition(UserCondition condition);
+}</code></pre></div>
+      </div>
+      <div class="highlight">
+        <strong>XML vs 注解选择：</strong>
+        <ul>
+          <li>简单SQL、快速开发 → 注解方式</li>
+          <li>复杂SQL、动态SQL → XML方式（推荐）</li>
+          <li>混合使用：简单用注解，复杂用XML</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">#{} vs ${} 区别</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>特性</th><th>#{}</th><th>${}</th></tr>
+        <tr><td>处理方式</td><td>预编译，使用占位符?</td><td>字符串直接替换</td></tr>
+        <tr><td>SQL注入风险</td><td>安全，防止注入</td><td>不安全，有注入风险</td></tr>
+        <tr><td>适用场景</td><td>参数值（推荐）</td><td>表名、列名、动态排序</td></tr>
+        <tr><td>示例</td><td>WHERE id = #{id}</td><td>ORDER BY ${column}</td></tr>
+      </table>
+      <div class="warning">
+        <div class="warning-title">⚠️ SQL注入风险</div>
+        <p><strong>错误示例：</strong><code>WHERE name = '${name}'</code></p>
+        <p>如果name传入：<code>' OR '1'='1</code>，将导致全表数据泄露</p>
+        <p><strong>正确使用：</strong><code>WHERE name = #{name}</code> → 预编译为 WHERE name = ?</p>
+      </div>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 安全的动态表名查询
+@Select("SELECT * FROM ${tableName} WHERE id = #{id}")
+User selectByTable(@Param("tableName") String tableName, @Param("id") Long id);
+
+// 使用前必须校验表名，防止注入
+public User safeSelect(String tableName, Long id) {
+    // 白名单校验
+    if (!Arrays.asList("user", "order", "product").contains(tableName)) {
+        throw new IllegalArgumentException("非法表名");
+    }
+    return mapper.selectByTable(tableName, id);
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔗</div><h2 class="section-title">嵌套查询 vs 联表查询</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+graph LR
+    subgraph 嵌套查询N+1
+    A[查询用户] --> B[查询订单1]
+    A --> C[查询订单2]
+    A --> D[查询订单N]
+    end
+
+    subgraph 联表查询
+    E[一次JOIN查询] --> F[返回用户+订单]
+    end
+      </div>
+      <table>
+        <tr><th>方式</th><th>优点</th><th>缺点</th><th>适用场景</th></tr>
+        <tr><td>嵌套查询</td><td>简单、复用现有SQL</td><td>N+1性能问题</td><td>数据量小、关联简单</td></tr>
+        <tr><td>联表查询</td><td>一次查询、性能好</td><td>SQL复杂、结果集大</td><td>数据量大、性能要求高</td></tr>
+      </table>
+      <div class="tip">
+        <div class="tip-title">💡 解决N+1问题</div>
+        <ul>
+          <li><strong>延迟加载：</strong>lazyLoadingEnabled=true，按需加载</li>
+          <li><strong>@BatchSize：</strong>批量加载关联数据</li>
+          <li><strong>联表查询：</strong>使用JOIN一次性查询</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔌</div><h2 class="section-title">插件机制 Interceptor</h2></div>
+    <div class="section-body">
+      <p>MyBatis插件可以拦截四大对象：Executor、StatementHandler、ParameterHandler、ResultSetHandler</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Intercepts({
+    @Signature(type = Executor.class, method = "query",
+        args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class})
+})
+public class SqlCostInterceptor implements Interceptor {
+    @Override
+    public Object intercept(Invocation invocation) throws Throwable {
+        long startTime = System.currentTimeMillis();
+        try {
+            return invocation.proceed();
+        } finally {
+            long cost = System.currentTimeMillis() - startTime;
+            MappedStatement ms = (MappedStatement) invocation.getArgs()[0];
+            System.out.println("SQL [" + ms.getId() + "] 执行耗时: " + cost + "ms");
+        }
+    }
+}
+
+// 配置插件
+@Bean
+public SqlCostInterceptor sqlCostInterceptor() {
+    return new SqlCostInterceptor();
+}</code></pre></div>
+      </div>
+      <table>
+        <tr><th>常见插件</th><th>功能</th></tr>
+        <tr><td>PageHelper</td><td>分页插件，自动处理分页逻辑</td></tr>
+        <tr><td>SQL日志</td><td>打印执行的SQL和参数</td></tr>
+        <tr><td>数据权限</td><td>自动添加数据权限过滤条件</td></tr>
+        <tr><td>性能监控</td><td>SQL执行时间统计</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💾</div><h2 class="section-title">一级缓存 vs 二级缓存</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+graph TD
+    subgraph 一级缓存Session级
+    A[SqlSession 1] --> B[Cache 1]
+    C[SqlSession 2] --> D[Cache 2]
+    end
+
+    subgraph 二级缓存Mapper级
+    E[SqlSession 1] --> F[Shared Cache]
+    G[SqlSession 2] --> F
+    H[SqlSession 3] --> F
+    end
+      </div>
+      <table>
+        <tr><th>特性</th><th>一级缓存</th><th>二级缓存</th></tr>
+        <tr><td>作用范围</td><td>SqlSession</td><td>Mapper Namespace</td></tr>
+        <tr><td>默认开启</td><td>是</td><td>否，需配置</td></tr>
+        <tr><td>失效时机</td><td>增删改、close</td><td>增删改、过期</td></tr>
+        <tr><td>线程安全</td><td>线程安全（SqlSession非线程安全）</td><td>线程安全</td></tr>
+      </table>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">XML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>&lt;!-- 开启二级缓存 --&gt;
+&lt;settings&gt;
+    &lt;setting name="cacheEnabled" value="true"/&gt;
+&lt;/settings&gt;
+
+&lt;!-- Mapper中启用缓存 --&gt;
+&lt;cache eviction="LRU" flushInterval="60000" size="512" readOnly="true"/&gt;
+
+&lt;!-- 禁用缓存 --&gt;
+&lt;select id="selectLatest" useCache="false"&gt;
+    SELECT * FROM log ORDER BY create_time DESC LIMIT 10
+&lt;/select&gt;</code></pre></div>
+      </div>
+      <div class="warning">
+        <div class="warning-title">⚠️ 分布式缓存注意事项</div>
+        <p>二级缓存默认是本地缓存，分布式环境下会导致数据不一致。建议使用Redis作为二级缓存实现。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">批量操作优化</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="foreach">foreach批量插入</button>
+        <button class="tab" data-tab="batch">Batch Executor</button>
+        <button class="tab" data-tab="compare">对比</button>
+      </div>
+
+      <div id="foreach" class="tab-content active">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">XML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>&lt;insert id="batchInsert" useGeneratedKeys="true" keyProperty="id"&gt;
+    INSERT INTO user (name, email) VALUES
+    &lt;foreach collection="list" item="user" separator=","&gt;
+        (#{user.name}, #{user.email})
+    &lt;/foreach&gt;
+&lt;/insert&gt;
+
+// 生成SQL：INSERT INTO user (name, email) VALUES ('a','a@mail'),('b','b@mail')</code></pre></div>
+        </div>
+        <div class="tip">
+          <div class="tip-title">💡 注意</div>
+          <p>单次插入数据量过大可能导致SQL过长，建议分批处理，每批1000条左右</p>
+        </div>
+      </div>
+
+      <div id="batch" class="tab-content">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 使用Batch Executor
+SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH);
+try {
+    UserMapper mapper = session.getMapper(UserMapper.class);
+    for (User user : userList) {
+        mapper.insert(user);
+    }
+    session.commit();
+} finally {
+    session.close();
+}
+
+// Spring Boot配置
+@Bean
+public SqlSessionTemplate sqlSessionTemplate(SqlSessionFactory factory) {
+    return new SqlSessionTemplate(factory, ExecutorType.BATCH);
+}</code></pre></div>
+        </div>
+        <div class="tip">
+          <div class="tip-title">💡 Batch Executor优势</div>
+          <ul>
+            <li>重用预编译语句，减少SQL解析开销</li>
+            <li>批量提交，减少网络往返</li>
+            <li>性能比foreach更好（大数据量）</li>
+          </ul>
+        </div>
+      </div>
+
+      <div id="compare" class="tab-content">
+        <table>
+          <tr><th>方式</th><th>适用场景</th><th>性能</th><th>复杂度</th></tr>
+          <tr><td>foreach</td><td>小到中等数据量（<1000条）</td><td>良好</td><td>简单</td></tr>
+          <tr><td>Batch Executor</td><td>大数据量（>1000条）</td><td>优秀</td><td>中等</td></tr>
+          <tr><td>单条循环</td><td>不推荐</td><td>差</td><td>简单</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

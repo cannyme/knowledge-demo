@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>熔断与限流 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .tip { background: rgba(78, 205, 196, 0.1); border-left: 4px solid var(--cyan); padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+  .tip-icon { color: var(--cyan); font-weight: bold; }
+  .warning { background: rgba(240, 180, 41, 0.1); border-left: 4px solid var(--amber); padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+  .warning-icon { color: var(--amber); font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .state-box { display: inline-block; padding: 4px 12px; border-radius: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; }
+  .state-closed { background: rgba(126, 231, 135, 0.2); color: var(--green); }
+  .state-open { background: rgba(255, 123, 114, 0.2); color: var(--red); }
+  .state-half { background: rgba(240, 180, 41, 0.2); color: var(--amber); }
+  .param-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+  .param-card { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; }
+  .param-name { font-family: var(--font-code); font-size: 14px; color: var(--amber); font-weight: 600; margin-bottom: 8px; }
+  .param-desc { font-size: 13px; line-height: 1.6; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } .param-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">熔断与限流</h1>
+    <p class="hero-desc">熔断与限流的详细解析和最佳实践。熔断器模式当下游服务故障时快速失败，避免级联崩溃；限流控制请求速率，保护系统不被压垮。</p>
+  </header>
+
+  <!-- 为什么需要熔断 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">❄️</div><h2 class="section-title">为什么需要熔断</h2></div>
+    <div class="section-body">
+      <p><strong>雪崩效应（Cascading Failure）</strong>是分布式系统中常见的问题：当某个服务出现故障时，大量请求会阻塞等待，导致线程池耗尽，进而影响上游服务，最终引发整个系统的崩溃。</p>
+
+      <div class="mermaid">
+graph TD
+    A[用户请求] --> B[API网关]
+    B --> C[订单服务]
+    C --> D[库存服务]
+    C --> E[支付服务]
+    D --> F[(库存数据库)]
+    E --> G[第三方支付]
+    style G fill:#ff7b72,color:#fff
+    style C fill:#ff7b72,color:#fff
+    style B fill:#ff7b72,color:#fff
+      </div>
+
+      <p>如上图所示，当<strong>第三方支付服务</strong>响应缓慢或不可用时：</p>
+      <ul>
+        <li>支付服务线程阻塞等待响应</li>
+        <li>订单服务线程池被占满，无法处理新请求</li>
+        <li>API网关堆积大量请求，内存耗尽</li>
+        <li>最终导致整个系统不可用</li>
+      </ul>
+
+      <div class="tip">
+        <span class="tip-icon">💡</span> <strong>熔断器的作用</strong><br>
+        熔断器模式借鉴了电路熔断器的概念，当"电流"（错误率）过大时自动"断开"电路，阻止故障扩散，给故障服务恢复的时间窗口。
+      </div>
+    </div>
+  </section>
+
+  <!-- 熔断器三种状态 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔀</div><h2 class="section-title">熔断器三种状态</h2></div>
+    <div class="section-body">
+      <p>熔断器有三种核心状态，对应不同的请求处理策略：</p>
+
+      <div class="param-grid">
+        <div class="param-card">
+          <div class="param-name"><span class="state-box state-closed">CLOSED</span> 关闭状态</div>
+          <div class="param-desc">
+            <strong>正常服务状态</strong><br>
+            请求正常通过，熔断器持续监控错误率。当失败率超过阈值时，切换到 OPEN 状态。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name"><span class="state-box state-open">OPEN</span> 打开状态</div>
+          <div class="param-desc">
+            <strong>熔断保护状态</strong><br>
+            所有请求被快速拒绝（直接返回降级逻辑），不再调用下游服务。经过超时时间后进入 HALF_OPEN 状态。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name"><span class="state-box state-half">HALF_OPEN</span> 半开状态</div>
+          <div class="param-desc">
+            <strong>探测恢复状态</strong><br>
+            放行少量请求试探下游服务是否恢复。如果成功则关闭熔断器，失败则重新打开。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 状态转换流程 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">状态转换流程</h2></div>
+    <div class="section-body">
+      <div class="mermaid">stateDiagram-v2
+    [*] --> CLOSED: 初始化
+    CLOSED --> CLOSED: 请求正常通过
+    CLOSED --> OPEN: 失败率 > 阈值
+    OPEN --> OPEN: 快速拒绝请求
+    OPEN --> HALF_OPEN: 超时时间到达
+    HALF_OPEN --> CLOSED: 探测成功
+    HALF_OPEN --> OPEN: 探测失败
+      </div>
+
+      <table>
+        <tr>
+          <th>转换路径</th>
+          <th>触发条件</th>
+          <th>行为说明</th>
+        </tr>
+        <tr>
+          <td>CLOSED → OPEN</td>
+          <td>失败率超过阈值（如50%）</td>
+          <td>记录失败次数，达到阈值后熔断</td>
+        </tr>
+        <tr>
+          <td>OPEN → HALF_OPEN</td>
+          <td>熔断持续时间到达（如10秒）</td>
+          <td>允许有限请求通过进行探测</td>
+        </tr>
+        <tr>
+          <td>HALF_OPEN → CLOSED</td>
+          <td>连续成功次数达标</td>
+          <td>服务恢复，熔断器关闭</td>
+        </tr>
+        <tr>
+          <td>HALF_OPEN → OPEN</td>
+          <td>探测请求失败</td>
+          <td>服务未恢复，重新熔断</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 熔断器核心参数 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚙️</div><h2 class="section-title">熔断器核心参数</h2></div>
+    <div class="section-body">
+      <p>配置熔断器时需要理解以下5个核心参数：</p>
+
+      <div class="param-grid">
+        <div class="param-card">
+          <div class="param-name">failureRateThreshold</div>
+          <div class="param-desc">
+            <strong>失败率阈值</strong>（默认50%）<br>
+            当失败率达到此阈值时触发熔断。建议根据业务容忍度设置，关键服务可设为30%-50%。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">waitDurationInOpenState</div>
+          <div class="param-desc">
+            <strong>熔断持续时间</strong>（默认60秒）<br>
+            熔断器打开后等待的时间，期间所有请求被拒绝。时间到达后进入半开状态。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">slidingWindowSize</div>
+          <div class="param-desc">
+            <strong>滑动窗口大小</strong>（默认100）<br>
+            统计失败率的请求窗口大小。可以是请求数量（COUNT_BASED）或时间（TIME_BASED）。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">minimumNumberOfCalls</div>
+          <div class="param-desc">
+            <strong>最小调用次数</strong>（默认10）<br>
+            触发熔断计算的最小请求数。防止启动初期少量失败就触发熔断。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">permittedNumberOfCallsInHalfOpenState</div>
+          <div class="param-desc">
+            <strong>半开状态允许请求数</strong>（默认10）<br>
+            HALF_OPEN状态下允许通过的请求数量，用于探测服务是否恢复。
+          </div>
+        </div>
+      </div>
+
+      <div class="warning">
+        <span class="warning-icon">⚠️</span> <strong>参数配置建议</strong><br>
+        滑动窗口不宜过大（内存占用），也不宜过小（统计不准）。建议生产环境：窗口100-1000，失败率阈值50%，熔断时间10-30秒。
+      </div>
+    </div>
+  </section>
+
+  <!-- Sentinel熔断规则配置 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🛡️</div><h2 class="section-title">Sentinel熔断规则配置</h2></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="sentinel-annotation">注解方式</button>
+      <button class="tab" data-tab="sentinel-code">代码配置</button>
+      <button class="tab" data-tab="sentinel-yaml">YAML配置</button>
+    </div>
+    <div class="section-body">
+      <div id="sentinel-annotation" class="tab-content active">
+        <p>使用 <code>@SentinelResource</code> 注解声明资源和降级方法：</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>@RestController
+public class UserController {
+
+    @SentinelResource(
+        value = "getUser",
+        blockHandler = "handleBlock",
+        fallback = "handleFallback"
+    )
+    @GetMapping("/user/{id}")
+    public User getUser(@PathVariable Long id) {
+        return userService.getById(id);
+    }
+
+    // 限流/熔断处理（BlockException）
+    public User handleBlock(Long id, BlockException ex) {
+        return new User(-1L, "服务被熔断", null);
+    }
+
+    // 异常降级处理（业务异常）
+    public User handleFallback(Long id, Throwable t) {
+        return new User(-1L, "服务异常", null);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+      <div id="sentinel-code" class="tab-content">
+        <p>通过代码动态配置熔断规则：</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 熔断规则配置
+DegradeRule rule = new DegradeRule("getUser")
+    // 熔断策略：0-慢调用比例 1-异常比例 2-异常数
+    .setGrade(CircuitBreakerStrategy.SLOW_REQUEST_RATIO.getType())
+    // 阈值：慢调用比例阈值（0.0-1.0）
+    .setCount(0.5)
+    // 熔断持续时间（秒）
+    .setTimeWindow(10)
+    // 最小请求数
+    .setMinRequestAmount(10)
+    // 慢调用阈值（RT，毫秒）
+    .setSlowRatioThreshold(500)
+    // 统计时长（毫秒）
+    .setStatIntervalMs(1000);
+
+DegradeRuleManager.loadRules(Collections.singletonList(rule));</code></pre></div>
+        </div>
+      </div>
+      <div id="sentinel-yaml" class="tab-content">
+        <p>Spring Cloud Alibaba 支持通过配置文件定义规则：</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>spring:
+  cloud:
+    sentinel:
+      datasource:
+        degrade:
+          nacos:
+            server-addr: localhost:8848
+            dataId: ${spring.application.name}-degrade-rules
+            rule-type: degrade
+
+# Nacos配置内容示例（JSON格式）
+[
+  {
+    "resource": "getUser",
+    "grade": 0,
+    "count": 0.5,
+    "timeWindow": 10,
+    "minRequestAmount": 10,
+    "slowRatioThreshold": 500,
+    "statIntervalMs": 1000
+  }
+]</code></pre></div>
+        </div>
+      </div>
+
+      <div class="tip">
+        <span class="tip-icon">💡</span> <strong>Sentinel熔断策略</strong><br>
+        <strong>慢调用比例</strong>：响应时间超过阈值的请求占比超过设定值时熔断，适用于响应变慢的场景。<br>
+        <strong>异常比例</strong>：异常请求占比超过阈值时熔断，适用于服务出错的场景。<br>
+        <strong>异常数</strong>：异常请求数超过阈值时熔断，适用于异常突增的场景。
+      </div>
+    </div>
+  </section>
+
+  <!-- Hystrix熔断配置 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔌</div><h2 class="section-title">Hystrix熔断配置</h2></div>
+    <div class="section-body">
+      <div class="warning">
+        <span class="warning-icon">⚠️</span> <strong>重要提示</strong><br>
+        Netflix Hystrix 已于2018年底停止维护，Spring Cloud 2020+ 版本已移除 Hystrix 依赖。新项目建议使用 Resilience4j 或 Sentinel。
+      </div>
+
+      <p>Hystrix 通过命令模式包装远程调用：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Service
+public class UserService {
+
+    @HystrixCommand(
+        commandKey = "getUser",
+        fallbackMethod = "getUserFallback",
+        commandProperties = {
+            // 熔断触发错误率阈值（默认50）
+            @HystrixProperty(name="circuitBreaker.errorThresholdPercentage", value="50"),
+            // 熔断持续时间（毫秒，默认5000）
+            @HystrixProperty(name="circuitBreaker.sleepWindowInMilliseconds", value="10000"),
+            // 触发熔断的最小请求数（默认20）
+            @HystrixProperty(name="circuitBreaker.requestVolumeThreshold", value="10"),
+            // 是否启用熔断（默认true）
+            @HystrixProperty(name="circuitBreaker.enabled", value="true")
+        },
+        threadPoolProperties = {
+            // 线程池大小
+            @HystrixProperty(name="coreSize", value="10"),
+            // 队列大小
+            @HystrixProperty(name="maxQueueSize", value="100")
+        }
+    )
+    public User getUser(Long id) {
+        return restTemplate.getForObject(
+            "http://user-service/user/{id}",
+            User.class,
+            id
+        );
+    }
+
+    public User getUserFallback(Long id) {
+        return new User(-1L, "服务降级", null);
+    }
+}</code></pre></div>
+      </div>
+
+      <table>
+        <tr>
+          <th>配置项</th>
+          <th>默认值</th>
+          <th>说明</th>
+        </tr>
+        <tr>
+          <td>errorThresholdPercentage</td>
+          <td>50</td>
+          <td>错误率阈值，达到后触发熔断</td>
+        </tr>
+        <tr>
+          <td>sleepWindowInMilliseconds</td>
+          <td>5000</td>
+          <td>熔断后休眠时间（毫秒）</td>
+        </tr>
+        <tr>
+          <td>requestVolumeThreshold</td>
+          <td>20</td>
+          <td>触发熔断的最小请求数</td>
+        </tr>
+        <tr>
+          <td>executionTimeoutInMilliseconds</td>
+          <td>1000</td>
+          <td>执行超时时间</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 熔断 vs 降级 vs 限流 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">熔断 vs 降级 vs 限流</h2></div>
+    <div class="section-body">
+      <p>这三者是微服务高可用的核心手段，但解决的问题不同：</p>
+
+      <table>
+        <tr>
+          <th style="width:15%">维度</th>
+          <th style="width:28%">熔断（Circuit Breaker）</th>
+          <th style="width:28%">降级（Degradation）</th>
+          <th style="width:29%">限流（Rate Limiting）</th>
+        </tr>
+        <tr>
+          <td><strong>触发条件</strong></td>
+          <td>下游服务故障/超时，错误率超标</td>
+          <td>系统负载过高或依赖故障</td>
+          <td>请求速率超过系统容量</td>
+        </tr>
+        <tr>
+          <td><strong>作用位置</strong></td>
+          <td>调用方（客户端）</td>
+          <td>服务端或调用方</td>
+          <td>服务端（入口层）</td>
+        </tr>
+        <tr>
+          <td><strong>行为表现</strong></td>
+          <td>快速失败，阻断故障扩散</td>
+          <td>提供备用逻辑（简化/缓存数据）</td>
+          <td>拒绝或排队处理请求</td>
+        </tr>
+        <tr>
+          <td><strong>恢复机制</strong></td>
+          <td>自动探测恢复（半开状态）</td>
+          <td>手动或自动恢复</td>
+          <td>请求减少后自动恢复</td>
+        </tr>
+        <tr>
+          <td><strong>典型框架</strong></td>
+          <td>Hystrix、Resilience4j、Sentinel</td>
+          <td>Sentinel、本地缓存</td>
+          <td>Guava RateLimiter、Sentinel、Nginx</td>
+        </tr>
+        <tr>
+          <td><strong>类比</strong></td>
+          <td>电路保险丝（自动跳闸）</td>
+          <td>飞机放燃油减重（保命操作）</td>
+          <td>高速收费站（控制流速）</td>
+        </tr>
+      </table>
+
+      <div class="mermaid">
+graph LR
+    A[用户请求] --> B{限流检查}
+    B -->|超过阈值| C[直接拒绝 429]
+    B -->|通过| D[服务处理]
+    D --> E{熔断检查}
+    E -->|已熔断| F[快速失败 降级]
+    E -->|正常| G[调用下游服务]
+    G -->|失败率高| H[触发熔断]
+    H --> E
+    G -->|成功| I[返回结果]
+    D -->|负载高| J[主动降级]
+    J --> K[返回缓存/简化数据]
+      </div>
+    </div>
+  </section>
+
+  <!-- 限流算法 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🚦</div><h2 class="section-title">限流算法详解</h2></div>
+    <div class="section-body">
+      <p>限流算法控制请求速率，防止系统被突发流量压垮：</p>
+
+      <table>
+        <tr>
+          <th>算法</th>
+          <th>优点</th>
+          <th>缺点</th>
+          <th>适用场景</th>
+        </tr>
+        <tr>
+          <td><strong>固定窗口</strong></td>
+          <td>实现简单，内存占用低</td>
+          <td>存在临界问题（窗口边界突发）</td>
+          <td>简单限流场景</td>
+        </tr>
+        <tr>
+          <td><strong>滑动窗口</strong></td>
+          <td>精确统计，无临界问题</td>
+          <td>内存占用较高</td>
+          <td>精确限流场景</td>
+        </tr>
+        <tr>
+          <td><strong>漏桶算法</strong></td>
+          <td>流量平滑，保护下游</td>
+          <td>无法应对突发流量</td>
+          <td>保护下游服务</td>
+        </tr>
+        <tr>
+          <td><strong>令牌桶算法</strong></td>
+          <td>允许突发，平均速率控制</td>
+          <td>实现稍复杂</td>
+          <td>API限流（推荐）</td>
+        </tr>
+        <tr>
+          <td><strong>滑动日志</strong></td>
+          <td>最精确的统计</td>
+          <td>内存占用最高</td>
+          <td>分布式限流</td>
+        </tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>/**
+ * 令牌桶算法实现 - 允许一定程度的突发流量
+ */
+public class TokenBucketRateLimiter {
+    private final int capacity;      // 桶容量
+    private final int rate;          // 令牌生成速率（个/秒）
+    private final AtomicInteger tokens;
+    private volatile long lastRefillTime;
+
+    public synchronized boolean tryAcquire(int permits) {
+        // 补充令牌
+        long now = System.currentTimeMillis();
+        int newTokens = (int) ((now - lastRefillTime) * rate / 1000);
+        if (newTokens > 0) {
+            tokens.set(Math.min(capacity, tokens.get() + newTokens));
+            lastRefillTime = now;
+        }
+        // 尝试获取令牌
+        if (tokens.get() >= permits) {
+            tokens.addAndGet(-permits);
+            return true;
+        }
+        return false;
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 最佳实践 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">✅</div><h2 class="section-title">最佳实践</h2></div>
+    <div class="section-body">
+      <div class="param-grid">
+        <div class="param-card">
+          <div class="param-name">1. 合理设置阈值</div>
+          <div class="param-desc">
+            失败率阈值建议<strong>50%-70%</strong>，避免过于敏感导致频繁熔断。最小请求数建议<strong>10-20</strong>，防止启动时误触发。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">2. 配合降级策略</div>
+          <div class="param-desc">
+            熔断后必须提供<strong>降级逻辑</strong>，如返回缓存数据、默认值或友好提示，避免直接抛出异常。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">3. 监控与告警</div>
+          <div class="param-desc">
+            接入<strong>Micrometer + Prometheus</strong>监控熔断器状态，熔断触发时及时告警，关注半开状态频率。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">4. 区分异常类型</div>
+          <div class="param-desc">
+            业务异常（如参数错误）不应计入熔断统计，只统计<strong>超时、连接失败</strong>等系统异常。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">5. 资源隔离</div>
+          <div class="param-desc">
+            不同服务使用独立的熔断器实例，避免相互影响。Hystrix 的线程池隔离或 Sentinel 的线程隔离。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">6. 限流前置</div>
+          <div class="param-desc">
+            限流应在<strong>网关层</strong>或<strong>入口层</strong>统一处理，熔断在服务调用层，形成双层防护。
+          </div>
+        </div>
+      </div>
+
+      <div class="tip">
+        <span class="tip-icon">💡</span> <strong>生产环境配置示例</strong><br>
+        失败率阈值: 50% | 熔断时间: 10-30秒 | 滑动窗口: 100 | 最小请求数: 10 | 半开请求数: 5<br>
+        根据业务特点调整，核心服务可以更保守（阈值30%，熔断时间5秒）。
+      </div>
+
+      <div class="warning">
+        <span class="warning-icon">⚠️</span> <strong>常见陷阱</strong><br>
+        1. <strong>降级逻辑过于复杂</strong>：降级方法应简单快速，避免再次依赖故障服务。<br>
+        2. <strong>忽略慢调用熔断</strong>：响应变慢往往是故障前兆，应配置慢调用比例熔断。<br>
+        3. <strong>全局异常捕获干扰</strong>：确保熔断器能正确捕获异常，不被全局异常处理器拦截。
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; mermaid.initialize({ theme: 'dark' }); } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; mermaid.initialize({ theme: 'default' }); } location.reload(); });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

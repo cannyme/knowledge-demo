@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>类加载机制 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+  th, td { padding: 12px 16px; border: 1px solid var(--border-card); text-align: left; }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+  .tip { background: rgba(78, 205, 196, 0.1); border-left: 4px solid var(--cyan); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .warning { background: rgba(240, 180, 41, 0.1); border-left: 4px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>JVM</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">类加载机制</h1>
+    <p class="hero-desc">深入理解Java类加载全过程：加载、验证、准备、解析、初始化，以及双亲委派模型与类加载器层次结构</p>
+  </header>
+
+  <!-- 核心概念 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">核心概念</h2></div>
+    <div class="section-body">
+      <p>类加载机制是JVM的核心功能之一，负责将.class文件加载到内存中，并进行验证、准备、解析和初始化，最终形成可以被JVM直接使用的Java类型。</p>
+
+      <h3 style="color: var(--amber); margin: 24px 0 16px;">类加载过程</h3>
+      <div class="mermaid">flowchart TD
+    A[加载 Loading] --> B[验证 Verification]
+    B --> C[准备 Preparation]
+    C --> D[解析 Resolution]
+    D --> E[初始化 Initialization]
+    E --> F[使用 Using]
+    F --> G[卸载 Unloading]
+    style A fill:#f0b429
+    style E fill:#4ecdc4</div>
+
+      <h3 style="color: var(--amber); margin: 24px 0 16px;">五个阶段详解</h3>
+      <table>
+        <tr><th>阶段</th><th>主要工作</th><th>关键特点</th></tr>
+        <tr><td><strong>加载</strong></td><td>读取.class文件，生成Class对象</td><td>通过全限定名获取二进制字节流</td></tr>
+        <tr><td><strong>验证</strong></td><td>验证字节码安全性</td><td>文件格式、元数据、字节码、符号引用验证</td></tr>
+        <tr><td><strong>准备</strong></td><td>为静态变量分配内存并设置默认值</td><td>static变量置0/null，final变量直接赋值</td></tr>
+        <tr><td><strong>解析</strong></td><td>符号引用转换为直接引用</td><td>类、接口、字段、方法解析</td></tr>
+        <tr><td><strong>初始化</strong></td><td>执行&lt;clinit&gt;()方法</td><td>执行静态变量赋值和静态代码块</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 类加载器 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔧</div><h2 class="section-title">类加载器层次</h2></div>
+    <div class="section-body">
+      <div class="mermaid">flowchart TD
+    A[自定义类加载器<br>Custom ClassLoader] --> B[应用类加载器<br>Application ClassLoader]
+    B --> C[扩展类加载器<br>Extension/Platform ClassLoader]
+    C --> D[启动类加载器<br>Bootstrap ClassLoader<br>C++实现]
+    style D fill:#f0b429</div>
+
+      <table>
+        <tr><th>类加载器</th><th>实现语言</th><th>加载路径</th><th>加载内容</th></tr>
+        <tr><td><strong>Bootstrap</strong></td><td>C++</td><td>JAVA_HOME/lib</td><td>rt.jar, java.lang.*, java.util.*</td></tr>
+        <tr><td><strong>Extension</strong></td><td>Java</td><td>JAVA_HOME/lib/ext</td><td>扩展类库</td></tr>
+        <tr><td><strong>Application</strong></td><td>Java</td><td>classpath</td><td>用户编写的类、第三方库</td></tr>
+        <tr><td><strong>Custom</strong></td><td>Java</td><td>自定义路径</td><td>网络、加密、热部署等特殊需求</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public static void showClassLoaders() {
+    // 获取类加载器
+    ClassLoader appClassLoader = ClassLoading.class.getClassLoader();
+    System.out.println("应用类加载器: " + appClassLoader);
+
+    ClassLoader extClassLoader = appClassLoader.getParent();
+    System.out.println("扩展类加载器: " + extClassLoader);
+
+    // Bootstrap ClassLoader是C++实现的，返回null
+    ClassLoader bootstrapClassLoader = extClassLoader.getParent();
+    System.out.println("启动类加载器: " + bootstrapClassLoader);
+
+    // String由启动类加载器加载
+    ClassLoader stringClassLoader = String.class.getClassLoader();
+    System.out.println("String的类加载器: " + stringClassLoader);
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 双亲委派模型 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🛡️</div><h2 class="section-title">双亲委派模型</h2></div>
+    <div class="section-body">
+      <p>双亲委派模型是Java类加载的核心机制，确保类加载的安全性和唯一性。</p>
+
+      <h3 style="color: var(--amber); margin: 24px 0 16px;">工作流程</h3>
+      <div class="mermaid">flowchart TD
+    Start[收到类加载请求] --> Check{是否已加载?}
+    Check -->|是| Return[返回已加载的类]
+    Check -->|否| Delegate[委派给父加载器]
+    Delegate --> ParentCheck{父加载器能否加载?}
+    ParentCheck -->|能| ParentLoad[父加载器加载]
+    ParentCheck -->|不能| SelfLoad[自己加载]
+    ParentLoad --> Return
+    SelfLoad --> Return</div>
+
+      <h3 style="color: var(--amber); margin: 24px 0 16px;">双亲委派的好处</h3>
+      <ul>
+        <li><strong>安全性</strong>：避免核心类被篡改（用户无法自定义java.lang.String）</li>
+        <li><strong>避免重复加载</strong>：父加载器加载过的类，子加载器不会再加载</li>
+      </ul>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 双亲委派模型核心代码示意
+protected Class&lt;?&gt; loadClass(String name, boolean resolve) {
+    // 1. 检查是否已加载
+    Class&lt;?&gt; c = findLoadedClass(name);
+    if (c == null) {
+        // 2. 委派给父加载器
+        if (parent != null) {
+            c = parent.loadClass(name, false);
+        } else {
+            c = findBootstrapClassOrNull(name);
+        }
+        // 3. 父加载器无法加载，自己加载
+        if (c == null) {
+            c = findClass(name);
+        }
+    }
+    return c;
+}</code></pre></div>
+      </div>
+
+      <div class="tip">
+        <strong>💡 打破双亲委派的情况：</strong>
+        <ul style="margin: 8px 0 0 20px;">
+          <li>SPI机制（JDBC、JNDI等）：Bootstrap加载器需要加载用户类路径下的实现类</li>
+          <li>OSGi模块化：实现模块间独立的类加载</li>
+          <li>Tomcat类加载：Web应用隔离、热部署需求</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 初始化时机 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⏰</div><h2 class="section-title">初始化时机</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber); margin-bottom: 16px;">主动引用（会触发初始化）</h3>
+      <ul>
+        <li>new 关键字创建对象</li>
+        <li>访问静态变量（非final或编译期不确定的final）</li>
+        <li>调用静态方法</li>
+        <li>使用反射 Class.forName()</li>
+        <li>初始化子类时先初始化父类</li>
+        <li>虚拟机启动时的主类</li>
+      </ul>
+
+      <h3 style="color: var(--amber); margin: 24px 0 16px;">被动引用（不会触发初始化）</h3>
+      <table>
+        <tr><th>场景</th><th>说明</th><th>示例</th></tr>
+        <tr><td>子类引用父类静态变量</td><td>只初始化父类</td><td>System.out.println(Child.a)</td></tr>
+        <tr><td>数组定义类引用</td><td>不会触发任何类初始化</td><td>Parent[] arr = new Parent[10]</td></tr>
+        <tr><td>常量</td><td>编译期常量进入常量池</td><td>static final int A = 10</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 初始化示例
+static class InitDemo {
+    static {
+        System.out.println("InitDemo 初始化");
+    }
+    public static int value = 123;
+}
+
+// 静态变量赋值过程
+static int a = 10;    // 准备阶段 a=0，初始化阶段 a=10
+static final int B = 20; // 准备阶段 B=20（编译期常量）</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 自定义类加载器 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔨</div><h2 class="section-title">自定义类加载器</h2></div>
+    <div class="section-body">
+      <p>通过继承ClassLoader并重写findClass()方法，可以实现自定义的类加载逻辑。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>static class MyClassLoader extends ClassLoader {
+    private final String classPath;
+
+    public MyClassLoader(String classPath) {
+        this.classPath = classPath;
+    }
+
+    @Override
+    protected Class&lt;?&gt; findClass(String name) throws ClassNotFoundException {
+        try {
+            // 读取class文件
+            byte[] data = loadClassData(name);
+            // 将字节码转为Class对象
+            return defineClass(name, data, 0, data.length);
+        } catch (Exception e) {
+            throw new ClassNotFoundException(name);
+        }
+    }
+
+    private byte[] loadClassData(String name) {
+        // 将类名转为文件路径
+        String path = classPath + "/" + name.replace('.', '/') + ".class";
+        // 读取文件内容
+        return Files.readAllBytes(Paths.get(path));
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="tip">
+        <strong>💡 应用场景：</strong>热部署、代码加密保护、从网络加载类、OSGi模块化等。
+      </div>
+    </div>
+  </section>
+
+  <!-- 字符串常量池 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📝</div><h2 class="section-title">字符串常量池演进</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>JDK版本</th><th>常量池位置</th><th>特点</th></tr>
+        <tr><td>JDK 1.6</td><td>方法区（永久代）</td><td>intern()复制对象到永久代</td></tr>
+        <tr><td>JDK 1.7</td><td>堆内存</td><td>intern()记录首次出现的引用</td></tr>
+        <tr><td>JDK 1.8+</td><td>堆内存</td><td>方法区改为元空间（本地内存）</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public static void stringPoolDemo() {
+    // intern示例
+    String s3 = new String("b") + new String("c");
+    s3.intern();
+    String s4 = "bc";
+    System.out.println(s3 == s4); // JDK 7+: true
+}</code></pre></div>
+      </div>
+
+      <div class="warning">
+        <strong>⚠️ 注意：</strong>频繁使用intern()可能导致常量池溢出（JDK 6），JDK 7+后移至堆中，受最大堆内存限制。
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

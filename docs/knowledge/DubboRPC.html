@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dubbo —— 高性能 RPC 框架 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+
+  /* Table styles */
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); font-weight: 600; }
+  td { padding: 12px 16px; border: 1px solid var(--border-card); color: var(--text-secondary); }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+
+  /* Tip/Warning/Highlight boxes */
+  .tip-box { background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.3); border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
+  .tip-box::before { content: '💡 '; font-size: 16px; }
+  .tip-box strong { color: var(--cyan); }
+
+  .warning-box { background: rgba(240, 180, 41, 0.1); border: 1px solid rgba(240, 180, 41, 0.3); border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
+  .warning-box::before { content: '⚠️ '; font-size: 16px; }
+  .warning-box strong { color: var(--amber); }
+
+  .highlight-box { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.3); border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
+  .highlight-box::before { content: '🎯 '; font-size: 16px; }
+  .highlight-box strong { color: var(--green); }
+
+  /* Comparison cards */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+  .compare-card { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; }
+  .compare-card h4 { color: var(--amber); font-size: 16px; margin-bottom: 12px; }
+  .compare-card ul { margin: 0; padding-left: 20px; }
+
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } .compare-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">Dubbo —— 高性能 RPC 框架</h1>
+    <p class="hero-desc">阿里巴巴开源的高性能Java RPC框架，提供服务调用、负载均衡、服务注册发现等完整微服务能力</p>
+  </header>
+
+  <!-- Dubbo核心架构 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">Dubbo核心架构</h2></div>
+    <div class="section-body">
+      <p>Dubbo架构包含五个核心角色，它们协作完成服务的注册、发现和调用：</p>
+      <div class="mermaid">flowchart TB
+        subgraph Consumer["服务消费者 Consumer"]
+          C_Proxy[Proxy代理]
+          C_Cluster[Cluster集群]
+          C_Protocol[Protocol协议]
+        end
+
+        subgraph Provider["服务提供者 Provider"]
+          P_Protocol[Protocol协议]
+          P_Filter[Filter过滤器]
+          P_Invoker[Invoker执行体]
+        end
+
+        subgraph Registry["注册中心 Registry"]
+          R_Service[服务注册表]
+        end
+
+        subgraph Monitor["监控中心 Monitor"]
+          M_Stats[调用统计]
+        end
+
+        C_Cluster -->|负载均衡| C_Protocol
+        C_Protocol -->|RPC调用| P_Protocol
+        P_Filter --> P_Invoker
+        P_Protocol -->|上报| M_Stats
+        C_Protocol -->|上报| M_Stats
+        C_Proxy -->|订阅| R_Service
+        P_Filter -->|注册| R_Service
+
+        style Consumer fill:rgba(78,205,196,0.15),stroke:#4ecdc4
+        style Provider fill:rgba(240,180,41,0.15),stroke:#f0b429
+        style Registry fill:rgba(126,231,135,0.15),stroke:#7ee787</div>
+
+      <table>
+        <tr><th>角色</th><th>职责说明</th></tr>
+        <tr><td>Provider</td><td>服务提供者，暴露服务接口供消费者调用</td></tr>
+        <tr><td>Consumer</td><td>服务消费者，通过代理调用远程服务</td></tr>
+        <tr><td>Registry</td><td>注册中心，负责服务注册与发现（Nacos/ZooKeeper/Redis等）</td></tr>
+        <tr><td>Monitor</td><td>监控中心，统计服务调用次数、耗时等指标</td></tr>
+        <tr><td>Container</td><td>服务容器，负责管理服务的生命周期</td></tr>
+      </table>
+
+      <div class="tip-box"><strong>调用流程：</strong>Provider启动时向Registry注册服务地址；Consumer启动时向Registry订阅服务，获取Provider地址列表后直接发起RPC调用，同时将调用信息上报给Monitor。</div>
+    </div>
+  </section>
+
+  <!-- 服务暴露与引用流程 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚙️</div><h2 class="section-title">服务暴露与引用流程</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="expose-flow">服务暴露流程</button>
+        <button class="tab" data-tab="reference-flow">服务引用流程</button>
+        <button class="tab" data-tab="invoke-flow">服务调用流程</button>
+      </div>
+
+      <div id="expose-flow" class="tab-content active">
+        <p>Provider端服务暴露的核心流程：</p>
+        <div class="mermaid">flowchart TD
+          A[Spring容器启动] --> B[解析@Service注解]
+          B --> C[ServiceConfig解析配置]
+          C --> D[ProtocolConfig创建Protocol]
+          D --> E[打开NettyServer绑定端口]
+          E --> F[创建Invoker包装服务实现]
+          F --> G[Registry.register注册服务]
+          G --> H[URL: dubbo://ip:port/interface]
+
+          style A fill:rgba(240,180,41,0.2)
+          style G fill:rgba(126,231,135,0.2)</div>
+
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 服务暴露核心步骤
+@ServiceConfig
+public class ServiceConfig&lt;T&gt; {
+    public synchronized void export() {
+        // 1. 检查并更新配置
+        checkAndUpdateSubConfigs();
+
+        // 2. 创建Invoker（可执行体）
+        Invoker&lt;?&gt; invoker = PROXY_FACTORY.getInvoker(ref, interfaceClass, url);
+
+        // 3. 协议导出（打开Server端口）
+        Exporter&lt;?&gt; exporter = PROTOCOL.export(invoker);
+
+        // 4. 注册到注册中心
+        Registry registry = registryFactory.getRegistry(registryUrl);
+        registry.register(registeredProviderUrl);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="reference-flow" class="tab-content">
+        <p>Consumer端服务引用的核心流程：</p>
+        <div class="mermaid">flowchart TD
+          A[Spring容器启动] --> B[解析@Reference注解]
+          B --> C[ReferenceConfig解析配置]
+          C --> D[Registry.subscribe订阅服务]
+          D --> E[获取Provider地址列表]
+          E --> F[为每个Provider创建Invoker]
+          F --> G[Cluster包装为集群Invoker]
+          G --> H[ProxyFactory创建代理对象]
+          H --> I[注入到Spring容器]
+
+          style A fill:rgba(240,180,41,0.2)
+          style H fill:rgba(126,231,135,0.2)</div>
+
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 服务引用核心步骤
+@ReferenceConfig
+public class ReferenceConfig&lt;T&gt; {
+    public synchronized T get() {
+        // 1. 检查并更新配置
+        checkAndUpdateSubConfigs();
+
+        // 2. 从注册中心订阅服务列表
+        List&lt;URL&gt; urls = registry.subscribe(consumerUrl);
+
+        // 3. 为每个Provider创建Invoker
+        List&lt;Invoker&lt;?&gt;&gt; invokers = urls.stream()
+            .map(url -&gt; PROTOCOL.refer(interfaceClass, url))
+            .collect(Collectors.toList());
+
+        // 4. 通过Cluster包装集群Invoker
+        Invoker&lt;T&gt; clusterInvoker = Cluster.join(directory);
+
+        // 5. 创建代理对象
+        return PROXY_FACTORY.getProxy(clusterInvoker);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="invoke-flow" class="tab-content">
+        <p>一次完整的服务调用流程：</p>
+        <div class="mermaid">flowchart LR
+          A[consumer.method] --> B[代理对象拦截]
+          B --> C[Cluster Invoker]
+          C --> C1[路由规则]
+          C --> C2[负载均衡]
+          C --> C3[集群容错]
+          C --> D[Filter Chain]
+          D --> E[Protocol编码]
+          E --> F[Netty传输]
+          F --> G[Provider解码]
+          G --> H[Filter Chain]
+          H --> I[Invoker执行]
+          I --> J[返回结果]
+
+          style A fill:rgba(78,205,196,0.2)
+          style J fill:rgba(126,231,135,0.2)</div>
+
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 调用链核心
+public class InvokerInvocationHandler implements InvocationHandler {
+    public Object invoke(Object proxy, Method method, Object[] args) {
+        // 1. 创建RpcInvocation
+        RpcInvocation inv = new RpcInvocation(method, args);
+
+        // 2. 通过Invoker发起调用
+        //    - Cluster层：路由、负载均衡、容错
+        //    - Filter链：上下文、超时、日志、监控
+        //    - Protocol层：序列化、网络传输
+        Result result = invoker.invoke(inv);
+
+        return result.getValue();
+    }
+}</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 注册中心 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📋</div><h2 class="section-title">注册中心</h2></div>
+    <div class="section-body">
+      <p>Dubbo支持多种注册中心，适应不同场景需求：</p>
+
+      <table>
+        <tr><th>注册中心</th><th>CAP模型</th><th>特点</th><th>适用场景</th></tr>
+        <tr><td>ZooKeeper</td><td>CP</td><td>官方推荐，强一致性，临时节点</td><td>Dubbo传统生态，需要强一致性</td></tr>
+        <tr><td>Nacos</td><td>AP/CP可切换</td><td>阿里开源，支持配置中心，功能全面</td><td>推荐，阿里生态，功能丰富</td></tr>
+        <tr><td>Redis</td><td>AP</td><td>简单场景，基于发布订阅</td><td>简单测试环境，已有Redis集群</td></tr>
+        <tr><td>Consul</td><td>CP</td><td>Go语言，支持多数据中心，健康检查</td><td>异构系统集成，多数据中心</td></tr>
+      </table>
+
+      <div class="mermaid">flowchart TB
+        subgraph ZK["ZooKeeper目录结构"]
+          Z1[/dubbo]
+          Z1 --> Z2[/com.example.UserService]
+          Z2 --> Z3[/providers]
+          Z2 --> Z4[/consumers]
+          Z2 --> Z5[/routers]
+          Z2 --> Z6[/configurators]
+          Z3 --> Z7[dubbo://192.168.1.1:20880/...]
+          Z3 --> Z8[dubbo://192.168.1.2:20880/...]
+        end
+
+        subgraph Nacos["Nacos服务列表"]
+          N1[服务名: user-service]
+          N1 --> N2[集群1]
+          N2 --> N3[实例1: 192.168.1.1:20880]
+          N2 --> N4[实例2: 192.168.1.2:20880]
+        end
+
+        style ZK fill:rgba(240,180,41,0.1)
+        style Nacos fill:rgba(78,205,196,0.1)</div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># Nacos注册中心配置
+dubbo:
+  registry:
+    address: nacos://127.0.0.1:8848
+    parameters:
+      namespace: dev
+      group: dubbo
+
+# ZooKeeper注册中心配置
+dubbo:
+  registry:
+    address: zookeeper://127.0.0.1:2181
+    timeout: 10000
+
+# Redis注册中心配置
+dubbo:
+  registry:
+    address: redis://127.0.0.1:6379</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 负载均衡策略 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">负载均衡策略</h2></div>
+    <div class="section-body">
+      <p>Dubbo提供多种负载均衡策略，适应不同的业务场景：</p>
+
+      <table>
+        <tr><th>策略</th><th>说明</th><th>适用场景</th></tr>
+        <tr><td>Random</td><td>随机策略（默认），按权重设置随机概率</td><td>大多数场景，实现简单，分布均匀</td></tr>
+        <tr><td>RoundRobin</td><td>轮询策略，按公约后的权重轮询</td><td>需要均匀分配请求的场景</td></tr>
+        <tr><td>LeastActive</td><td>最少活跃调用数，使慢Provider少接请求</td><td>Provider性能差异较大的场景</td></tr>
+        <tr><td>ConsistentHash</td><td>一致性哈希，相同参数总是发到同一Provider</td><td>有状态服务、缓存场景</td></tr>
+        <tr><td>ShortestResponse</td><td>最短响应时间，优先选择响应快的Provider</td><td>对响应时间敏感的场景</td></tr>
+      </table>
+
+      <div class="highlight-box"><strong>一致性哈希原理：</strong>将Provider和请求参数都哈希到一个环上，顺时针找到第一个Provider。当Provider增减时只影响相邻节点，保证缓存命中率。</div>
+
+      <div class="mermaid">flowchart LR
+        subgraph HashRing["一致性哈希环 0-360°"]
+          direction LR
+          H1[0°] --> H2[90°] --> H3[180°] --> H4[270°] --> H1
+          H1 -.-> P1[Provider A]
+          H2 -.-> P2[Provider B]
+          H3 -.-> P3[Provider C]
+          H4 -.-> P4[Provider D]
+        end
+
+        Request[请求参数hash] -->|hash=45°| P1
+        Request2[请求参数hash] -->|hash=200°| P3
+
+        style HashRing fill:rgba(240,180,41,0.1)</div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java/YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// Provider端配置权重
+@DubboService(weight = 100)
+public class UserServiceImpl implements UserService { }
+
+// Consumer端配置负载均衡
+@DubboReference(loadbalance = "roundrobin")
+private UserService userService;
+
+// 或在配置文件中配置
+dubbo:
+  consumer:
+    loadbalance: leastactive</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 集群容错 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🛡️</div><h2 class="section-title">集群容错</h2></div>
+    <div class="section-body">
+      <p>当调用失败时，Dubbo提供多种容错策略保证系统可用性：</p>
+
+      <table>
+        <tr><th>策略</th><th>说明</th><th>适用场景</th></tr>
+        <tr><td>Failover</td><td>失败自动切换（默认），重试其他服务器</td><td>读操作，幂等写操作</td></tr>
+        <tr><td>Failfast</td><td>快速失败，立即报错，不重试</td><td>非幂等写操作，需要快速感知失败</td></tr>
+        <tr><td>Failsafe</td><td>失败安全，忽略异常，返回空结果</td><td>日志记录、监控等非核心操作</td></tr>
+        <tr><td>Failback</td><td>失败自动恢复，后台记录定时重试</td><td>消息通知等最终一致性场景</td></tr>
+        <tr><td>Forking</td><td>并行调用，只要一个成功即返回</td><td>实时性要求高的读操作</td></tr>
+        <tr><td>Broadcast</td><td>广播调用，调用所有提供者</td><td>通知所有提供者更新缓存或状态</td></tr>
+      </table>
+
+      <div class="mermaid">sequenceDiagram
+        participant C as Consumer
+        participant A as Provider A
+        participant B as Provider B
+        participant D as Provider C
+
+        rect rgb(240,180,41,0.1)
+          Note over C,D: Failover 失败重试流程
+          C->>A: 调用（失败）
+          A--xC: 超时异常
+          C->>B: 重试Provider B（失败）
+          B--xC: 连接异常
+          C->>D: 重试Provider C（成功）
+          D-->>C: 返回结果
+        end
+
+        rect rgb(78,205,196,0.1)
+          Note over C,D: Forking 并行调用流程
+          C->>A: 并行调用
+          C->>B: 并行调用
+          C->>D: 并行调用
+          B-->>C: 最快返回（取消其他）
+        end</div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java/YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 注解方式配置容错
+@DubboReference(
+    cluster = "failover",  // 容错策略
+    retries = 3,           // 重试次数
+    timeout = 5000         // 超时时间
+)
+private UserService userService;
+
+// 配置文件方式
+dubbo:
+  consumer:
+    cluster: failfast
+    retries: 2
+    timeout: 3000</code></pre></div>
+      </div>
+
+      <div class="warning-box"><strong>重要提示：</strong>非幂等操作（如扣款、创建订单）应使用Failfast策略，避免重复执行导致数据不一致。</div>
+    </div>
+  </section>
+
+  <!-- 服务降级 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⬇️</div><h2 class="section-title">服务降级（Mock机制）</h2></div>
+    <div class="section-body">
+      <p>当服务不可用或响应超时时，Dubbo支持通过Mock机制进行服务降级，保证系统整体可用性：</p>
+
+      <div class="mermaid">flowchart TB
+        A[服务调用] --> B{服务可用?}
+        B -->|是| C[正常调用]
+        B -->|否| D[触发Mock降级]
+        D --> E{Mock类型}
+        E -->|return null| F[返回null]
+        E -->|return empty| G[返回空对象]
+        E -->|return json| H[返回默认值]
+        E -->|class| I[执行Mock类逻辑]
+
+        style D fill:rgba(240,180,41,0.3)
+        style F fill:rgba(126,231,135,0.2)
+        style G fill:rgba(126,231,135,0.2)
+        style H fill:rgba(126,231,135,0.2)
+        style I fill:rgba(126,231,135,0.2)</div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 方式1：返回null
+@DubboReference(mock = "return null")
+private UserService userService;
+
+// 方式2：返回空对象
+@DubboReference(mock = "return empty")
+private UserService userService;
+
+// 方式3：返回自定义值
+@DubboReference(mock = "return {\"id\":1,\"name\":\"默认用户\"}")
+private UserService userService;
+
+// 方式4：自定义Mock类（推荐）
+@DubboReference(mock = "com.example.UserServiceMock")
+private UserService userService;
+
+// Mock实现类
+public class UserServiceMock implements UserService {
+    @Override
+    public User getUser(Long id) {
+        return User.builder()
+            .id(id)
+            .name("降级用户")
+            .status("offline")
+            .build();
+    }
+
+    @Override
+    public List&lt;User&gt; listUsers() {
+        return Collections.emptyList();
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="tip-box"><strong>最佳实践：</strong>建议为关键服务提供Mock实现，在降级时返回缓存数据或默认值，保证用户体验不中断。</div>
+    </div>
+  </section>
+
+  <!-- 异步调用 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">异步调用</h2></div>
+    <div class="section-body">
+      <p>Dubbo支持异步调用，提高系统吞吐量和资源利用率：</p>
+
+      <div class="mermaid">sequenceDiagram
+        participant C as Consumer
+        participant D as Dubbo框架
+        participant P as Provider
+        participant F as Future
+
+        C->>D: async调用（立即返回）
+        D->>P: 发送请求
+        D-->>C: 返回null
+        C->>F: 通过RpcContext获取Future
+        Note over F: 继续执行业务逻辑
+        P-->>D: 返回结果
+        D-->>F: 设置结果
+        F-->>C: 回调处理结果</div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 定义异步接口
+public interface UserService {
+    // 同步方法
+    User getUser(Long id);
+
+    // 异步方法（返回CompletableFuture）
+    CompletableFuture&lt;User&gt; getUserAsync(Long id);
+}
+
+// 方式1：使用async=true标记
+@Service
+public class OrderService {
+    @DubboReference(async = true)
+    private UserService userService;
+
+    public void createOrder() {
+        // 调用立即返回null
+        userService.getUser(1L);
+
+        // 通过RpcContext获取Future
+        CompletableFuture&lt;User&gt; future = RpcContext.getContext()
+            .getCompletableFuture();
+
+        future.thenAccept(user -&gt; {
+            System.out.println("异步获取用户：" + user);
+        });
+    }
+}
+
+// 方式2：接口返回CompletableFuture（推荐）
+@Service
+public class OrderService {
+    @DubboReference
+    private UserService userService;
+
+    public void createOrder() {
+        CompletableFuture&lt;User&gt; future = userService.getUserAsync(1L);
+        future.thenAccept(user -&gt; {
+            System.out.println("异步获取用户：" + user);
+        });
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 服务分组与版本 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏷️</div><h2 class="section-title">服务分组与版本</h2></div>
+    <div class="section-body">
+      <p>Dubbo支持通过分组（group）和版本（version）实现服务的多维度管理：</p>
+
+      <div class="mermaid">flowchart TB
+        subgraph Group["服务分组 Group"]
+          G1[group: online]
+          G2[group: offline]
+        end
+
+        subgraph Version["服务版本 Version"]
+          V1[version: 1.0.0]
+          V2[version: 2.0.0]
+        end
+
+        G1 --> S1[UserService v1.0.0]
+        G1 --> S2[UserService v2.0.0]
+        G2 --> S3[AdminService v1.0.0]
+
+        style Group fill:rgba(240,180,41,0.1)
+        style Version fill:rgba(78,205,196,0.1)</div>
+
+      <table>
+        <tr><th>特性</th><th>说明</th><th>使用场景</th></tr>
+        <tr><td>version</td><td>服务版本号，接口变更时使用</td><td>灰度发布、接口升级</td></tr>
+        <tr><td>group</td><td>服务分组，区分不同业务线</td><td>多环境隔离、业务隔离</td></tr>
+        <tr><td>interface</td><td>服务接口全限定名</td><td>唯一标识服务</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// Provider端配置分组和版本
+@DubboService(
+    version = "2.0.0",
+    group = "user",
+    timeout = 5000
+)
+public class UserServiceImpl implements UserService { }
+
+// Consumer端指定调用的分组和版本
+@DubboReference(
+    version = "2.0.0",
+    group = "user",
+    timeout = 3000
+)
+private UserService userService;
+
+// 配置多个版本（用于灰度）
+@DubboReference(version = "1.0.0")
+private UserService userServiceV1;
+
+@DubboReference(version = "2.0.0")
+private UserService userServiceV2;</code></pre></div>
+      </div>
+
+      <div class="tip-box"><strong>灰度发布建议：</strong>新版本服务先部署少量实例，通过配置中心或网关控制流量比例，观察稳定后再全量切换。</div>
+    </div>
+  </section>
+
+  <!-- Dubbo vs Spring Cloud对比 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🆚</div><h2 class="section-title">Dubbo vs Spring Cloud 对比</h2></div>
+    <div class="section-body">
+      <p>两个框架都是微服务架构的主流选择，各有优势和适用场景：</p>
+
+      <table>
+        <tr><th>对比项</th><th>Dubbo</th><th>Spring Cloud</th></tr>
+        <tr><td>通信协议</td><td>TCP（默认Dubbo协议）</td><td>HTTP（RESTful）</td></tr>
+        <tr><td>性能</td><td>高（二进制协议，序列化效率高）</td><td>中（文本协议，HTTP开销大）</td></tr>
+        <tr><td>服务治理</td><td>内置完善（负载均衡、容错、降级）</td><td>依赖组件多（需整合Ribbon、Hystrix等）</td></tr>
+        <tr><td>服务调用</td><td>接口代理，像调用本地方法</td><td>HTTP客户端（Feign/RestTemplate）</td></tr>
+        <tr><td>注册中心</td><td>ZooKeeper/Nacos/Redis等</td><td>Eureka/Consul/Nacos</td></tr>
+        <tr><td>配置中心</td><td>依赖外部（Nacos/Apollo）</td><td>Spring Cloud Config</td></tr>
+        <tr><td>学习成本</td><td>中等（需要理解RPC概念）</td><td>低（基于Spring，文档丰富）</td></tr>
+        <tr><td>社区活跃度</td><td>高（阿里维护，Apache顶级项目）</td><td>高（Pivotal/VMware维护）</td></tr>
+        <tr><td>生态</td><td>阿里系， Dubbo生态</td><td>Spring全家桶，Netflix生态</td></tr>
+        <tr><td>跨语言</td><td>支持（Triple协议、gRPC）</td><td>支持（HTTP天然跨语言）</td></tr>
+      </table>
+
+      <div class="compare-grid">
+        <div class="compare-card">
+          <h4>Dubbo 更适合</h4>
+          <ul>
+            <li>内部服务间高性能调用</li>
+            <li>大规模微服务集群</li>
+            <li>需要完善服务治理能力</li>
+            <li>Java技术栈为主</li>
+            <li>追求极致性能</li>
+          </ul>
+        </div>
+        <div class="compare-card">
+          <h4>Spring Cloud 更适合</h4>
+          <ul>
+            <li>快速开发和原型</li>
+            <li>前端/移动端对接</li>
+            <li>异构语言系统</li>
+            <li>团队熟悉Spring生态</li>
+            <li>与K8s等云原生集成</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="highlight-box"><strong>趋势：</strong>Dubbo 3.x支持Triple协议（基于HTTP/2和gRPC），同时兼容RESTful，与Spring Cloud生态的边界正在模糊化。</div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } }); } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; mermaid.initialize({ startOnLoad: false, theme: 'default', themeVariables: { primaryColor: '#b8860b', lineColor: '#4a90a4', background: '#f8f6f1' } }); } location.reload(); });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code'); if (code) { navigator.clipboard.writeText(code.textContent).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); } }
+</script>
+</body>
+</html>

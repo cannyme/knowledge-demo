@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RocketMQ核心概念与使用 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+  th, td { padding: 12px 16px; border: 1px solid var(--border-card); text-align: left; }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+  .tip { background: rgba(78, 205, 196, 0.1); border-left: 4px solid var(--cyan); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .warning { background: rgba(240, 180, 41, 0.1); border-left: 4px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .highlight { background: rgba(240, 180, 41, 0.15); border: 1px solid rgba(240, 180, 41, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  h3 { color: var(--amber); margin: 24px 0 16px; font-size: 18px; }
+  h4 { color: var(--cyan); margin: 16px 0 8px; font-size: 15px; }
+  .subsection-title { font-weight: 700; font-size: 16px; color: var(--cyan); margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-card); }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>消息队列</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">RocketMQ核心概念与使用</h1>
+    <p class="hero-desc">阿里巴巴开源的分布式消息中间件，支持事务消息、顺序消息、延迟消息等丰富特性，适用于业务系统消息通信场景</p>
+  </header>
+
+  <!-- 核心概念 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">核心概念</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber); margin: 24px 0 16px;">架构组件</h3>
+      <div class="mermaid">flowchart TD
+    Producer[Producer<br>生产者] -->|发送消息| Broker[Broker<br>消息服务器]
+    NameServer[NameServer<br>路由注册中心] -->|注册/发现| Broker
+    Broker -->|推送消息| Consumer[Consumer<br>消费者]
+    Broker --> Store[消息存储<br>CommitLog/ConsumeQueue]
+    style Broker fill:#f0b429
+    style NameServer fill:#4ecdc4</div>
+
+      <table>
+        <tr><th>组件</th><th>作用</th><th>特点</th></tr>
+        <tr><td><strong>NameServer</strong></td><td>路由注册中心</td><td>无状态集群，Broker注册Topic路由信息</td></tr>
+        <tr><td><strong>Broker</strong></td><td>消息服务器</td><td>负责存储和转发消息，分Master/Slave</td></tr>
+        <tr><td><strong>Producer</strong></td><td>消息生产者</td><td>支持同步/异步/单向发送</td></tr>
+        <tr><td><strong>Consumer</strong></td><td>消息消费者</td><td>支持集群/广播消费模式</td></tr>
+        <tr><td><strong>Topic</strong></td><td>消息主题</td><td>消息第一级分类</td></tr>
+        <tr><td><strong>Tag</strong></td><td>消息标签</td><td>消息第二级分类，用于过滤</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 消息模型 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📦</div><h2 class="section-title">消息模型</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>消息类型</th><th>特点</th><th>适用场景</th></tr>
+        <tr><td><strong>普通消息</strong></td><td>最常用的消息类型，无特殊要求</td><td>大部分业务场景</td></tr>
+        <tr><td><strong>顺序消息</strong></td><td>同一队列内消息按FIFO顺序消费</td><td>订单状态变更、流水记录</td></tr>
+        <tr><td><strong>延迟消息</strong></td><td>发送后延迟一定时间才能消费</td><td>订单超时取消、定时任务</td></tr>
+        <tr><td><strong>事务消息</strong></td><td>保证本地事务和消息发送的原子性</td><td>分布式事务、最终一致性</td></tr>
+        <tr><td><strong>批量消息</strong></td><td>多条消息合并发送，提高效率</td><td>日志收集、大数据场景</td></tr>
+      </table>
+
+      <div class="tip">
+        <strong>💡 延迟级别：</strong>1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h（共18个级别）
+      </div>
+
+      <h3 style="color: var(--amber); margin: 24px 0 16px;">18个延迟级别详细表</h3>
+      <table>
+        <tr><th>级别</th><th>延迟时间</th><th>级别</th><th>延迟时间</th><th>级别</th><th>延迟时间</th></tr>
+        <tr><td>1</td><td>1秒</td><td>7</td><td>3分钟</td><td>13</td><td>9分钟</td></tr>
+        <tr><td>2</td><td>5秒</td><td>8</td><td>4分钟</td><td>14</td><td>10分钟</td></tr>
+        <tr><td>3</td><td>10秒</td><td>9</td><td>5分钟</td><td>15</td><td>20分钟</td></tr>
+        <tr><td>4</td><td>30秒</td><td>10</td><td>6分钟</td><td>16</td><td>30分钟</td></tr>
+        <tr><td>5</td><td>1分钟</td><td>11</td><td>7分钟</td><td>17</td><td>1小时</td></tr>
+        <tr><td>6</td><td>2分钟</td><td>12</td><td>8分钟</td><td>18</td><td>2小时</td></tr>
+      </table>
+
+      <h3 style="color: var(--amber); margin: 24px 0 16px;">顺序消息：全局顺序 vs 分区顺序</h3>
+      <div class="mermaid">flowchart LR
+    subgraph "全局顺序"
+    G1[Producer] -->|所有消息| G2[Queue 0]
+    G2 --> G3[Consumer]
+    end
+    subgraph "分区顺序"
+    P1[Producer] -->|订单A| P2[Queue 0]
+    P1 -->|订单B| P3[Queue 1]
+    P1 -->|订单C| P4[Queue 2]
+    P2 --> P5[Consumer A]
+    P3 --> P6[Consumer B]
+    P4 --> P7[Consumer C]
+    end
+    style G2 fill:#f0b429
+    style P2 fill:#4ecdc4
+    style P3 fill:#4ecdc4
+    style P4 fill:#4ecdc4</div>
+
+      <table>
+        <tr><th>对比项</th><th>全局顺序</th><th>分区顺序（推荐）</th></tr>
+        <tr><td>实现方式</td><td>单队列，单线程消费</td><td>按分区键路由到同一队列</td></tr>
+        <tr><td>性能</td><td>差（无法并行）</td><td>好（多队列并行）</td></tr>
+        <tr><td>适用场景</td><td>强一致性要求极低</td><td>订单状态变更等业务场景</td></tr>
+        <tr><td>分区键</td><td>无需</td><td>订单ID、用户ID等</td></tr>
+      </table>
+
+      <div class="tip">
+        <strong>💡 顺序消息场景示例：</strong>订单A的消息：创建 → 支付 → 发货 → 完成。订单A的消息必须按顺序处理，但订单A和订单B可以并行处理。
+      </div>
+    </div>
+  </section>
+
+  <!-- 生产者示例 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📤</div><h2 class="section-title">生产者使用</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="sync-send">同步发送</button>
+        <button class="tab" data-tab="async-send">异步发送</button>
+        <button class="tab" data-tab="delay-send">延迟消息</button>
+        <button class="tab" data-tab="order-send">顺序消息</button>
+        <button class="tab" data-tab="transaction-send">事务消息</button>
+      </div>
+
+      <div id="sync-send" class="tab-content active">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>@Service
+public class OrderProducer {
+    @Autowired
+    private RocketMQTemplate rocketMQTemplate;
+
+    // 同步发送
+    public void sendSync(Order order) {
+        SendResult result = rocketMQTemplate.syncSend(
+            "order-topic",
+            MessageBuilder.withPayload(order).build()
+        );
+        System.out.println("发送结果：" + result.getSendStatus());
+    }
+
+    // 单向发送（不关心结果，性能最高）
+    public void sendOneWay(Order order) {
+        rocketMQTemplate.sendOneWay("order-topic",
+            MessageBuilder.withPayload(order).build());
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="async-send" class="tab-content">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 异步发送
+public void sendAsync(Order order) {
+    rocketMQTemplate.asyncSend(
+        "order-topic",
+        MessageBuilder.withPayload(order).build(),
+        new SendCallback() {
+            @Override
+            public void onSuccess(SendResult result) {
+                System.out.println("发送成功");
+            }
+            @Override
+            public void onException(Throwable e) {
+                System.err.println("发送失败：" + e.getMessage());
+            }
+        }
+    );
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="delay-send" class="tab-content">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 延迟消息 - 延迟级别16，即30分钟后消费
+public void sendDelayMessage(Order order) {
+    Message&lt;Order&gt; message = MessageBuilder.withPayload(order).build();
+    SendResult result = rocketMQTemplate.syncSend(
+        "order-cancel-topic",
+        message,
+        3000,  // 超时时间
+        16     // 延迟级别
+    );
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="order-send" class="tab-content">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 顺序消息 - 根据订单ID选择队列，保证同一订单的消息顺序
+public void sendOrderly(Order order) {
+    rocketMQTemplate.syncSendOrderly(
+        "order-topic",
+        MessageBuilder.withPayload(order).build(),
+        order.getOrderId()  // 分区键，相同值的消息进入同一队列
+    );
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="transaction-send" class="tab-content">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>@Service
+public class TransactionProducer {
+    @Autowired
+    private RocketMQTemplate rocketMQTemplate;
+
+    public void sendTransactionMessage(Order order) {
+        // 发送半消息
+        TransactionSendResult result = rocketMQTemplate.sendMessageInTransaction(
+            "order-topic",
+            MessageBuilder.withPayload(order).build(),
+            order  // 本地事务参数
+        );
+        System.out.println("事务消息发送结果：" + result.getSendStatus());
+    }
+}
+
+@RocketMQTransactionListener
+@Component
+public class OrderTransactionListener implements RocketMQLocalTransactionListener {
+    @Autowired
+    private OrderService orderService;
+
+    // 执行本地事务
+    @Override
+    public RocketMQLocalTransactionState executeLocalTransaction(Message msg, Object arg) {
+        try {
+            Order order = (Order) arg;
+            orderService.createOrder(order);
+            return RocketMQLocalTransactionState.COMMIT;
+        } catch (Exception e) {
+            return RocketMQLocalTransactionState.ROLLBACK;
+        }
+    }
+
+    // 回查本地事务状态
+    @Override
+    public RocketMQLocalTransactionState checkLocalTransaction(Message msg) {
+        String orderId = (String) msg.getHeaders().get("orderId");
+        Order order = orderService.getById(orderId);
+        return order != null
+            ? RocketMQLocalTransactionState.COMMIT
+            : RocketMQLocalTransactionState.ROLLBACK;
+    }
+}</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 消费者示例 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📥</div><h2 class="section-title">消费者使用</h2></div>
+    <div class="section-body">
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 普通消费
+@Service
+@RocketMQMessageListener(
+    topic = "order-topic",
+    consumerGroup = "order-consumer-group",
+    messageModel = MessageModel.CLUSTERING  // 集群模式（默认）
+    // messageModel = MessageModel.BROADCASTING  // 广播模式
+)
+public class OrderConsumer implements RocketMQListener&lt;Order&gt; {
+    @Override
+    public void onMessage(Order order) {
+        System.out.println("收到订单消息：" + order.getOrderId());
+        // 处理订单...
+    }
+}
+
+// 顺序消费
+@RocketMQMessageListener(
+    topic = "order-topic",
+    consumerGroup = "order-consumer-group",
+    consumeMode = ConsumeMode.ORDERLY  // 顺序消费
+)
+
+// 高级配置
+@RocketMQMessageListener(
+    topic = "order-topic",
+    consumerGroup = "order-consumer-group",
+    consumeMode = ConsumeMode.CONCURRENTLY,  // 并发消费
+    messageModel = MessageModel.CLUSTERING,   // 集群模式
+    consumeThreadMax = 20,                     // 最大消费线程数
+    maxReconsumeTimes = 3,                     // 最大重试次数
+    delayLevelWhenNextConsume = 3              // 重试延迟级别
+)</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 24px 0 16px;">消费者模式对比</h3>
+      <table>
+        <tr><th>模式</th><th>集群模式 CLUSTERING</th><th>广播模式 BROADCASTING</th></tr>
+        <tr><td>消息分发</td><td>同组消费者均摊消息</td><td>每个消费者接收全部消息</td></tr>
+        <tr><td>适用场景</td><td>负载均衡、高吞吐</td><td>全量通知、本地缓存更新</td></tr>
+        <tr><td>消费进度</td><td>服务端统一管理</td><td>消费者各自管理</td></tr>
+        <tr><td>故障恢复</td><td>自动重平衡分配</td><td>消费者自行处理</td></tr>
+      </table>
+
+      <h3 style="color: var(--amber); margin: 24px 0 16px;">消费者配置参数</h3>
+      <table>
+        <tr><th>参数</th><th>说明</th><th>默认值</th></tr>
+        <tr><td>consumeMode</td><td>消费模式：CONCURRENTLY(并发) / ORDERLY(顺序)</td><td>CONCURRENTLY</td></tr>
+        <tr><td>messageModel</td><td>消息模式：CLUSTERING(集群) / BROADCASTING(广播)</td><td>CLUSTERING</td></tr>
+        <tr><td>consumeThreadMax</td><td>最大消费线程数</td><td>64</td></tr>
+        <tr><td>maxReconsumeTimes</td><td>最大重试次数</td><td>16</td></tr>
+        <tr><td>delayLevelWhenNextConsume</td><td>重试延迟级别</td><td>0</td></tr>
+        <tr><td>consumeTimeout</td><td>消费超时时间(分钟)</td><td>15</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 消息可靠性 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔒</div><h2 class="section-title">消息可靠性保障</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>阶段</th><th>可能丢失点</th><th>解决方案</th></tr>
+        <tr><td><strong>生产者发送</strong></td><td>网络异常、Broker宕机</td><td>同步发送+重试、多Broker发送</td></tr>
+        <tr><td><strong>Broker存储</strong></td><td>写入失败、主从同步失败</td><td>同步刷盘(SYNC_FLUSH)、同步复制(SYNC_MASTER)</td></tr>
+        <tr><td><strong>消费者消费</strong></td><td>处理异常、ACK失败</td><td>重试机制、消费确认</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 生产者配置
+rocketmq:
+  producer:
+    retry-times-when-send-failed: 3  # 发送失败重试次数
+    retry-times-when-send-async-failed: 3
+
+# Broker配置
+broker:
+  flushDiskType: SYNC_FLUSH    # 同步刷盘
+  brokerRole: SYNC_MASTER      # 同步复制</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 消费幂等 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">消费幂等</h2></div>
+    <div class="section-body">
+      <p>消息重复消费的原因：</p>
+      <ul>
+        <li>生产者重复发送（网络重试）</li>
+        <li>消费者处理成功但ACK失败</li>
+        <li>Rebalance导致重复消费</li>
+      </ul>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Service
+public class IdempotentConsumer {
+    @Autowired
+    private RedisTemplate&lt;String, String&gt; redisTemplate;
+
+    public void consume(String messageId, Consumer&lt;Void&gt; businessLogic) {
+        // 使用Redis实现幂等
+        String key = "mq:consumed:" + messageId;
+        Boolean success = redisTemplate.opsForValue()
+            .setIfAbsent(key, "1", 1, TimeUnit.DAYS);
+
+        if (Boolean.TRUE.equals(success)) {
+            // 首次消费，执行业务逻辑
+            businessLogic.accept(null);
+        } else {
+            // 重复消费，直接返回
+            log.info("消息已消费，跳过：{}", messageId);
+        }
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 对比表格 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">RocketMQ vs Kafka</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>特性</th><th>RocketMQ</th><th>Kafka</th></tr>
+        <tr><td><strong>定位</strong></td><td>业务消息</td><td>日志/大数据</td></tr>
+        <tr><td><strong>单机吞吐量</strong></td><td>10万级</td><td>100万级</td></tr>
+        <tr><td><strong>消息延迟</strong></td><td>毫秒级</td><td>毫秒级</td></tr>
+        <tr><td><strong>消息可靠性</strong></td><td>高（同步刷盘）</td><td>可能丢失</td></tr>
+        <tr><td><strong>事务消息</strong></td><td>支持</td><td>支持（有限）</td></tr>
+        <tr><td><strong>延迟消息</strong></td><td>支持（固定级别）</td><td>不支持</td></tr>
+        <tr><td><strong>顺序消息</strong></td><td>支持</td><td>支持（分区内）</td></tr>
+        <tr><td><strong>消息过滤</strong></td><td>支持（Tag、SQL）</td><td>不支持</td></tr>
+        <tr><td><strong>消息回溯</strong></td><td>支持（按时间）</td><td>支持（按Offset）</td></tr>
+      </table>
+
+      <div class="tip">
+        <strong>💡 选型建议：</strong>
+        <ul style="margin-top: 8px;">
+          <li><strong>RocketMQ</strong>：业务场景、事务消息、延迟消息、需要消息过滤的场景</li>
+          <li><strong>Kafka</strong>：大数据场景、日志收集、流处理、高吞吐场景</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) {
+  const container = btn.closest('.code-container');
+  const codeElement = container.querySelector('code');
+  const preElement = container.querySelector('pre');
+  const code = codeElement ? codeElement.textContent : (preElement ? preElement.textContent : '');
+  navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); });
+}
+</script>
+</body>
+</html>

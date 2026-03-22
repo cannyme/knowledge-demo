@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HashMap源码分析 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 14px; }
+  th, td { padding: 14px 18px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  td { color: var(--text-secondary); }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .highlight { color: var(--amber); font-weight: 600; }
+  .highlight-cyan { color: var(--cyan); }
+  .note-box { background: rgba(78, 205, 196, 0.1); border-left: 3px solid var(--cyan); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .warning-box { background: rgba(255, 123, 114, 0.1); border-left: 3px solid var(--red); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .tip-box { background: rgba(126, 231, 135, 0.1); border-left: 3px solid var(--green); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  h3 { color: var(--text-primary); margin: 20px 0 12px; font-size: 16px; }
+  h4 { color: var(--amber); margin: 16px 0 8px; font-size: 14px; }
+  code { background: var(--bg-code); padding: 2px 6px; border-radius: 4px; font-family: var(--font-code); font-size: 12px; color: var(--cyan); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } table { font-size: 12px; } th, td { padding: 10px 12px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Java基础 / 数据结构</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🔍 SOURCE</div>
+    <h1 class="hero-title">HashMap源码分析</h1>
+    <p class="hero-desc">深入理解HashMap的底层实现原理，包括数据结构、哈希算法、扩容机制、线程安全问题等核心知识点。</p>
+  </header>
+
+  <!-- 核心参数 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚙️</div><h2 class="section-title">核心参数</h2></div>
+    <div class="section-body">
+      <p>HashMap中定义了一系列静态常量，这些参数决定了HashMap的行为和性能特征：</p>
+      <table>
+        <tr><th>参数名</th><th>默认值</th><th>说明</th></tr>
+        <tr><td>DEFAULT_INITIAL_CAPACITY</td><td>16</td><td>默认初始容量，必须是2的幂</td></tr>
+        <tr><td>MAXIMUM_CAPACITY</td><td>1 &lt;&lt; 30</td><td>最大容量（约10亿）</td></tr>
+        <tr><td>DEFAULT_LOAD_FACTOR</td><td>0.75f</td><td>默认负载因子</td></tr>
+        <tr><td>TREEIFY_THRESHOLD</td><td>8</td><td>链表转红黑树阈值</td></tr>
+        <tr><td>UNTREEIFY_THRESHOLD</td><td>6</td><td>红黑树转链表阈值</td></tr>
+        <tr><td>MIN_TREEIFY_CAPACITY</td><td>64</td><td>转红黑树的最小容量</td></tr>
+      </table>
+      <div class="note-box">
+        <strong>为什么容量必须是2的幂？</strong><br>
+        计算下标时使用 <code>(n-1) &amp; hash</code>，当n是2的幂时，n-1的二进制全是1，这样可以保证hash值均匀分布。同时位运算比取模运算更快。
+      </div>
+    </div>
+  </section>
+
+  <!-- 底层数据结构 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">底层数据结构</h2></div>
+    <div class="section-body">
+      <h3>JDK 1.7：数组 + 链表</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>Entry[] table
+┌───┐
+│ 0 │ → Entry → Entry → Entry   (链表)
+├───┤
+│ 1 │ → Entry
+├───┤
+│ 2 │ → null
+├───┤
+│...│
+└───┘</pre></div>
+      </div>
+      <ul>
+        <li>数组存储链表头节点</li>
+        <li>冲突元素以链表形式连接</li>
+        <li>链表过长时查询效率退化到O(n)</li>
+      </ul>
+
+      <h3>JDK 1.8：数组 + 链表 + 红黑树</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>Node[] table
+┌───┐
+│ 0 │ → Node → Node → Node → Node → Node → Node → Node → Node (≥8个转为红黑树)
+├───┤          ↓
+│ 1 │     TreeNode (红黑树节点)
+├───┤
+│ 2 │ → null
+└───┘</pre></div>
+      </div>
+      <ul>
+        <li>链表长度≥8且数组长度≥64时，链表转为红黑树</li>
+        <li>红黑树查询复杂度O(log n)，大幅提升性能</li>
+        <li>红黑树节点数≤6时，退化回链表</li>
+      </ul>
+
+      <div class="mermaid">graph TD
+    A[HashMap数据结构] --> B[数组 Node\[\] table]
+    B --> C[链表 Node]
+    B --> D[红黑树 TreeNode]
+    C --> E[拉链法解决冲突]
+    D --> F[优化长链表查询]</div>
+    </div>
+  </section>
+
+  <!-- 扰动函数 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔀</div><h2 class="section-title">扰动函数 hash()</h2></div>
+    <div class="section-body">
+      <p>HashMap通过扰动函数让高16位也参与hash运算，减少hash冲突的概率。</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>static final int hash(Object key) {
+    int h;
+    return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+}</pre></div>
+      </div>
+
+      <h4>为什么要右移16位后异或？</h4>
+      <p>计算数组下标时使用 <code>(n-1) &amp; hash</code>，如果n较小（如默认16），只有hash的低4位参与运算，高16位完全没有用到。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">TEXT</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>示例：hashCode = 0x12345678
+
+原始hash:     0001 0010 0011 0100 0101 0110 0111 1000
+右移16位:     0000 0000 0000 0000 0001 0010 0011 0100
+异或后:       0001 0010 0011 0100 0100 0100 0100 1100
+              ↑高16位影响低16位，分布更均匀</pre></div>
+      </div>
+
+      <div class="tip-box">
+        扰动函数的设计目的是让高16位的信息也能影响最终的hash值，使得即使hashCode()返回的值高位变化很大，也能在下标计算时体现出来，减少冲突。
+      </div>
+    </div>
+  </section>
+
+  <!-- put()方法执行流程 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📝</div><h2 class="section-title">put()方法执行流程</h2></div>
+    <div class="section-body">
+      <div class="mermaid">flowchart TD
+    Start([put key, value]) --> A{key == null?}
+    A -->|是| B[存入下标0]
+    A -->|否| C[计算hash]
+    C --> D{table为空?}
+    D -->|是| E[扩容初始化]
+    D -->|否| F[计算下标: (n-1) & hash]
+    F --> G{该位置为空?}
+    G -->|是| H[直接插入新节点]
+    G -->|否| I{key相同?}
+    I -->|是| J[覆盖value]
+    I -->|否| K{是红黑树?}
+    K -->|是| L[树节点插入]
+    K -->|否| M[链表遍历插入]
+    M --> N{遍历到相同key?}
+    N -->|是| J
+    N -->|否| O[尾插新节点]
+    O --> P{链表长度 >= 8?}
+    P -->|是| Q[转为红黑树]
+    P -->|否| R[检查扩容]
+    Q --> R
+    H --> R
+    L --> R
+    J --> R
+    R --> S{size > threshold?}
+    S -->|是| T[扩容resize]
+    S -->|否| End([结束])
+    T --> End</div>
+
+      <h4>详细步骤说明：</h4>
+      <ol>
+        <li>计算key的hash值（扰动函数）</li>
+        <li>如果table为空或长度为0，进行扩容初始化</li>
+        <li>计算数组下标：<code>(n-1) &amp; hash</code></li>
+        <li>如果该位置为空，直接放入新节点</li>
+        <li>如果不为空：
+          <ul>
+            <li>相同key：覆盖value</li>
+            <li>是TreeNode：红黑树插入</li>
+            <li>是链表：遍历插入，链表长度≥8转为红黑树</li>
+          </ul>
+        </li>
+        <li>size++，检查是否需要扩容</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 扩容机制 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📈</div><h2 class="section-title">扩容机制 resize()</h2></div>
+    <div class="section-body">
+      <h4>扩容时机</h4>
+      <p>当 <code>size > capacity * loadFactor</code> 时触发扩容，新容量为原来的2倍。</p>
+
+      <h4>JDK 1.8 扩容优化</h4>
+      <p>扩容时，元素的新位置<strong>要么是原位置，要么是原位置 + 原容量</strong>，无需重新计算hash。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">TEXT</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>原理分析：
+假设原容量 n = 16，新容量 = 32
+
+n = 16 时:  (n-1) = 15 = 0000 1111
+n = 32 时:  (n-1) = 31 = 0001 1111
+
+hash & 15  → 原位置（只取低4位）
+hash & 31  → 新位置（取低5位）
+
+第5位（即原容量16对应的那一位）：
+- 如果是0：新位置 = 原位置
+- 如果是1：新位置 = 原位置 + 16</pre></div>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>// JDK 1.8 扩容核心逻辑
+// 根据hash & oldCap的结果，将节点分到两个链表
+Node&lt;K,V&gt; loHead = null, loTail = null;
+Node&lt;K,V&gt; hiHead = null, hiTail = null;
+
+// 遍历原链表
+for (Node&lt;K,V&gt; e = oldTab[j]; e != null; e = e.next) {
+    if ((e.hash &amp; oldCap) == 0) {  // 高位为0，位置不变
+        if (loTail == null) loHead = e;
+        else loTail.next = e;
+        loTail = e;
+    } else {  // 高位为1，位置变为原位置+oldCap
+        if (hiTail == null) hiHead = e;
+        else hiTail.next = e;
+        hiTail = e;
+    }
+}
+// lo链表放回原位置，hi链表放到原位置+oldCap</pre></div>
+      </div>
+
+      <div class="tip-box">
+        JDK 1.8的扩容优化避免了重新计算hash，只需要判断hash的某一位是0还是1，即可确定元素在新数组中的位置，大大提高了扩容效率。
+      </div>
+    </div>
+  </section>
+
+  <!-- 链表转红黑树 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🌳</div><h2 class="section-title">链表转红黑树</h2></div>
+    <div class="section-body">
+      <h4>转换条件</h4>
+      <ul>
+        <li>链表长度 <code>&gt;= TREEIFY_THRESHOLD (8)</code></li>
+        <li>数组长度 <code>&gt;= MIN_TREEIFY_CAPACITY (64)</code></li>
+      </ul>
+
+      <div class="warning-box">
+        <strong>注意：</strong>如果数组长度小于64，即使链表长度达到8，也会优先进行扩容而不是转树，因为扩容后链表长度会变短。
+      </div>
+
+      <h4>为什么阈值是8？</h4>
+      <p>根据泊松分布，当负载因子为0.75时，hash冲突达到8的概率已经小于千万分之一，此时转为红黑树的收益大于成本。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">TEXT</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>泊松分布概率（负载因子0.75）：
+0:    0.60653066
+1:    0.30326533
+2:    0.07581633
+3:    0.01263606
+4:    0.00157952
+5:    0.00015795
+6:    0.00001316
+7:    0.00000094
+8:    0.00000006  ← 达到8个节点的概率极低</pre></div>
+      </div>
+
+      <h4>红黑树转回链表</h4>
+      <p>当红黑树节点数 <code>&lt;= UNTREEIFY_THRESHOLD (6)</code> 时，在resize过程中会退化回链表。</p>
+
+      <div class="mermaid">flowchart LR
+    A[链表] -->|长度>=8 & 容量>=64| B[红黑树]
+    B -->|节点数<=6| A
+    A -->|长度>=8 & 容量<64| C[扩容]
+    C -->|链表变短| A</div>
+    </div>
+  </section>
+
+  <!-- 线程安全问题 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">线程安全问题</h2></div>
+    <div class="section-body">
+      <h4>1. JDK 1.7：扩容死循环</h4>
+      <div class="warning-box">
+        <strong>原因：</strong>JDK 1.7使用头插法，并发扩容时链表可能形成环形结构，导致get操作死循环。
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>// JDK 1.7 头插法（有问题）
+void transfer(Entry[] newTable) {
+    Entry[] src = table;
+    int newCapacity = newTable.length;
+    for (int j = 0; j < src.length; j++) {
+        Entry&lt;K,V&gt; e = src[j];
+        if (e != null) {
+            src[j] = null;
+            do {
+                Entry&lt;K,V&gt; next = e.next;
+                int i = indexFor(e.hash, newCapacity);
+                e.next = newTable[i];  // 头插法
+                newTable[i] = e;
+                e = next;
+            } while (e != null);
+        }
+    }
+}</pre></div>
+      </div>
+
+      <h4>2. JDK 1.8：数据覆盖</h4>
+      <p>JDK 1.8改用尾插法解决了死循环问题，但仍存在数据覆盖问题：</p>
+      <ul>
+        <li>线程A判断位置为空，准备插入</li>
+        <li>线程B也判断位置为空，插入成功</li>
+        <li>线程A继续执行，覆盖了线程B的数据</li>
+      </ul>
+
+      <h4>3. size++ 非原子操作</h4>
+      <p>多个线程同时执行size++会导致计数不准确。</p>
+
+      <div class="note-box">
+        <strong>解决方案：</strong>使用ConcurrentHashMap（推荐）、Collections.synchronizedMap或HashTable。
+      </div>
+    </div>
+  </section>
+
+  <!-- JDK 1.7 vs 1.8 对比 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">JDK 1.7 vs JDK 1.8</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>特性</th><th>JDK 1.7</th><th>JDK 1.8</th></tr>
+        <tr><td>数据结构</td><td>数组 + 链表</td><td>数组 + 链表 + 红黑树</td></tr>
+        <tr><td>节点类</td><td>Entry</td><td>Node / TreeNode</td></tr>
+        <tr><td>插入方式</td><td>头插法</td><td>尾插法</td></tr>
+        <tr><td>hash计算</td><td>4次位运算 + 5次异或</td><td>1次位运算 + 1次异或</td></tr>
+        <tr><td>扩容</td><td>重新计算hash</td><td>原位置或原位置+旧容量</td></tr>
+        <tr><td>并发安全</td><td>扩容可能死循环</td><td>不会死循环，但可能丢数据</td></tr>
+        <tr><td>查询复杂度</td><td>O(1) ~ O(n)</td><td>O(1) ~ O(log n)</td></tr>
+      </table>
+
+      <h4>JDK 1.8 的主要改进</h4>
+      <ul>
+        <li><strong>红黑树优化：</strong>长链表查询从O(n)优化到O(log n)</li>
+        <li><strong>尾插法：</strong>避免并发扩容时的死循环</li>
+        <li><strong>扩容优化：</strong>无需重新计算hash，性能提升</li>
+        <li><strong>hash简化：</strong>扰动函数简化，性能更好</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 使用注意事项 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💡</div><h2 class="section-title">使用注意事项</h2></div>
+    <div class="section-body">
+      <h4>1. 初始容量设置</h4>
+      <p>如果已知元素数量，建议设置初始容量，避免频繁扩容。</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>// 公式：initialCapacity = (int) (元素数量 / 0.75) + 1
+// 例：需要存1000个元素
+int initialCapacity = (int) (1000 / 0.75) + 1;  // ≈ 1334
+Map&lt;String, Integer&gt; map = new HashMap&lt;&gt;(1334); // 实际会取2的幂: 2048</pre></div>
+      </div>
+
+      <h4>2. 自定义对象作为Key</h4>
+      <p>必须正确重写 <code>hashCode()</code> 和 <code>equals()</code>：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>static class Person {
+    private String name;
+    private int age;
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, age);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Person person = (Person) obj;
+        return age == person.age &amp;&amp; Objects.equals(name, person.name);
+    }
+}</pre></div>
+      </div>
+
+      <h4>3. 线程安全替代方案</h4>
+      <table>
+        <tr><th>方案</th><th>实现原理</th><th>性能</th><th>推荐度</th></tr>
+        <tr><td>ConcurrentHashMap</td><td>CAS + synchronized</td><td>高</td><td>⭐⭐⭐</td></tr>
+        <tr><td>Collections.synchronizedMap</td><td>方法级synchronized</td><td>中</td><td>⭐⭐</td></tr>
+        <tr><td>HashTable</td><td>方法级synchronized</td><td>低</td><td>⭐</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code, pre').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

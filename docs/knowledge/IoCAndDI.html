@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring IoC（控制反转）和 DI - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+  th, td { padding: 12px 16px; border: 1px solid var(--border-card); text-align: left; }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+  .tip { background: rgba(78, 205, 196, 0.1); border-left: 4px solid var(--cyan); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .warning { background: rgba(240, 180, 41, 0.1); border-left: 4px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .highlight { color: var(--amber); font-weight: 600; }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring生态</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🌱 SPRING</div>
+    <h1 class="hero-title">Spring IoC与DI</h1>
+    <p class="hero-desc">控制反转(IoC)是Spring框架的核心，依赖注入(DI)是IoC的具体实现方式，实现对象解耦和生命周期管理</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📖</div><h2 class="section-title">核心概念</h2></div>
+    <div class="section-body">
+      <p><span class="highlight">IoC（控制反转）</span>：将对象创建和管理的控制权从程序代码转移到Spring容器。</p>
+      <ul>
+        <li><strong>传统方式</strong>：对象自己创建和管理依赖（new）</li>
+        <li><strong>IoC方式</strong>：由容器创建和管理对象，对象被动接收依赖</li>
+      </ul>
+      <p><span class="highlight">DI（依赖注入）</span>：IoC的具体实现方式，容器负责将依赖注入到对象中。</p>
+
+      <table>
+        <tr><th>IoC容器</th><th>特点</th><th>适用场景</th></tr>
+        <tr><td>BeanFactory</td><td>基础容器，延迟加载</td><td>资源受限环境</td></tr>
+        <tr><td>ApplicationContext</td><td>高级容器，立即加载，支持AOP、国际化</td><td>标准应用（推荐）</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏷️</div><h2 class="section-title">Bean的注册方式</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">方式1：@Component 及其衍生注解</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Component      // 通用组件
+@Repository     // 数据访问层
+@Service        // 业务层
+@Controller     // 控制层
+@Configuration  // 配置类</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">方式2：@Configuration + @Bean</h3>
+      <p>适用于第三方库的类、需要复杂初始化逻辑的场景。</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Configuration
+public class AppConfig {
+    @Bean(initMethod = "init", destroyMethod = "destroy")
+    public UserService userService() {
+        return new UserService();
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">方式3：@Import</h3>
+      <p>快速导入配置类或组件。</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Import({AppConfig.class, UserService.class})
+public class MainConfig {
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💉</div><h2 class="section-title">依赖注入方式对比</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">构造器注入（推荐）✅</h3>
+      <div class="tip">
+        <strong>优点：</strong>依赖明确、不可变（final）、便于单元测试、确保对象完整、循环依赖启动时报错
+      </div>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Service
+public class UserService {
+    private final UserRepository userRepository;
+
+    // 单构造器可省略@Autowired
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">Setter注入</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Service
+public class UserService {
+    private UserRepository userRepository;
+
+    @Autowired
+    public void setUserRepository(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">字段注入（不推荐）❌</h3>
+      <div class="warning">
+        <strong>缺点：</strong>无法设置final、单元测试困难、依赖不透明、容易隐藏循环依赖
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">Bean的生命周期</h2></div>
+    <div class="section-body">
+      <div class="mermaid">flowchart TD
+    A[实例化<br>Instantiation] --> B[属性赋值<br>Populate]
+    B --> C[Aware接口回调]
+    C --> D[postProcessBeforeInitialization]
+    D --> E[@PostConstruct]
+    E --> F[InitializingBean.afterPropertiesSet]
+    F --> G[postProcessAfterInitialization]
+    G --> H[使用<br>Use]
+    H --> I[@PreDestroy]
+    I --> J[DisposableBean.destroy]
+    J --> K[销毁<br>Destruction]</div>
+
+      <table>
+        <tr><th>阶段</th><th>回调方式</th><th>用途</th></tr>
+        <tr><td>初始化前</td><td>BeanPostProcessor</td><td>代理包装</td></tr>
+        <tr><td>初始化</td><td>@PostConstruct</td><td>资源初始化</td></tr>
+        <tr><td>初始化</td><td>InitializingBean</td><td>属性检查</td></tr>
+        <tr><td>销毁前</td><td>@PreDestroy</td><td>资源释放</td></tr>
+        <tr><td>销毁</td><td>DisposableBean</td><td>清理工作</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📦</div><h2 class="section-title">Bean作用域</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>作用域</th><th>说明</th></tr>
+        <tr><td>singleton</td><td>单例（默认），整个应用只有一个实例</td></tr>
+        <tr><td>prototype</td><td>原型，每次获取创建新实例</td></tr>
+        <tr><td>request</td><td>每次HTTP请求一个实例（Web环境）</td></tr>
+        <tr><td>session</td><td>每个HTTP Session一个实例（Web环境）</td></tr>
+        <tr><td>application</td><td>整个ServletContext生命周期（Web环境）</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">循环依赖问题</h2></div>
+    <div class="section-body">
+      <p><strong>问题：</strong>A依赖B，B依赖A，形成循环。</p>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">解决方案</h3>
+      <table>
+        <tr><th>方案</th><th>说明</th></tr>
+        <tr><td>构造器注入</td><td>无法解决，启动时报错（推荐，强制避免循环）</td></tr>
+        <tr><td>Setter/字段注入</td><td>Spring通过三级缓存解决</td></tr>
+        <tr><td>@Lazy</td><td>延迟加载打破循环</td></tr>
+        <tr><td>重构设计</td><td>最佳方案，避免循环依赖</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Service
+public class ServiceA {
+    public ServiceA(@Lazy ServiceB serviceB) {
+        // 使用@Lazy延迟注入
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="tip">
+        <strong>三级缓存原理：</strong>
+        <ul style="margin: 8px 0 0 20px;">
+          <li>singletonObjects：完整的Bean</li>
+          <li>earlySingletonObjects：提前暴露的Bean（未完成属性注入）</li>
+          <li>singletonFactories：Bean工厂，用于生成代理对象</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔀</div><h2 class="section-title">自动装配规则</h2></div>
+    <div class="section-body">
+      <p><span class="highlight">@Autowired</span> 装配规则：</p>
+      <ol>
+        <li>首先按类型查找</li>
+        <li>如果有多个，按名称匹配</li>
+        <li>如果仍无法确定，抛出异常</li>
+      </ol>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">解决多实现类问题</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 方式1：@Primary 设置默认实现
+@Service
+@Primary
+public class AlipayService implements PaymentService {}
+
+// 方式2：@Qualifier 指定名称
+public PaymentController(@Qualifier("wechatPay") PaymentService service) {}
+
+// 方式3：注入所有实现
+public PaymentController(List&lt;PaymentService&gt; services) {}</code></pre></div>
+      </div>
+    </div>
+  </section>
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('pre'); const text = code ? code.textContent : ''; navigator.clipboard.writeText(text).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

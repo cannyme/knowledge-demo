@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>并发编程基础 - 线程安全与同步机制 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .section-body table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  .section-body th, .section-body td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  .section-body th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  .section-body tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .highlight-box { background: rgba(78, 205, 196, 0.1); border-left: 3px solid var(--cyan); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .tip-box { background: rgba(240, 180, 41, 0.1); border-left: 3px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .warning-box { background: rgba(255, 123, 114, 0.1); border-left: 3px solid var(--red); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>并发编程</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">并发编程基础 - 线程安全与同步机制</h1>
+    <p class="hero-desc">线程安全问题、volatile、synchronized、Lock、原子类、ThreadLocal等并发核心概念的全面解析</p>
+  </header>
+
+  <!-- 线程安全三要素 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">线程安全问题（三大特性）</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>特性</th><th>说明</th><th>解决方案</th></tr>
+        <tr><td>原子性</td><td>操作不可分割，要么全部成功，要么全部失败</td><td>synchronized, Lock, Atomic类</td></tr>
+        <tr><td>可见性</td><td>一个线程的修改对其他线程立即可见</td><td>volatile, synchronized, Lock, final</td></tr>
+        <tr><td>有序性</td><td>程序执行顺序与代码顺序一致</td><td>volatile, synchronized, Lock</td></tr>
+      </table>
+
+      <div class="warning-box">
+        <strong>⚠️ 问题示例：count++ 不是原子操作</strong><br>
+        实际执行：1. 读取count值 → 2. 加1 → 3. 写回。多线程下可能读取相同值，导致计数丢失。
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 线程不安全的计数器
+class UnsafeCounter {
+    private int count = 0;
+    public void increment() {
+        count++; // 非原子操作！
+    }
+}
+
+// 两个线程同时执行：
+// T1: 读取count=0 → T2: 读取count=0 → T1: 写入count=1 → T2: 写入count=1
+// 结果：count=1（期望是2），丢失了1次计数！</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- volatile -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">👁️</div><h2 class="section-title">volatile关键字</h2></div>
+    <div class="section-body">
+      <p>volatile保证<strong>可见性</strong>和<strong>禁止指令重排序</strong>，但不保证原子性。</p>
+
+      <div class="mermaid">
+sequenceDiagram
+    participant T1 as Thread 1
+    participant M as 主内存
+    participant T2 as Thread 2
+    T1->>T1: 修改volatile变量
+    T1->>M: 立即刷新到主内存
+    T2->>M: 读取最新值
+    M-->>T2: 保证可见性
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">适用场景</h3>
+      <ul>
+        <li><strong>状态标志位</strong>：一个线程修改，其他线程立即可见</li>
+        <li><strong>双重检查锁</strong>：单例模式中的懒加载</li>
+        <li><strong>独立观察</strong>：一个线程写，多个线程读</li>
+      </ul>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>class VolatileExample {
+    // 状态标志：一个线程修改，其他线程立即可见
+    private volatile boolean running = true;
+
+    public void stop() {
+        running = false; // 对其他线程立即可见
+    }
+
+    public void doWork() {
+        while (running) {
+            // 执行任务
+        }
+    }
+}
+
+// 双重检查锁（DCL）单例
+class Singleton {
+    private volatile static Singleton instance;
+
+    public static Singleton getInstance() {
+        if (instance == null) {
+            synchronized (Singleton.class) {
+                if (instance == null) {
+                    instance = new Singleton(); // volatile防止指令重排序
+                }
+            }
+        }
+        return instance;
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="warning-box">
+        <strong>❌ 错误用法：</strong>volatile不能保证原子性，不能用于 count++ 等复合操作
+      </div>
+    </div>
+  </section>
+
+  <!-- synchronized -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔐</div><h2 class="section-title">synchronized关键字</h2></div>
+    <div class="section-body">
+      <p>synchronized是Java内置的同步机制，可以保证原子性、可见性和有序性。</p>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">三种使用方式</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>class SynchronizedCounter {
+    private int count = 0;
+    private final Object lock = new Object();
+
+    // 1. 同步方法（锁当前对象this）
+    public synchronized void increment() {
+        count++;
+    }
+
+    // 2. 同步代码块（更灵活，减小锁粒度）
+    public void incrementWithBlock() {
+        synchronized (this) {
+            count++;
+        }
+    }
+
+    // 3. 使用不同对象作为锁
+    public void incrementWithCustomLock() {
+        synchronized (lock) {
+            count++;
+        }
+    }
+
+    // 静态同步方法（锁类对象）
+    public static synchronized void staticMethod() {
+        // 锁的是SynchronizedCounter.class
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">锁升级（JDK 6+优化）</h3>
+      <div class="mermaid">
+flowchart LR
+    A[无锁] -->|第一个线程访问| B[偏向锁]
+    B -->|第二个线程竞争| C[轻量级锁]
+    C -->|竞争激烈| D[重量级锁]
+      </div>
+
+      <table>
+        <tr><th>锁类型</th><th>说明</th></tr>
+        <tr><td>偏向锁</td><td>单线程访问时，在对象头标记线程ID，无需CAS</td></tr>
+        <tr><td>轻量级锁</td><td>多线程交替访问，使用CAS自旋，避免线程阻塞</td></tr>
+        <tr><td>重量级锁</td><td>竞争激烈，线程阻塞，使用操作系统互斥量</td></tr>
+      </table>
+
+      <div class="tip-box">
+        <strong>💡 实现原理：</strong>基于对象的Monitor（监视器锁），通过monitorenter和monitorexit指令实现
+      </div>
+    </div>
+  </section>
+
+  <!-- Lock接口 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔒</div><h2 class="section-title">Lock接口</h2></div>
+    <div class="section-body">
+      <p>java.util.concurrent.locks.Lock提供更灵活的锁机制，相比synchronized有更多高级特性。</p>
+
+      <table>
+        <tr><th>特性</th><th>synchronized</th><th>ReentrantLock</th></tr>
+        <tr><td>获取/释放</td><td>JVM自动管理</td><td>手动lock()/unlock()</td></tr>
+        <tr><td>可中断</td><td>否</td><td>是（lockInterruptibly）</td></tr>
+        <tr><td>超时获取</td><td>否</td><td>是（tryLock(timeout)）</td></tr>
+        <tr><td>公平锁</td><td>非公平</td><td>可选公平/非公平</td></tr>
+        <tr><td>条件变量</td><td>单个（wait/notify）</td><td>多个（Condition）</td></tr>
+        <tr><td>性能</td><td>JDK6后差异不大</td><td>高竞争时略优</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>class ReentrantLockCounter {
+    // 公平锁：new ReentrantLock(true)
+    private final ReentrantLock lock = new ReentrantLock();
+    private int count = 0;
+
+    public void increment() {
+        lock.lock(); // 获取锁
+        try {
+            count++; // 临界区代码
+        } finally {
+            lock.unlock(); // 必须释放锁！
+        }
+    }
+
+    // 尝试获取锁（非阻塞）
+    public boolean tryIncrement() {
+        if (lock.tryLock()) {
+            try {
+                count++;
+                return true;
+            } finally {
+                lock.unlock();
+            }
+        }
+        return false;
+    }
+
+    // 超时获取锁
+    public boolean tryIncrementWithTimeout() throws InterruptedException {
+        if (lock.tryLock(1, TimeUnit.SECONDS)) {
+            try {
+                count++;
+                return true;
+            } finally {
+                lock.unlock();
+            }
+        }
+        return false;
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">ReadWriteLock（读写锁）</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>class ReadWriteLockExample {
+    private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+    private final Lock readLock = rwLock.readLock();
+    private final Lock writeLock = rwLock.writeLock();
+    private int data = 0;
+
+    // 读操作（多个线程可同时读）
+    public int read() {
+        readLock.lock();
+        try {
+            return data;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    // 写操作（独占）
+    public void write(int value) {
+        writeLock.lock();
+        try {
+            data = value;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="highlight-box">
+        <strong>读写锁规则：</strong>读-读不互斥、读-写互斥、写-写互斥。适合读多写少的场景。
+      </div>
+    </div>
+  </section>
+
+  <!-- 原子类 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚛️</div><h2 class="section-title">原子类与CAS</h2></div>
+    <div class="section-body">
+      <p>原子类使用CAS（Compare-And-Swap）实现无锁并发，性能好且不会阻塞线程。</p>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">CAS原理</h3>
+      <div class="mermaid">
+sequenceDiagram
+    participant T as 线程
+    participant M as 内存值V
+    participant E as 预期值A
+    participant N as 新值B
+    T->>M: 读取当前值V
+    T->>E: 记录预期值A=V
+    T->>T: 计算新值B
+    T->>M: CAS(V, A, B)
+    alt V == A
+        M->>M: 更新为B
+        M-->>T: 成功
+    else V != A
+        M-->>T: 失败，重试
+    end
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>class AtomicCounter {
+    private final AtomicInteger count = new AtomicInteger(0);
+
+    public void increment() {
+        count.incrementAndGet(); // 原子自增
+    }
+
+    public void incrementWithRetry() {
+        // 手动CAS操作（带重试）
+        int oldValue, newValue;
+        do {
+            oldValue = count.get();
+            newValue = oldValue + 1;
+        } while (!count.compareAndSet(oldValue, newValue));
+    }
+
+    // 常用方法
+    public void methods() {
+        count.get();                    // 获取值
+        count.set(100);                 // 设置值
+        count.getAndIncrement();        // 先获取后自增
+        count.incrementAndGet();        // 先自增后获取
+        count.addAndGet(5);             // 增加指定值
+        count.compareAndSet(0, 1);      // CAS操作
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">原子类族</h3>
+      <table>
+        <tr><th>类型</th><th>类</th><th>说明</th></tr>
+        <tr><td>基本类型</td><td>AtomicInteger, AtomicLong, AtomicBoolean</td><td>原子基本类型</td></tr>
+        <tr><td>引用类型</td><td>AtomicReference</td><td>原子引用</td></tr>
+        <tr><td>数组类型</td><td>AtomicIntegerArray</td><td>原子数组</td></tr>
+        <tr><td>字段更新器</td><td>AtomicIntegerFieldUpdater</td><td>原子更新字段</td></tr>
+        <tr><td>高并发累加器</td><td>LongAdder, LongAccumulator</td><td>分段累加，减少竞争</td></tr>
+      </table>
+
+      <div class="tip-box">
+        <strong>💡 LongAdder：</strong>高并发场景下比AtomicLong性能更好，原理是分段累加多个Cell，最后汇总
+      </div>
+
+      <div class="warning-box">
+        <strong>⚠️ CAS缺点：</strong><br>
+        1. ABA问题（可用AtomicStampedReference解决）<br>
+        2. 长时间自旋消耗CPU<br>
+        3. 只能保证单个变量的原子性
+      </div>
+    </div>
+  </section>
+
+  <!-- ThreadLocal -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🧵</div><h2 class="section-title">ThreadLocal（线程本地变量）</h2></div>
+    <div class="section-body">
+      <p>ThreadLocal为每个线程提供独立的变量副本，线程间互不干扰。</p>
+
+      <div class="mermaid">
+flowchart TD
+    subgraph Thread1["Thread 1"]
+        T1V["ThreadLocal变量副本: user=Alice"]
+    end
+    subgraph Thread2["Thread 2"]
+        T2V["ThreadLocal变量副本: user=Bob"]
+    end
+    subgraph Thread3["Thread 3"]
+        T3V["ThreadLocal变量副本: user=null"]
+    end
+    TL[ThreadLocal对象] -.-> T1V
+    TL -.-> T2V
+    TL -.-> T3V
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">应用场景</h3>
+      <ul>
+        <li><strong>数据库连接</strong>：每个线程独立的Connection，避免多线程安全问题</li>
+        <li><strong>用户会话</strong>：存储当前登录用户信息</li>
+        <li><strong>SimpleDateFormat</strong>：非线程安全，每个线程一个实例</li>
+        <li><strong>请求上下文</strong>：Spring中存储Request、Response信息</li>
+      </ul>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>class ThreadLocalExample {
+    // 每个线程独立的变量
+    private static final ThreadLocal&lt;String&gt; userContext = new ThreadLocal&lt;&gt;();
+
+    // 使用initialValue设置初始值
+    private static final ThreadLocal&lt;Integer&gt; requestId =
+        ThreadLocal.withInitial(() -> 0);
+
+    public void setUser(String user) {
+        userContext.set(user);
+    }
+
+    public String getUser() {
+        return userContext.get();
+    }
+
+    public void process() {
+        try {
+            setUser("当前用户");
+            // 执行业务逻辑
+            System.out.println(getUser());
+        } finally {
+            // ⚠️ 重要：使用完毕必须清理，防止内存泄漏！
+            userContext.remove();
+        }
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">内存泄漏问题</h3>
+      <div class="warning-box">
+        <strong>⚠️ 原因：</strong>ThreadLocalMap的key是弱引用（ThreadLocal），value是强引用（存储的值）。<br>
+        线程池场景下，线程不销毁，value无法回收。<br>
+        <strong>解决：</strong>使用后必须调用 remove() 方法清理
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// InheritableThreadLocal：子线程可继承父线程的值
+private static final InheritableThreadLocal&lt;String&gt; inheritable =
+    new InheritableThreadLocal&lt;&gt;();
+
+// 父线程设置值
+inheritable.set("父线程的值");
+
+// 子线程可以获取到父线程的值
+new Thread(() -> {
+    System.out.println(inheritable.get()); // 输出：父线程的值
+}).start();</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 并发容器 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📦</div><h2 class="section-title">并发容器</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">ConcurrentHashMap</h3>
+      <p>线程安全的HashMap，采用分段锁（Java 7）或CAS+synchronized（Java 8）实现高并发。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 线程安全的HashMap
+ConcurrentHashMap&lt;String, Integer&gt; map = new ConcurrentHashMap&lt;&gt;();
+
+// 基本操作
+map.put("key", 1);
+Integer value = map.get("key");
+
+// 原子性复合操作
+map.putIfAbsent("key", 2);     // key不存在才put
+map.replace("key", 1, 2);      // 旧值等于1时才替换为2
+
+// compute方法（原子性计算）
+map.compute("key", (k, v) -> v == null ? 1 : v + 1);
+
+// merge方法（合并）
+map.merge("key", 1, Integer::sum); // 存在则相加，不存在则put 1</code></pre></div>
+      </div>
+
+      <div class="mermaid">
+flowchart LR
+    subgraph Java7["Java 7 分段锁"]
+        S1[Segment 0] --> B1[Bucket...]
+        S2[Segment 1] --> B2[Bucket...]
+        S3[Segment N] --> B3[Bucket...]
+    end
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">CopyOnWriteArrayList</h3>
+      <p>写时复制，读操作无锁，写操作加锁并复制新数组。适合读多写少的场景。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>CopyOnWriteArrayList&lt;String&gt; list = new CopyOnWriteArrayList&lt;&gt;();
+
+// 读操作：无锁
+for (String s : list) {
+    System.out.println(s);
+}
+
+// 写操作：加锁，复制新数组
+list.add("new item");
+list.remove("old item");</code></pre></div>
+      </div>
+
+      <div class="tip-box">
+        <strong>💡 CopyOnWrite原理：</strong>写操作时复制一份新数组，修改后替换引用。读操作始终在原数组上进行，无需加锁。
+      </div>
+
+      <table>
+        <tr><th>容器</th><th>特点</th><th>适用场景</th></tr>
+        <tr><td>ConcurrentHashMap</td><td>分段锁/CAS，高并发读写</td><td>高频读写的Map</td></tr>
+        <tr><td>CopyOnWriteArrayList</td><td>写时复制，读无锁</td><td>读多写少</td></tr>
+        <tr><td>CopyOnWriteArraySet</td><td>基于CopyOnWriteArrayList</td><td>读多写少的Set</td></tr>
+        <tr><td>ConcurrentLinkedQueue</td><td>CAS无锁队列</td><td>高并发队列</td></tr>
+        <tr><td>BlockingQueue</td><td>阻塞队列，支持生产者消费者</td><td>线程协作</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

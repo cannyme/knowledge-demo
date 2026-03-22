@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据库事务隔离级别与锁机制 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+    --text-dim: #4a5068; --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e; --text-dim: #7a7a8e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .highlight { background: linear-gradient(135deg, rgba(240, 180, 41, 0.2), rgba(78, 205, 196, 0.15)); padding: 16px; border-radius: 8px; border-left: 3px solid var(--amber); margin: 16px 0; }
+  .tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .tip-title { color: var(--green); font-weight: 600; margin-bottom: 8px; }
+  .warning { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .warning-title { color: var(--red); font-weight: 600; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Database</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🗄️ DATABASE</div>
+    <h1 class="hero-title">数据库事务隔离级别与锁机制</h1>
+    <p class="hero-desc">深入理解数据库事务的ACID特性、四种隔离级别及其引发的并发问题，掌握MySQL锁机制（Record Lock、Gap Lock、Next-Key Lock）和死锁处理策略。</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📋</div><h2 class="section-title">ACID特性</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>特性</th><th>英文</th><th>说明</th></tr>
+        <tr><td>原子性</td><td>Atomicity</td><td>事务是不可分割的最小执行单位，要么全部成功，要么全部失败回滚</td></tr>
+        <tr><td>一致性</td><td>Consistency</td><td>事务执行前后，数据库从一个一致状态转换到另一个一致状态</td></tr>
+        <tr><td>隔离性</td><td>Isolation</td><td>并发事务之间相互隔离，互不干扰</td></tr>
+        <tr><td>持久性</td><td>Durability</td><td>事务一旦提交，对数据库的改变是永久性的</td></tr>
+      </table>
+      <div class="mermaid">
+graph LR
+    A[开始事务] --> B{执行操作}
+    B -->|成功| C[提交事务]
+    B -->|失败| D[回滚事务]
+    C --> E[数据持久化]
+    D --> F[数据恢复]
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔒</div><h2 class="section-title">四种隔离级别对比</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>隔离级别</th><th>脏读</th><th>不可重复读</th><th>幻读</th><th>数据库默认</th></tr>
+        <tr><td>READ UNCOMMITTED</td><td style="color: var(--red);">可能</td><td style="color: var(--red);">可能</td><td style="color: var(--red);">可能</td><td>-</td></tr>
+        <tr><td>READ COMMITTED</td><td style="color: var(--green);">不会</td><td style="color: var(--red);">可能</td><td style="color: var(--red);">可能</td><td>Oracle, SQL Server</td></tr>
+        <tr><td>REPEATABLE READ</td><td style="color: var(--green);">不会</td><td style="color: var(--green);">不会</td><td style="color: var(--amber);">可能*</td><td>MySQL（MVCC解决幻读）</td></tr>
+        <tr><td>SERIALIZABLE</td><td style="color: var(--green);">不会</td><td style="color: var(--green);">不会</td><td style="color: var(--green);">不会</td><td>-</td></tr>
+      </table>
+      <p style="font-size: 13px; color: var(--text-dim);">* MySQL InnoDB在REPEATABLE READ下通过MVCC和Next-Key Lock基本解决幻读问题</p>
+
+      <h3 style="margin-top: 24px;">并发问题定义</h3>
+      <table>
+        <tr><th>问题</th><th>说明</th></tr>
+        <tr><td>脏读（Dirty Read）</td><td>读取到其他事务未提交的数据</td></tr>
+        <tr><td>不可重复读（Non-repeatable Read）</td><td>同一事务内两次读取同一数据结果不同</td></tr>
+        <tr><td>幻读（Phantom Read）</td><td>同一事务内两次查询，后一次查询到了前一次没有的行</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">隔离级别详解</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="ru">READ UNCOMMITTED</button>
+        <button class="tab" data-tab="rc">READ COMMITTED</button>
+        <button class="tab" data-tab="rr">REPEATABLE READ</button>
+        <button class="tab" data-tab="ser">SERIALIZABLE</button>
+      </div>
+
+      <div id="ru" class="tab-content active">
+        <h3>读未提交（READ UNCOMMITTED）</h3>
+        <p>最低的隔离级别，事务可以读取到其他事务未提交的数据。</p>
+        <div class="warning">
+          <div class="warning-title">⚠️ 脏读示例</div>
+          <div class="code-container" style="margin: 10px 0;">
+            <div class="code-body"><pre><code>时刻    事务A                        事务B
+─────────────────────────────────────────────────────
+T1     BEGIN
+T2     UPDATE user SET name='李四' WHERE id=1
+       (未提交)
+T3                                  BEGIN
+T4                                  SELECT name FROM user WHERE id=1
+                                    → 读到'李四'（脏读！）
+T5     ROLLBACK
+       (数据回滚为'张三')</code></pre></div>
+          </div>
+          <p>问题：事务B读到了未提交的数据，这些数据可能被回滚，导致数据不一致。</p>
+        </div>
+        <p><strong>适用场景：</strong>极少使用，仅用于对数据一致性要求极低的场景。</p>
+      </div>
+
+      <div id="rc" class="tab-content">
+        <h3>读已提交（READ COMMITTED）</h3>
+        <p>事务只能读取到其他事务已提交的数据，解决了脏读问题。</p>
+        <div class="warning">
+          <div class="warning-title">⚠️ 不可重复读示例</div>
+          <div class="code-container" style="margin: 10px 0;">
+            <div class="code-body"><pre><code>时刻    事务A                        事务B
+─────────────────────────────────────────────────────
+T1                                  BEGIN
+T2                                  SELECT name FROM user WHERE id=1
+                                    → 读到'张三'
+T3     BEGIN
+T4     UPDATE user SET name='李四' WHERE id=1
+T5     COMMIT
+T6                                  SELECT name FROM user WHERE id=1
+                                    → 读到'李四'（不可重复读！）
+T7                                  COMMIT</code></pre></div>
+          </div>
+          <p>问题：同一事务内两次读取结果不同，破坏了一致性。</p>
+        </div>
+        <p><strong>适用场景：</strong>Oracle、SQL Server默认级别，适合大多数业务场景。</p>
+      </div>
+
+      <div id="rr" class="tab-content">
+        <h3>可重复读（REPEATABLE READ）</h3>
+        <p>MySQL默认隔离级别，通过MVCC机制保证同一事务内多次读取结果一致。</p>
+        <div class="tip">
+          <div class="tip-title">💡 MVCC机制</div>
+          <p>Multi-Version Concurrency Control（多版本并发控制），通过保存数据的历史版本，让读操作不加锁也能保证一致性。</p>
+        </div>
+        <div class="warning">
+          <div class="warning-title">⚠️ 幻读示例（当前读场景）</div>
+          <div class="code-container" style="margin: 10px 0;">
+            <div class="code-body"><pre><code>时刻    事务A                        事务B
+─────────────────────────────────────────────────────
+T1     BEGIN
+T2     SELECT * FROM user WHERE id>5
+       → 2条记录
+T3                                  BEGIN
+T4                                  INSERT INTO user VALUES(6,'test')
+T5                                  COMMIT
+T6     SELECT * FROM user WHERE id>5
+       → 2条记录（MVCC保证一致性读）
+T7     SELECT * FROM user WHERE id>5 FOR UPDATE
+       → 3条记录（当前读，幻读！）
+T8     UPDATE user SET name='x' WHERE id=6
+       → 更新成功（幻读效果）</code></pre></div>
+          </div>
+          <p>解决：使用SELECT ... FOR UPDATE加Next-Key Lock防止幻读</p>
+        </div>
+      </div>
+
+      <div id="ser" class="tab-content">
+        <h3>串行化（SERIALIZABLE）</h3>
+        <p>最高隔离级别，所有事务串行执行，完全避免并发问题。</p>
+        <div class="highlight">
+          <strong>实现方式：</strong>
+          <ul>
+            <li>读操作加共享锁（S锁）</li>
+            <li>写操作加排他锁（X锁）</li>
+            <li>锁的范围扩大到扫描的所有行</li>
+          </ul>
+        </div>
+        <div class="warning">
+          <div class="warning-title">⚠️ 性能问题</div>
+          <p>SERIALIZABLE性能最差，会导致大量锁等待，实际应用中基本不使用。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔐</div><h2 class="section-title">MySQL锁机制</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+graph TD
+    A[MySQL锁机制] --> B[按粒度]
+    A --> C[按类型]
+    B --> D[全局锁]
+    B --> E[表级锁]
+    B --> F[行级锁]
+    C --> G[共享锁 S]
+    C --> H[排他锁 X]
+    C --> I[意向锁]
+    F --> J[Record Lock]
+    F --> K[Gap Lock]
+    F --> L[Next-Key Lock]
+      </div>
+
+      <h3>按粒度分类</h3>
+      <table>
+        <tr><th>锁类型</th><th>说明</th><th>命令示例</th></tr>
+        <tr><td>全局锁</td><td>锁定整个数据库实例</td><td>FLUSH TABLES WITH READ LOCK</td></tr>
+        <tr><td>表级锁</td><td>锁定整张表</td><td>LOCK TABLES user READ/WRITE</td></tr>
+        <tr><td>行级锁</td><td>锁定单行数据（InnoDB）</td><td>SELECT ... FOR UPDATE</td></tr>
+      </table>
+
+      <h3>InnoDB行锁详解</h3>
+      <table>
+        <tr><th>锁类型</th><th>说明</th><th>示例</th></tr>
+        <tr><td>Record Lock</td><td>记录锁，锁定单条索引记录</td><td>WHERE id = 1 FOR UPDATE</td></tr>
+        <tr><td>Gap Lock</td><td>间隙锁，锁定索引记录之间的间隙</td><td>WHERE id > 5 AND id < 10</td></tr>
+        <tr><td>Next-Key Lock</td><td>临键锁 = Record Lock + Gap Lock</td><td>RR级别默认，防止幻读</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">SQL</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>-- 唯一索引等值查询，记录存在
+SELECT * FROM user WHERE id = 1 FOR UPDATE;
+→ Record Lock on id=1
+
+-- 唯一索引等值查询，记录不存在
+SELECT * FROM user WHERE id = 3 FOR UPDATE;  -- 假设id=3不存在
+→ Gap Lock on (1, 5)  -- 锁定相邻记录之间的间隙
+
+-- 唯一索引范围查询
+SELECT * FROM user WHERE id >= 5 FOR UPDATE;
+→ Record Lock on id=5
+→ Next-Key Lock on (5, 10]
+→ Gap Lock on (10, +∞)
+
+-- 非唯一索引等值查询
+-- 假设有普通索引 idx_age，数据：age=20,20,30,30
+SELECT * FROM user WHERE age = 20 FOR UPDATE;
+→ Next-Key Lock on (-∞, 20]
+→ Gap Lock on (20, 30)  -- 锁定到下一个不同值</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💀</div><h2 class="section-title">死锁产生与避免</h2></div>
+    <div class="section-body">
+      <h3>死锁产生的四个条件</h3>
+      <ul>
+        <li><strong>互斥条件：</strong>资源一次只能被一个事务占用</li>
+        <li><strong>请求与保持条件：</strong>事务持有资源同时请求新资源</li>
+        <li><strong>不可剥夺条件：</strong>已获得的资源不能被强制释放</li>
+        <li><strong>循环等待条件：</strong>多个事务形成循环等待链</li>
+      </ul>
+
+      <div class="warning">
+        <div class="warning-title">⚠️ 死锁示例</div>
+        <div class="code-container" style="margin: 10px 0;">
+          <div class="code-body"><pre><code>时刻    事务A                        事务B
+─────────────────────────────────────────────────────
+T1     BEGIN
+T2     UPDATE user SET name='A' WHERE id=1
+       (持有id=1的锁)
+T3                                  BEGIN
+T4                                  UPDATE user SET name='B' WHERE id=2
+                                     (持有id=2的锁)
+T5     UPDATE user SET name='A2' WHERE id=2
+       (等待id=2的锁)  ←┐
+T6                                  UPDATE user SET name='B2' WHERE id=1
+                                     (等待id=1的锁)  ←┘
+       → 死锁！双方都持有对方需要的锁</code></pre></div>
+        </div>
+      </div>
+
+      <h3>死锁检测与处理</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">SQL</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>-- 开启死锁检测（默认ON）
+SET GLOBAL innodb_deadlock_detect = ON;
+
+-- 查看最近的死锁信息
+SHOW ENGINE INNODB STATUS;
+
+-- 查看锁等待
+SELECT * FROM information_schema.INNODB_LOCK_WAITS;
+
+-- 查看当前锁
+SELECT * FROM performance_schema.data_locks;
+
+-- 锁等待超时配置（默认50秒）
+SET GLOBAL innodb_lock_wait_timeout = 50;</code></pre></div>
+      </div>
+
+      <h3>避免死锁的建议</h3>
+      <div class="tip">
+        <div class="tip-title">💡 最佳实践</div>
+        <ul>
+          <li><strong>固定顺序：</strong>按固定顺序访问表和行，避免循环等待</li>
+          <li><strong>缩短事务：</strong>大事务拆小事务，减少锁持有时间</li>
+          <li><strong>合理索引：</strong>避免无索引导致的全表扫描锁</li>
+          <li><strong>降级隔离：</strong>适当降低隔离级别，减少锁竞争</li>
+          <li><strong>重试机制：</strong>捕获死锁异常后重试</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📋</div><h2 class="section-title">隔离级别选择建议</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>场景</th><th>建议隔离级别</th><th>说明</th></tr>
+        <tr><td>一般OLTP业务</td><td>READ COMMITTED</td><td>Oracle默认，避免脏读，性能好</td></tr>
+        <tr><td>需要一致性读</td><td>REPEATABLE READ</td><td>MySQL默认，MVCC保证</td></tr>
+        <tr><td>报表/统计</td><td>REPEATABLE READ</td><td>避免统计过程中数据变化</td></tr>
+        <tr><td>高安全性要求</td><td>SERIALIZABLE</td><td>完全串行，性能牺牲</td></tr>
+      </table>
+
+      <div class="highlight">
+        <strong>锁优化建议：</strong>
+        <ul>
+          <li>合理设计索引，减少锁范围（无索引会锁全表）</li>
+          <li>避免长事务，及时提交或回滚</li>
+          <li>尽量使用主键更新，精确锁定</li>
+          <li>避免在事务中执行耗时操作（RPC调用、复杂计算）</li>
+          <li>SELECT尽量不加锁，除非必要（FOR UPDATE）</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

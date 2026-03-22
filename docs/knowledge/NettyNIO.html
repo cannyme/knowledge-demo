@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Netty与NIO - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .section-body table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  .section-body th, .section-body td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  .section-body th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  .section-body tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .highlight-box { background: rgba(78, 205, 196, 0.1); border-left: 3px solid var(--cyan); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .tip-box { background: rgba(240, 180, 41, 0.1); border-left: 3px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .warning-box { background: rgba(255, 123, 114, 0.1); border-left: 3px solid var(--red); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>网络编程</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">Netty与NIO</h1>
+    <p class="hero-desc">IO模型演进、NIO三大核心组件、Netty架构设计、线程模型、零拷贝与高性能网络编程实践</p>
+  </header>
+
+  <!-- IO模型对比 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔌</div><h2 class="section-title">IO模型演进</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>特性</th><th>BIO</th><th>NIO</th><th>AIO</th></tr>
+        <tr><td>阻塞性</td><td>阻塞</td><td>非阻塞</td><td>非阻塞</td></tr>
+        <tr><td>同步/异步</td><td>同步</td><td>同步</td><td>异步</td></tr>
+        <tr><td>线程模型</td><td>一连接一线程</td><td>一线程处理多连接</td><td>回调模式</td></tr>
+        <tr><td>适用场景</td><td>连接数少</td><td>连接数多</td><td>连接数很多</td></tr>
+        <tr><td>Java实现</td><td>ServerSocket</td><td>Selector+Channel</td><td>AsynchronousChannel</td></tr>
+      </table>
+
+      <div class="mermaid">
+flowchart LR
+    subgraph BIO["BIO: 一连接一线程"]
+        B1[Client1] --> T1[Thread1]
+        B2[Client2] --> T2[Thread2]
+        B3[Client3] --> T3[Thread3]
+    end
+
+    subgraph NIO["NIO: 一线程多连接"]
+        N1[Client1] --> S[Selector]
+        N2[Client2] --> S
+        N3[Client3] --> S
+        S --> T[Single Thread]
+    end
+      </div>
+    </div>
+  </section>
+
+  <!-- BIO示例 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🐢</div><h2 class="section-title">BIO示例（阻塞IO）</h2></div>
+    <div class="section-body">
+      <p>BIO采用一连接一线程模型，每个连接需要独立的线程处理，连接数多时资源消耗大。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// BIO服务端（一连接一线程）
+class BIOServer {
+    public static void main(String[] args) throws IOException {
+        ServerSocket serverSocket = new ServerSocket(8080);
+        System.out.println("BIO服务器启动...");
+
+        while (true) {
+            // 阻塞等待连接
+            Socket socket = serverSocket.accept();
+            System.out.println("客户端连接：" + socket.getInetAddress());
+
+            // 为每个连接创建新线程
+            new Thread(() -> {
+                try {
+                    BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(socket.getInputStream()));
+                    PrintWriter writer = new PrintWriter(socket.getOutputStream());
+
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println("收到：" + line);
+                        writer.println("Echo: " + line);
+                        writer.flush();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        }
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="warning-box">
+        <strong>⚠️ 缺点：</strong>每个连接一个线程，线程切换开销大，连接数受限（几千个就接近极限）。
+      </div>
+    </div>
+  </section>
+
+  <!-- NIO核心组件 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">NIO三大核心组件</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>组件</th><th>作用</th><th>关键特性</th></tr>
+        <tr><td>Channel（通道）</td><td>双向通道，可读可写</td><td>非阻塞、支持 scatter/gather</td></tr>
+        <tr><td>Buffer（缓冲区）</td><td>数据容器</td><td>capacity/limit/position/mark</td></tr>
+        <tr><td>Selector（选择器）</td><td>多路复用器</td><td>轮询多个Channel的就绪状态</td></tr>
+      </table>
+
+      <div class="mermaid">
+flowchart TD
+    subgraph NIOCore["NIO核心组件"]
+        S[Selector] -->|监控| C1[Channel 1]
+        S -->|监控| C2[Channel 2]
+        S -->|监控| C3[Channel 3]
+        C1 -->|数据| B1[Buffer]
+        C2 -->|数据| B2[Buffer]
+        C3 -->|数据| B3[Buffer]
+    end
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">Buffer工作原理</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// Buffer核心属性
+// 0 <= mark <= position <= limit <= capacity
+
+public static void bufferDemo() {
+    // 创建Buffer
+    ByteBuffer buffer = ByteBuffer.allocate(1024);
+
+    // 写入数据（写模式）
+    buffer.put("Hello".getBytes());
+    // position=5, limit=1024, capacity=1024
+
+    // 切换为读模式（flip）
+    buffer.flip();
+    // position=0, limit=5, capacity=1024
+
+    // 读取数据
+    byte[] data = new byte[buffer.remaining()]; // remaining = limit - position
+    buffer.get(data);
+    System.out.println(new String(data)); // Hello
+
+    // 清空，准备再次写入（clear）
+    buffer.clear();
+    // position=0, limit=1024, capacity=1024
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">NIO服务端示例</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>class NIOServer {
+    public static void main(String[] args) throws IOException {
+        // 创建Selector
+        Selector selector = Selector.open();
+
+        // 创建ServerSocketChannel
+        ServerSocketChannel serverChannel = ServerSocketChannel.open();
+        serverChannel.bind(new InetSocketAddress(8080));
+        serverChannel.configureBlocking(false); // 非阻塞模式
+
+        // 注册到Selector，监听连接事件
+        serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+        System.out.println("NIO服务器启动...");
+
+        while (true) {
+            // 阻塞等待事件（可设置超时）
+            selector.select();
+
+            // 获取就绪的事件
+            Set&lt;SelectionKey&gt; selectedKeys = selector.selectedKeys();
+            Iterator&lt;SelectionKey&gt; iterator = selectedKeys.iterator();
+
+            while (iterator.hasNext()) {
+                SelectionKey key = iterator.next();
+                iterator.remove();
+
+                if (key.isAcceptable()) {
+                    // 接受连接
+                    ServerSocketChannel server = (ServerSocketChannel) key.channel();
+                    SocketChannel client = server.accept();
+                    client.configureBlocking(false);
+                    client.register(selector, SelectionKey.OP_READ);
+                    System.out.println("客户端连接：" + client.getRemoteAddress());
+
+                } else if (key.isReadable()) {
+                    // 读取数据
+                    SocketChannel client = (SocketChannel) key.channel();
+                    ByteBuffer buffer = ByteBuffer.allocate(1024);
+                    int bytesRead = client.read(buffer);
+
+                    if (bytesRead == -1) {
+                        client.close();
+                    } else {
+                        buffer.flip();
+                        client.write(buffer); // Echo
+                    }
+                }
+            }
+        }
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Reactor模式 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚛️</div><h2 class="section-title">Reactor模式</h2></div>
+    <div class="section-body">
+      <p>Reactor是基于事件驱动的设计模式，是NIO编程的核心架构模式。</p>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">单Reactor单线程</h3>
+      <div class="mermaid">
+flowchart TD
+    R[Reactor] -->|监听| S[Selector]
+    S -->|分发| H1[Handler 1]
+    S -->|分发| H2[Handler 2]
+    S -->|分发| H3[Handler 3]
+    H1 --> P[业务处理]
+    H2 --> P
+    H3 --> P
+      </div>
+      <p><strong>缺点：</strong>一个线程处理所有请求，无法利用多核CPU，handler阻塞会影响整个服务。</p>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">单Reactor多线程（Netty采用）</h3>
+      <div class="mermaid">
+flowchart TD
+    subgraph MainReactor["Boss线程组"]
+        MR[MainReactor] -->|监听连接| SS[ServerSocketChannel]
+    end
+
+    subgraph SubReactor["Worker线程池"]
+        SR[SubReactor 1] --> H1[Handler]
+        SR2[SubReactor 2] --> H2[Handler]
+        SR3[SubReactor N] --> H3[Handler]
+    end
+
+    SS -.->|分发| SR
+    SS -.->|分发| SR2
+    SS -.->|分发| SR3
+      </div>
+      <p><strong>优点：</strong>Boss线程只负责连接建立，Worker线程池负责I/O读写，充分利用多核。</p>
+    </div>
+  </section>
+
+  <!-- Netty架构 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🚀</div><h2 class="section-title">Netty架构设计</h2></div>
+    <div class="section-body">
+      <p>Netty是基于NIO的高性能网络框架，封装了NIO的复杂性，提供易用的API。</p>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">核心组件</h3>
+      <table>
+        <tr><th>组件</th><th>说明</th></tr>
+        <tr><td>EventLoopGroup</td><td>事件循环组（Boss/Worker）</td></tr>
+        <tr><td>EventLoop</td><td>事件循环，处理Channel的I/O操作</td></tr>
+        <tr><td>Channel</td><td>网络通道，封装了Socket</td></tr>
+        <tr><td>ChannelPipeline</td><td>处理器链，责任链模式</td></tr>
+        <tr><td>ChannelHandler</td><td>处理器，处理业务逻辑</td></tr>
+        <tr><td>ChannelHandlerContext</td><td>处理器上下文</td></tr>
+        <tr><td>ByteBuf</td><td>字节缓冲区，优于NIO ByteBuffer</td></tr>
+      </table>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">Netty服务端示例</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public class NettyServer {
+    public static void main(String[] args) throws Exception {
+        // Boss线程组：处理连接（1个即可）
+        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+        // Worker线程组：处理I/O（默认CPU核心数*2）
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
+
+        try {
+            ServerBootstrap bootstrap = new ServerBootstrap();
+            bootstrap.group(bossGroup, workerGroup)
+                .channel(NioServerSocketChannel.class)
+                .option(ChannelOption.SO_BACKLOG, 128)
+                .childOption(ChannelOption.SO_KEEPALIVE, true)
+                .childHandler(new ChannelInitializer&lt;SocketChannel&gt;() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+                        ch.pipeline()
+                            .addLast(new StringDecoder())   // 解码
+                            .addLast(new StringEncoder())   // 编码
+                            .addLast(new ServerHandler());  // 业务处理器
+                    }
+                });
+
+            ChannelFuture future = bootstrap.bind(8080).sync();
+            System.out.println("Netty服务器启动...");
+            future.channel().closeFuture().sync();
+
+        } finally {
+            bossGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
+        }
+    }
+}
+
+@Sharable // 可共享的无状态Handler
+public class ServerHandler extends ChannelInboundHandlerAdapter {
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        System.out.println("收到消息：" + msg);
+        ctx.writeAndFlush("Echo: " + msg);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        cause.printStackTrace();
+        ctx.close();
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ChannelPipeline -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⛓️</div><h2 class="section-title">ChannelPipeline与ChannelHandler</h2></div>
+    <div class="section-body">
+      <p>ChannelPipeline是Netty的责任链实现，ChannelHandler是实际处理数据的处理器。</p>
+
+      <div class="mermaid">
+flowchart LR
+    C[Client] -->|入站| D[Decoder]
+    D -->|入站| L1[LoggingHandler]
+    L1 -->|入站| B[BusinessHandler]
+    B -->|出站| E[Encoder]
+    E -->|出站| L2[LoggingHandler]
+    L2 -->|出站| C2[Client]
+
+    style D fill:#4ecdc4,stroke:#4ecdc4
+    style E fill:#f0b429,stroke:#f0b429
+    style B fill:#7ee787,stroke:#7ee787
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 常用Handler类型
+public class HandlerExample {
+
+    // 入站处理器
+    public class InboundHandler extends ChannelInboundHandlerAdapter {
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            // 处理读取的数据
+            ctx.fireChannelRead(msg); // 传递给下一个Handler
+        }
+
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) {
+            // 连接建立时触发
+            ctx.fireChannelActive();
+        }
+    }
+
+    // 出站处理器
+    public class OutboundHandler extends ChannelOutboundHandlerAdapter {
+        @Override
+        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+            // 处理写出的数据
+            ctx.write(msg, promise); // 传递给下一个Handler
+        }
+    }
+
+    // 编码器
+    public class MyEncoder extends MessageToByteEncoder&lt;MyMessage&gt; {
+        @Override
+        protected void encode(ChannelHandlerContext ctx, MyMessage msg, ByteBuf out) {
+            // 将对象编码为字节
+            out.writeInt(msg.getLength());
+            out.writeBytes(msg.getData());
+        }
+    }
+
+    // 解码器（处理粘包/拆包）
+    public class MyDecoder extends ByteToMessageDecoder {
+        @Override
+        protected void decode(ChannelHandlerContext ctx, ByteBuf in, List&lt;Object&gt; out) {
+            if (in.readableBytes() < 4) return;
+            in.markReaderIndex();
+            int length = in.readInt();
+            if (in.readableBytes() < length) {
+                in.resetReaderIndex();
+                return;
+            }
+            byte[] data = new byte[length];
+            in.readBytes(data);
+            out.add(new MyMessage(length, data));
+        }
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ByteBuf -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📦</div><h2 class="section-title">ByteBuf（字节缓冲区）</h2></div>
+    <div class="section-body">
+      <p>ByteBuf是Netty的增强版字节缓冲区，相比NIO的ByteBuffer更强大、更易用。</p>
+
+      <table>
+        <tr><th>特性</th><th>ByteBuffer</th><th>ByteBuf</th></tr>
+        <tr><td>读写指针</td><td>需要flip切换</td><td>独立的readerIndex/writerIndex</td></tr>
+        <tr><td>容量扩展</td><td>固定大小</td><td>自动扩展</td></tr>
+        <tr><td>内存类型</td><td>堆内存</td><td>堆/堆外内存</td></tr>
+        <tr><td>引用计数</td><td>无</td><td>有（内存池管理）</td></tr>
+        <tr><td>池化</td><td>无</td><td>有（减少GC压力）</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// ByteBuf使用示例
+public void byteBufDemo() {
+    // 1. 创建ByteBuf
+    ByteBuf buf = Unpooled.buffer(1024); // 未池化堆内存
+    ByteBuf directBuf = Unpooled.directBuffer(1024); // 未池化堆外内存
+    // ByteBuf pooledBuf = PooledByteBufAllocator.DEFAULT.buffer(1024); // 池化
+
+    // 2. 写入数据
+    buf.writeInt(100);
+    buf.writeBytes("Hello".getBytes());
+
+    // 3. 读取数据
+    int num = buf.readInt();           // 100
+    byte[] data = new byte[5];
+    buf.readBytes(data);               // "Hello"
+
+    // 4. 引用计数（池化ByteBuf需要）
+    buf.retain();  // 引用计数+1
+    buf.release(); // 引用计数-1，为0时释放
+
+    // 5. 零拷贝：切片（共享底层数据）
+    ByteBuf slice = buf.slice(0, 5);
+
+    // 6. 零拷贝：组合（CompositeByteBuf）
+    CompositeByteBuf composite = Unpooled.compositeBuffer();
+    composite.addComponents(true, buf1, buf2, buf3);
+}</code></pre></div>
+      </div>
+
+      <div class="tip-box">
+        <strong>💡 ByteBuf类型：</strong><br>
+        <strong>Heap ByteBuf：</strong>堆内存，读写效率高<br>
+        <strong>Direct ByteBuf：</strong>堆外内存，减少一次内存拷贝<br>
+        <strong>Pooled ByteBuf：</strong>池化，减少内存分配开销
+      </div>
+    </div>
+  </section>
+
+  <!-- 零拷贝 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🚀</div><h2 class="section-title">零拷贝技术</h2></div>
+    <div class="section-body">
+      <p>零拷贝减少数据在内核态和用户态之间的复制次数，提高文件传输性能。</p>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">传统数据传输</h3>
+      <div class="mermaid">
+flowchart LR
+    D[磁盘] -->|DMA| K[内核缓冲区]
+    K -->|CPU复制| U[用户缓冲区]
+    U -->|CPU复制| S[Socket缓冲区]
+    S -->|DMA| N[网卡]
+      </div>
+      <p><strong>4次复制，4次上下文切换</strong></p>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">零拷贝（sendfile）</h3>
+      <div class="mermaid">
+flowchart LR
+    D[磁盘] -->|DMA| K[内核缓冲区]
+    K -->|CPU收集| S[Socket缓冲区]
+    S -->|DMA| N[网卡]
+      </div>
+      <p><strong>2次复制，2次上下文切换</strong></p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// Netty零拷贝实现
+public class ZeroCopyExample {
+
+    // 1. FileRegion：使用sendfile系统调用传输文件
+    public void sendFile(ChannelHandlerContext ctx, File file) throws IOException {
+        FileRegion region = new DefaultFileRegion(
+            new FileInputStream(file).getChannel(), 0, file.length());
+        ctx.writeAndFlush(region);
+    }
+
+    // 2. CompositeByteBuf：逻辑合并多个Buffer，无需物理复制
+    public void compositeBuffer() {
+        ByteBuf header = Unpooled.wrappedBuffer(new byte[]{0x01, 0x02});
+        ByteBuf body = Unpooled.wrappedBuffer(new byte[]{0x03, 0x04});
+
+        CompositeByteBuf composite = Unpooled.compositeBuffer();
+        composite.addComponents(true, header, body);
+        // 逻辑上是一个Buffer，物理上共享数据
+    }
+
+    // 3. slice：切片，共享底层数据
+    public void sliceBuffer() {
+        ByteBuf buf = Unpooled.wrappedBuffer("Hello World".getBytes());
+        ByteBuf slice1 = buf.slice(0, 5);   // "Hello"
+        ByteBuf slice2 = buf.slice(6, 5);   // "World"
+        // 共享buf的底层数组，没有数据拷贝
+    }
+
+    // 4. wrappedBuffer：包装现有数组，避免拷贝
+    public void wrapBuffer() {
+        byte[] data = new byte[1024];
+        ByteBuf buf = Unpooled.wrappedBuffer(data);
+        // 直接使用data数组，不拷贝
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 拆包粘包 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📦</div><h2 class="section-title">粘包/拆包与心跳机制</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">粘包/拆包问题</h3>
+      <ul>
+        <li><strong>粘包：</strong>多个小消息被合并成一个大数据包发送</li>
+        <li><strong>拆包：</strong>一个大数据包被拆分成多个小包发送</li>
+        <li><strong>原因：</strong>TCP是流协议，不保证消息边界</li>
+      </ul>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">解决方案</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 1. 固定长度解码器
+ch.pipeline().addLast(new FixedLengthFrameDecoder(1024));
+
+// 2. 行分隔符解码器
+ch.pipeline().addLast(new LineBasedFrameDecoder(8192));
+
+// 3. 分隔符解码器
+ch.pipeline().addLast(new DelimiterBasedFrameDecoder(
+    8192, Unpooled.wrappedBuffer(new byte[]{'$'})));
+
+// 4. 长度字段解码器（推荐）
+// 协议格式：| 长度(4字节) | 内容(N字节) |
+ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(
+    65535,   // 最大帧长度
+    0,       // 长度字段偏移
+    4,       // 长度字段长度
+    0,       // 长度调整
+    4        // 跳过的字节数（长度字段本身）
+));</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">心跳机制</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 心跳检测
+ch.pipeline().addLast(new IdleStateHandler(
+    60,   // 读空闲超时（秒）
+    30,   // 写空闲超时（秒）
+    0     // 读写空闲超时
+));
+ch.pipeline().addLast(new HeartbeatHandler());
+
+// 心跳处理器
+public class HeartbeatHandler extends ChannelDuplexHandler {
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent event = (IdleStateEvent) evt;
+            if (event.state() == IdleState.READER_IDLE) {
+                // 读超时，关闭连接
+                ctx.close();
+            } else if (event.state() == IdleState.WRITER_IDLE) {
+                // 写超时，发送心跳
+                ctx.writeAndFlush(new PingMessage());
+            }
+        }
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 最佳实践 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">✅</div><h2 class="section-title">Netty最佳实践</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>方面</th><th>建议</th></tr>
+        <tr><td>线程数配置</td><td>Boss线程1个；Worker线程CPU核心数*2</td></tr>
+        <tr><td>内存配置</td><td>使用池化DirectBuffer；合理设置ByteBuf大小</td></tr>
+        <tr><td>Handler设计</td><td>避免在Handler中执行耗时操作；使用@Sharable注解共享无状态Handler</td></tr>
+        <tr><td>资源释放</td><td>使用ReferenceCountUtil.release()；或使用SimpleChannelInboundHandler自动释放</td></tr>
+        <tr><td>日志</td><td>使用LoggingHandler调试，生产环境移除或降低级别</td></tr>
+      </table>
+
+      <div class="tip-box">
+        <strong>💡 业务线程池：</strong>耗时业务操作应提交到业务线程池处理，避免阻塞EventLoop线程
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 业务线程池处理耗时操作
+public class BusinessHandler extends ChannelInboundHandlerAdapter {
+    private final ExecutorService executor = Executors.newFixedThreadPool(100);
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        // 提交到业务线程池
+        executor.submit(() -> {
+            try {
+                // 执行业务逻辑
+                Object result = process(msg);
+                // 通过ctx写回响应（保证线程安全）
+                ctx.writeAndFlush(result);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

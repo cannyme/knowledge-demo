@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>装饰器模式 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .table-container { overflow-x: auto; margin: 20px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .highlight { color: var(--amber); font-weight: 600; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-family: var(--font-code); }
+  .tag-success { background: rgba(126, 231, 135, 0.15); color: var(--green); }
+  .tag-danger { background: rgba(255, 123, 114, 0.15); color: var(--red); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>设计模式</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🎨 DECORATOR</div>
+    <h1 class="hero-title">装饰器模式</h1>
+    <p class="hero-desc">动态地给对象添加额外职责，比继承更灵活。装饰器与被装饰对象有相同的接口，可以在不改变对象结构的情况下扩展功能。</p>
+  </header>
+
+  <!-- 模式定义与意图 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📖</div><h2 class="section-title">模式定义与意图</h2></div>
+    <div class="section-body">
+      <p><strong class="highlight">定义：</strong>装饰器模式（Decorator Pattern）是一种结构型设计模式，它允许你通过将对象放入包含行为的特殊包装对象中来为原对象绑定新的行为。</p>
+      <p><strong class="highlight">核心思想：</strong>使用组合替代继承，动态地给对象添加职责。装饰器和被装饰对象实现相同的接口，客户端可以透明地使用装饰后的对象。</p>
+      <div class="mermaid">classDiagram
+    class Component { <<interface>> +operation() }
+    class ConcreteComponent {
+        +operation()
+    }
+    class Decorator {
+        -component: Component
+        +operation()
+    }
+    class ConcreteDecoratorA {
+        +operation()
+    }
+    class ConcreteDecoratorB {
+        +operation()
+    }
+    Component <|.. ConcreteComponent
+    Component <|.. Decorator
+    Decorator <|-- ConcreteDecoratorA
+    Decorator <|-- ConcreteDecoratorB
+    Decorator o-- Component</div>
+      <p><strong class="highlight">角色说明：</strong></p>
+      <ul>
+        <li><strong>Component（组件接口）：</strong>定义被装饰对象和装饰器的公共接口</li>
+        <li><strong>ConcreteComponent（具体组件）：</strong>被装饰的原始对象</li>
+        <li><strong>Decorator（装饰器基类）：</strong>实现组件接口，并持有组件引用</li>
+        <li><strong>ConcreteDecorator（具体装饰器）：</strong>添加具体的装饰功能</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 适用场景 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">适用场景</h2></div>
+    <div class="section-body">
+      <p>以下场景适合使用装饰器模式：</p>
+      <ul>
+        <li><strong>Java I/O流：</strong>InputStream/OutputStream及其包装类（BufferedInputStream、DataInputStream等）</li>
+        <li><strong>咖啡配料系统：</strong>基础咖啡 + 牛奶 + 糖 + 奶油的组合</li>
+        <li><strong>报表装饰：</strong>为报表添加标题、页脚、水印等</li>
+        <li><strong>请求/响应增强：</strong>过滤器链、拦截器、AOP等</li>
+        <li><strong>Spring中的Request/Response包装：</strong>HttpServletRequestWrapper、HttpServletResponseWrapper</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 代码实现 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💻</div><h2 class="section-title">代码实现</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="coffee">咖啡配料系统</button>
+        <button class="tab" data-tab="io">Java I/O示例</button>
+        <button class="tab" data-tab="report">报表装饰</button>
+        <button class="tab" data-tab="spring">Spring应用</button>
+      </div>
+
+      <div id="coffee" class="tab-content active">
+        <p><strong class="highlight">场景：咖啡配料系统</strong> - 动态组合咖啡配料</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 组件接口
+interface Coffee {
+    String getDescription();
+    double getCost();
+}
+
+// 具体组件：基础咖啡
+class SimpleCoffee implements Coffee {
+    @Override
+    public String getDescription() {
+        return "黑咖啡";
+    }
+
+    @Override
+    public double getCost() {
+        return 10.0;
+    }
+}
+
+// 装饰器基类
+abstract class CoffeeDecorator implements Coffee {
+    protected final Coffee coffee;
+
+    public CoffeeDecorator(Coffee coffee) {
+        this.coffee = coffee;
+    }
+}
+
+// 具体装饰器：牛奶
+class MilkDecorator extends CoffeeDecorator {
+    public MilkDecorator(Coffee coffee) {
+        super(coffee);
+    }
+
+    @Override
+    public String getDescription() {
+        return coffee.getDescription() + " + 牛奶";
+    }
+
+    @Override
+    public double getCost() {
+        return coffee.getCost() + 3.0;
+    }
+}
+
+// 具体装饰器：糖
+class SugarDecorator extends CoffeeDecorator {
+    public SugarDecorator(Coffee coffee) {
+        super(coffee);
+    }
+
+    @Override
+    public String getDescription() {
+        return coffee.getDescription() + " + 糖";
+    }
+
+    @Override
+    public double getCost() {
+        return coffee.getCost() + 1.0;
+    }
+}
+
+// 具体装饰器：奶油
+class CreamDecorator extends CoffeeDecorator {
+    public CreamDecorator(Coffee coffee) {
+        super(coffee);
+    }
+
+    @Override
+    public String getDescription() {
+        return coffee.getDescription() + " + 奶油";
+    }
+
+    @Override
+    public double getCost() {
+        return coffee.getCost() + 5.0;
+    }
+}
+
+// 使用
+Coffee coffee = new SimpleCoffee();
+System.out.println(coffee.getDescription() + " = " + coffee.getCost() + "元");
+
+// 加牛奶
+coffee = new MilkDecorator(coffee);
+System.out.println(coffee.getDescription() + " = " + coffee.getCost() + "元");
+
+// 再加糖
+coffee = new SugarDecorator(coffee);
+System.out.println(coffee.getDescription() + " = " + coffee.getCost() + "元");
+
+// 链式创建
+Coffee fancyCoffee = new CreamDecorator(
+    new SugarDecorator(
+        new MilkDecorator(
+            new SimpleCoffee())));
+System.out.println("花式咖啡：" + fancyCoffee.getDescription() + " = " + fancyCoffee.getCost() + "元");</code></pre></div>
+        </div>
+        <div class="mermaid">graph TD
+    A[SimpleCoffee<br/>黑咖啡 10元] --> B[MilkDecorator<br/>+牛奶 +3元]
+    B --> C[SugarDecorator<br/>+糖 +1元]
+    C --> D[CreamDecorator<br/>+奶油 +5元]
+    D --> E[最终: 黑咖啡+牛奶+糖+奶油 = 19元]</div>
+      </div>
+
+      <div id="io" class="tab-content">
+        <p><strong class="highlight">Java I/O中的装饰器</strong> - 经典的装饰器模式应用</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// Java I/O 是装饰器模式的经典应用
+// 抽象组件：InputStream / OutputStream
+// 具体组件：FileInputStream / ByteArrayInputStream
+// 抽象装饰器：FilterInputStream / FilterOutputStream
+// 具体装饰器：BufferedInputStream / DataInputStream / GZIPInputStream
+
+// 典型使用方式
+InputStream is = new BufferedInputStream(
+                    new GZIPInputStream(
+                        new FileInputStream("file.gz")));
+
+// 简化版InputStream示意
+abstract class InputStream {
+    public abstract int read();
+}
+
+class FileInputStream extends InputStream {
+    @Override
+    public int read() {
+        return 0; // 从文件读取
+    }
+}
+
+// 装饰器基类
+class FilterInputStream extends InputStream {
+    protected final InputStream in;
+
+    public FilterInputStream(InputStream in) {
+        this.in = in;
+    }
+
+    @Override
+    public int read() {
+        return in.read();
+    }
+}
+
+// 具体装饰器：缓冲
+class BufferedInputStream extends FilterInputStream {
+    private final byte[] buffer = new byte[8192];
+
+    public BufferedInputStream(InputStream in) {
+        super(in);
+    }
+
+    @Override
+    public int read() {
+        // 先从缓冲区读取，缓冲区空了再从底层读取
+        return super.read();
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="report" class="tab-content">
+        <p><strong class="highlight">报表装饰</strong> - 为报表添加各种装饰</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 报表接口
+interface Report {
+    String getContent();
+}
+
+// 基础报表
+class BasicReport implements Report {
+    @Override
+    public String getContent() {
+        return "报表数据";
+    }
+}
+
+// 报表装饰器基类
+abstract class ReportDecorator implements Report {
+    protected final Report report;
+
+    public ReportDecorator(Report report) {
+        this.report = report;
+    }
+}
+
+// 标题装饰器
+class HeaderDecorator extends ReportDecorator {
+    private final String header;
+
+    public HeaderDecorator(Report report, String header) {
+        super(report);
+        this.header = header;
+    }
+
+    @Override
+    public String getContent() {
+        return "【" + header + "】\n" + report.getContent();
+    }
+}
+
+// 页脚装饰器
+class FooterDecorator extends ReportDecorator {
+    private final String footer;
+
+    public FooterDecorator(Report report, String footer) {
+        super(report);
+        this.footer = footer;
+    }
+
+    @Override
+    public String getContent() {
+        return report.getContent() + "\n" + footer;
+    }
+}
+
+// 水印装饰器
+class WatermarkDecorator extends ReportDecorator {
+    private final String watermark;
+
+    public WatermarkDecorator(Report report, String watermark) {
+        super(report);
+        this.watermark = watermark;
+    }
+
+    @Override
+    public String getContent() {
+        return report.getContent() + " [水印:" + watermark + "]";
+    }
+}
+
+// 使用
+Report report = new BasicReport();
+report = new HeaderDecorator(report, "月度销售报表");
+report = new FooterDecorator(report, "--- 生成时间: 2024-01 ---");
+report = new WatermarkDecorator(report, "机密");
+System.out.println(report.getContent());</code></pre></div>
+        </div>
+      </div>
+
+      <div id="spring" class="tab-content">
+        <p><strong class="highlight">Spring中的装饰器模式</strong></p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// Spring中的装饰器模式应用
+
+// 1. HttpServletRequestWrapper
+// 可以对Request进行增强，如：
+// - 修改参数
+// - 缓存请求体（可重复读取）
+// - 添加自定义头
+
+public class CachedBodyHttpServletRequest extends HttpServletRequestWrapper {
+    private final byte[] cachedBody;
+
+    public CachedBodyHttpServletRequest(HttpServletRequest request) throws IOException {
+        super(request);
+        this.cachedBody = StreamUtils.copyToByteArray(request.getInputStream());
+    }
+
+    @Override
+    public ServletInputStream getInputStream() {
+        return new CachedBodyServletInputStream(cachedBody);
+    }
+
+    @Override
+    public BufferedReader getReader() {
+        return new BufferedReader(new InputStreamReader(
+            new ByteArrayInputStream(cachedBody)));
+    }
+}
+
+// 2. HttpServletResponseWrapper
+// 可以对Response进行增强，如：
+// - 缓存响应内容
+// - 压缩响应
+// - 添加响应头
+
+// 3. BeanWrapper
+// 对Bean进行包装，提供属性访问能力
+BeanWrapper wrapper = PropertyAccessorFactory.forBeanPropertyAccess(myBean);
+wrapper.setPropertyValue("name", "John");
+Object value = wrapper.getPropertyValue("name");</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 优缺点分析 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">优缺点分析</h2></div>
+    <div class="section-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div>
+          <h4 style="color: var(--green); margin-bottom: 12px;">优点</h4>
+          <ul>
+            <li><strong>开闭原则：</strong>无需修改现有代码即可扩展功能</li>
+            <li><strong>灵活组合：</strong>可以任意组合多个装饰器，实现不同功能</li>
+            <li><strong>避免类爆炸：</strong>比多重继承更灵活，不会产生大量子类</li>
+            <li><strong>单一职责：</strong>每个装饰器只负责一项功能</li>
+            <li><strong>运行时扩展：</strong>可以在运行时动态添加或移除功能</li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="color: var(--red); margin-bottom: 12px;">缺点</h4>
+          <ul>
+            <li><strong>增加复杂度：</strong>引入大量小类，增加代码复杂度</li>
+            <li><strong>装饰顺序敏感：</strong>装饰器的顺序可能影响最终结果</li>
+            <li><strong>调试困难：</strong>多层装饰后，调试和追踪较为困难</li>
+            <li><strong>边缘情况处理：</strong>需要确保装饰器不依赖于组件的特殊实现</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 与其他模式的关系 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔗</div><h2 class="section-title">与其他模式的关系</h2></div>
+    <div class="section-body">
+      <table>
+        <tr>
+          <th>相关模式</th>
+          <th>关系说明</th>
+        </tr>
+        <tr>
+          <td><strong class="highlight">代理模式</strong></td>
+          <td>装饰器用于增强功能（添加新职责），代理用于控制访问（不增加新功能）</td>
+        </tr>
+        <tr>
+          <td><strong class="highlight">适配器模式</strong></td>
+          <td>适配器改变接口，装饰器不改变接口只增强功能</td>
+        </tr>
+        <tr>
+          <td><strong class="highlight">组合模式</strong></td>
+          <td>装饰器可以视为只有一个组件的组合特例</td>
+        </tr>
+        <tr>
+          <td><strong class="highlight">策略模式</strong></td>
+          <td>装饰器改变对象的外壳，策略模式改变对象的内部实现</td>
+        </tr>
+        <tr>
+          <td><strong class="highlight">工厂方法</strong></td>
+          <td>装饰器可以配合工厂方法创建装饰后的对象</td>
+        </tr>
+      </table>
+      <p style="margin-top: 16px;"><strong class="highlight">装饰器 vs 代理模式：</strong>两者结构相似，但意图不同。装饰器的目的是增强功能，客户端明确知道使用了装饰器；代理的目的是控制访问，对客户端透明。</p>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

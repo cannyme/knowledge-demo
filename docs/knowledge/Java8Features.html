@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 8+ 新特性详解 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .section-body table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  .section-body th, .section-body td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  .section-body th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  .section-body tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .highlight-box { background: rgba(78, 205, 196, 0.1); border-left: 3px solid var(--cyan); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .tip-box { background: rgba(240, 180, 41, 0.1); border-left: 3px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Java基础</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">Java 8+ 新特性详解</h1>
+    <p class="hero-desc">Lambda表达式、Stream API、Optional、CompletableFuture等Java 8+核心特性的全面解析与实战示例</p>
+  </header>
+
+  <!-- Lambda表达式 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">λ</div><h2 class="section-title">Lambda表达式</h2></div>
+    <div class="section-body">
+      <p>Lambda表达式是Java 8引入的函数式编程特性，允许将函数作为参数传递，简化匿名内部类的写法。</p>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">语法格式</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 基本语法: (参数) -> { 方法体 }
+
+// 1. 无参数无返回值
+Runnable r1 = () -> System.out.println("Hello Lambda");
+
+// 2. 单参数（可省略括号）
+Consumer&lt;String&gt; printer = s -> System.out.println(s);
+
+// 3. 多参数
+Comparator&lt;Integer&gt; c1 = (a, b) -> a - b;
+
+// 4. 多语句（需要花括号和return）
+Comparator&lt;Integer&gt; c2 = (a, b) -> {
+    System.out.println("比较：" + a + " 和 " + b);
+    return a - b;
+};</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">函数式接口</h3>
+      <table>
+        <tr><th>接口</th><th>方法</th><th>用途</th></tr>
+        <tr><td>Function&lt;T,R&gt;</td><td>R apply(T t)</td><td>有输入有输出（转换）</td></tr>
+        <tr><td>Consumer&lt;T&gt;</td><td>void accept(T t)</td><td>有输入无输出（消费）</td></tr>
+        <tr><td>Supplier&lt;T&gt;</td><td>T get()</td><td>无输入有输出（供给）</td></tr>
+        <tr><td>Predicate&lt;T&gt;</td><td>boolean test(T t)</td><td>判断条件</td></tr>
+        <tr><td>UnaryOperator&lt;T&gt;</td><td>T apply(T t)</td><td>一元运算</td></tr>
+        <tr><td>BinaryOperator&lt;T&gt;</td><td>T apply(T t1, T t2)</td><td>二元运算</td></tr>
+      </table>
+
+      <div class="tip-box">
+        <strong>💡 简化规则：</strong>参数类型可省略（类型推断）、单参数可省略括号、单语句可省略花括号和return
+      </div>
+    </div>
+  </section>
+
+  <!-- 方法引用 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">::</div><h2 class="section-title">方法引用</h2></div>
+    <div class="section-body">
+      <p>方法引用是Lambda的简化写法，当Lambda体中只调用一个已存在的方法时使用。</p>
+
+      <table>
+        <tr><th>类型</th><th>语法</th><th>示例</th></tr>
+        <tr><td>静态方法引用</td><td>ClassName::staticMethod</td><td>Math::abs</td></tr>
+        <tr><td>实例方法引用</td><td>instance::method</td><td>"hello"::toUpperCase</td></tr>
+        <tr><td>特定类型实例方法引用</td><td>ClassName::method</td><td>String::length</td></tr>
+        <tr><td>构造方法引用</td><td>ClassName::new</td><td>ArrayList::new</td></tr>
+        <tr><td>数组构造方法引用</td><td>TypeName[]::new</td><td>int[]::new</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>List&lt;String&gt; list = Arrays.asList("a", "b", "c");
+
+// 1. 静态方法引用
+list.forEach(System.out::println);
+
+// 2. 特定类型实例方法引用
+List&lt;String&gt; upper = list.stream()
+    .map(String::toUpperCase)
+    .collect(Collectors.toList());
+
+// 3. 构造方法引用
+Supplier&lt;List&lt;String&gt;&gt; supplier = ArrayList::new;
+Function&lt;Integer, int[]&gt; arrayCreator = int[]::new;</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stream API -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🌊</div><h2 class="section-title">Stream API</h2></div>
+    <div class="section-body">
+      <p>Stream API提供函数式编程方式处理集合，支持链式操作和并行计算。</p>
+
+      <div class="mermaid">
+sequenceDiagram
+    participant Source as 数据源
+    participant Intermediate as 中间操作
+    participant Terminal as 终止操作
+    participant Result as 结果
+    Source->>Intermediate: filter/map/sorted
+    Intermediate->>Intermediate: 链式处理（惰性）
+    Intermediate->>Terminal: collect/forEach/reduce
+    Terminal->>Result: 触发执行，返回结果
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">中间操作（返回Stream）</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>List&lt;Integer&gt; numbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+// filter: 过滤
+List&lt;Integer&gt; evens = numbers.stream()
+    .filter(n -> n % 2 == 0)
+    .collect(Collectors.toList()); // [2, 4, 6, 8, 10]
+
+// map: 映射
+List&lt;Integer&gt; squares = numbers.stream()
+    .map(n -> n * n)
+    .collect(Collectors.toList()); // [1, 4, 9, 16...]
+
+// flatMap: 扁平化
+List&lt;List&lt;Integer&gt;&gt; nested = Arrays.asList(
+    Arrays.asList(1, 2), Arrays.asList(3, 4)
+);
+List&lt;Integer&gt; flat = nested.stream()
+    .flatMap(Collection::stream)
+    .collect(Collectors.toList()); // [1, 2, 3, 4]
+
+// sorted: 排序
+distinct: 去重
+// limit/skip: 分页
+numbers.stream()
+    .skip(5)   // 跳过前5个
+    .limit(3)  // 取3个
+    .collect(Collectors.toList()); // [6, 7, 8]</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">终止操作</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// collect: 收集到集合
+List&lt;String&gt; list = names.stream().collect(Collectors.toList());
+Set&lt;String&gt; set = names.stream().collect(Collectors.toSet());
+Map&lt;String, Integer&gt; map = names.stream()
+    .collect(Collectors.toMap(name -> name, String::length));
+
+// 分组
+Map&lt;Integer, List&lt;String&gt;&gt; grouped = names.stream()
+    .collect(Collectors.groupingBy(String::length));
+
+// 分区（按条件分两组）
+Map&lt;Boolean, List&lt;String&gt;&gt; partitioned = names.stream()
+    .collect(Collectors.partitioningBy(s -> s.length() > 4));
+
+// reduce: 归约
+int sum = numbers.stream().reduce(0, Integer::sum);
+Optional&lt;Integer&gt; max = numbers.stream().reduce(Integer::max);
+
+// 统计
+IntSummaryStatistics stats = names.stream()
+    .collect(Collectors.summarizingInt(String::length));</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">并行流</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 串行流
+long serialSum = numbers.stream()
+    .mapToLong(n -> n * n)
+    .sum();
+
+// 并行流（自动利用多核）
+long parallelSum = numbers.parallelStream()
+    .mapToLong(n -> n * n)
+    .sum();
+
+// 或
+long parallelSum2 = numbers.stream()
+    .parallel()
+    .mapToLong(n -> n * n)
+    .sum();</code></pre></div>
+      </div>
+
+      <div class="highlight-box">
+        <strong>⚠️ 并行流适用场景：</strong>数据量大、操作无状态、操作无依赖关系。线程数 = CPU核心数 - 1
+      </div>
+    </div>
+  </section>
+
+  <!-- Optional -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔒</div><h2 class="section-title">Optional类</h2></div>
+    <div class="section-body">
+      <p>Optional是用于避免NullPointerException的容器类，强制开发者处理空值情况。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 创建Optional
+Optional&lt;String&gt; opt1 = Optional.of("Hello");           // 非null，null会抛异常
+Optional&lt;String&gt; opt2 = Optional.ofNullable(getName()); // 可为null
+Optional&lt;String&gt; opt3 = Optional.empty();               // 空Optional
+
+// 获取值（避免使用get()，可能抛异常）
+String value1 = opt1.orElse("默认值");                  // 提供默认值
+String value2 = opt1.orElseGet(() -> computeDefault()); // 懒加载默认值
+String value3 = opt1.orElseThrow(RuntimeException::new); // 为空则抛异常
+
+// 判断
+if (opt1.isPresent()) { /* 处理 */ }
+opt1.ifPresent(System.out::println);  // 有值才执行
+
+// 转换和过滤
+Optional&lt;Integer&gt; length = opt1.map(String::length);
+Optional&lt;String&gt; filtered = opt1.filter(s -> s.length() > 3);
+Optional&lt;String&gt; result = opt1.flatMap(s -> Optional.of(s + "!"));</code></pre></div>
+      </div>
+
+      <div class="tip-box">
+        <strong>💡 链式调用示例：</strong>传统多层if判断可用Optional链式调用优雅处理
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 传统写法
+String name = getUserName(1L);
+if (name != null) {
+    String upper = name.toUpperCase();
+    if (upper != null) {
+        System.out.println(upper);
+    }
+}
+
+// Optional写法
+Optional.ofNullable(getUserName(1L))
+    .map(String::toUpperCase)
+    .ifPresent(System.out::println);</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 接口默认方法和静态方法 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔌</div><h2 class="section-title">接口默认方法和静态方法</h2></div>
+    <div class="section-body">
+      <p>Java 8允许接口定义默认方法（有实现）和静态方法，解决接口的扩展问题。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>interface MyInterface {
+    // 抽象方法
+    void abstractMethod();
+
+    // 默认方法（有默认实现）
+    default void defaultMethod() {
+        System.out.println("默认实现");
+    }
+
+    // 静态方法（属于接口）
+    static void staticMethod() {
+        System.out.println("静态方法");
+    }
+}
+
+// 实现类可以选择重写默认方法
+class MyClass implements MyInterface {
+    @Override
+    public void abstractMethod() {
+        // 必须实现
+    }
+
+    // defaultMethod() 可选择重写
+}
+
+// 调用
+MyInterface.staticMethod(); // 直接调用静态方法</code></pre></div>
+      </div>
+
+      <div class="highlight-box">
+        <strong>解决冲突：</strong>当类实现多个接口且存在相同默认方法时，必须重写该方法
+      </div>
+    </div>
+  </section>
+
+  <!-- 新日期时间API -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📅</div><h2 class="section-title">新日期时间API（Java 8）</h2></div>
+    <div class="section-body">
+      <p>新的java.time包替代了旧的Date和Calendar，设计更合理、线程安全、不可变。</p>
+
+      <table>
+        <tr><th>类</th><th>说明</th><th>示例</th></tr>
+        <tr><td>LocalDate</td><td>日期（年月日）</td><td>2024-01-15</td></tr>
+        <tr><td>LocalTime</td><td>时间（时分秒）</td><td>14:30:00</td></tr>
+        <tr><td>LocalDateTime</td><td>日期时间</td><td>2024-01-15T14:30:00</td></tr>
+        <tr><td>Instant</td><td>时间戳</td><td>1970-01-01T00:00:00Z</td></tr>
+        <tr><td>Duration</td><td>时间段（秒、纳秒）</td><td>PT2H30M</td></tr>
+        <tr><td>Period</td><td>日期段（年月日）</td><td>P1Y2M3D</td></tr>
+        <tr><td>DateTimeFormatter</td><td>格式化</td><td>yyyy-MM-dd</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 获取当前日期时间
+LocalDate today = LocalDate.now();
+LocalTime now = LocalTime.now();
+LocalDateTime dateTime = LocalDateTime.now();
+
+// 创建指定日期
+LocalDate date = LocalDate.of(2024, 1, 15);
+LocalDate date2 = LocalDate.parse("2024-01-15");
+
+// 日期运算
+LocalDate tomorrow = today.plusDays(1);
+LocalDate lastMonth = today.minusMonths(1);
+
+// 格式化
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+String str = dateTime.format(formatter);
+LocalDateTime parsed = LocalDateTime.parse("2024-01-15 14:30:00", formatter);
+
+// 时间戳转换
+Instant instant = Instant.now();
+long millis = instant.toEpochMilli();</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CompletableFuture -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">CompletableFuture异步编程</h2></div>
+    <div class="section-body">
+      <p>CompletableFuture是Java 8引入的异步编程工具，支持链式调用和组合多个异步任务。</p>
+
+      <div class="mermaid">
+flowchart LR
+    A[supplyAsync] --> B[thenApply]
+    B --> C[thenAccept]
+    B --> D[thenCombine]
+    B --> E[thenCompose]
+    D --> F[allOf/anyOf]
+    E --> F
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 创建异步任务
+CompletableFuture&lt;String&gt; future = CompletableFuture.supplyAsync(() -> {
+    sleep(1000);
+    return "Hello";
+});
+
+// 获取结果
+String result1 = future.get();              // 阻塞等待
+String result2 = future.get(2, TimeUnit.SECONDS);  // 带超时
+String result3 = future.join();             // 阻塞，抛Unchecked异常
+String result4 = future.getNow("默认值");   // 立即返回
+
+// 链式调用
+CompletableFuture&lt;String&gt; chain = CompletableFuture
+    .supplyAsync(() -> "Hello")
+    .thenApply(s -> s + " World")           // 同步转换
+    .thenApplyAsync(String::toUpperCase);   // 异步转换</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">组合多个Future</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>CompletableFuture&lt;String&gt; f1 = CompletableFuture.supplyAsync(() -> "Hello");
+CompletableFuture&lt;String&gt; f2 = CompletableFuture.supplyAsync(() -> "World");
+CompletableFuture&lt;String&gt; f3 = CompletableFuture.supplyAsync(() -> "!");
+
+// thenCombine: 两个都完成后合并
+CompletableFuture&lt;String&gt; combined = f1.thenCombine(f2, (a, b) -> a + " " + b);
+
+// thenCompose: 依赖链（第一个结果作为第二个参数）
+CompletableFuture&lt;String&gt; composed = f1.thenCompose(s ->
+    CompletableFuture.supplyAsync(() -> s + " Composed"));
+
+// allOf: 全部完成
+CompletableFuture&lt;Void&gt; all = CompletableFuture.allOf(f1, f2, f3);
+
+// anyOf: 任一完成
+CompletableFuture&lt;Object&gt; any = CompletableFuture.anyOf(f1, f2, f3);</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">异常处理</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>CompletableFuture&lt;String&gt; result = CompletableFuture
+    .supplyAsync(() -> {
+        if (true) throw new RuntimeException("异常");
+        return "OK";
+    })
+    .exceptionally(ex -> "异常恢复: " + ex.getMessage())  // 异常时返回默认值
+    .handle((res, ex) -> {
+        if (ex != null) return "处理异常";
+        return res;
+    });</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 其他新特性 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">✨</div><h2 class="section-title">其他新特性</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">重复注解（Java 8）</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 定义可重复注解
+@Repeatable(Schedules.class)
+public @interface Schedule {
+    String day();
+}
+
+// 使用重复注解
+@Schedule(day = "Monday")
+@Schedule(day = "Tuesday")
+public void doWork() {}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">类型推断增强（Java 8+）</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// Java 8: 泛型类型推断
+List&lt;String&gt; list = new ArrayList&lt;&gt;();  // 钻石运算符
+
+// Java 10+: var局部变量类型推断（不能用于字段、参数、返回值）
+var numbers = new ArrayList&lt;Integer&gt;();  // 推断为ArrayList&lt;Integer&gt;
+var stream = list.stream();              // 推断为Stream&lt;String&gt;</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">Record类（Java 14预览，Java 16正式）</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// Java 16+: 简洁的数据类
+public record Person(String name, int age) {
+    // 自动获得：构造器、getter（name(), age()）、equals、hashCode、toString
+
+    // 可添加自定义方法
+    public boolean isAdult() {
+        return age >= 18;
+    }
+
+    // 紧凑构造器（验证）
+    public Person {
+        if (age < 0) {
+            throw new IllegalArgumentException("年龄不能为负");
+        }
+    }
+}
+
+// 使用
+Person p = new Person("张三", 25);
+System.out.println(p.name());  // 张三
+System.out.println(p.isAdult()); // true</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">Sealed Classes（Java 17）</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 密封类：限制继承层次
+public sealed class Shape
+    permits Circle, Rectangle, Square {
+    // 只有指定的类可以继承
+}
+
+public final class Circle extends Shape { }
+public final class Rectangle extends Shape { }
+public non-sealed class Square extends Shape { }</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

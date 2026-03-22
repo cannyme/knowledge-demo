@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kafka核心概念与使用 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+  th, td { padding: 12px 16px; border: 1px solid var(--border-card); text-align: left; }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+  .tip { background: rgba(78, 205, 196, 0.1); border-left: 4px solid var(--cyan); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .warning { background: rgba(240, 180, 41, 0.1); border-left: 4px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .highlight { background: rgba(240, 180, 41, 0.15); border: 1px solid rgba(240, 180, 41, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  h3 { color: var(--amber); margin: 24px 0 16px; font-size: 18px; }
+  h4 { color: var(--cyan); margin: 16px 0 8px; font-size: 15px; }
+  .subsection-title { font-weight: 700; font-size: 16px; color: var(--cyan); margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-card); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>消息队列</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">Kafka核心概念与使用</h1>
+    <p class="hero-desc">Apache Kafka是一个分布式流处理平台，具有高性能、高吞吐、可持久化、可横向扩展等特点。广泛应用于日志收集、流处理、事件溯源等大数据场景，单机吞吐量可达100万/秒</p>
+  </header>
+
+  <!-- 核心概念 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">核心概念</h2></div>
+    <div class="section-body">
+      <div class="mermaid">flowchart TD
+    Producer[Producer<br/>生产者] -->|发送消息| Topic[Topic<br/>消息主题]
+    Topic -->|分区| P0[Partition 0]
+    Topic -->|分区| P1[Partition 1]
+    Topic -->|分区| P2[Partition 2]
+    P0 -->|消费| CG[Consumer Group<br/>消费者组]
+    P1 --> CG
+    P2 --> CG
+    P0 -->|副本| R0[Replica]
+    P1 -->|副本| R1[Replica]
+    P2 -->|副本| R2[Replica]
+    Broker[Broker<br/>消息服务器] --> Topic
+    ZooKeeper[ZooKeeper<br/>集群协调] --> Broker
+    style Producer fill:#f0b429
+    style CG fill:#4ecdc4
+    style Broker fill:#7ee787</div>
+
+      <table>
+        <tr><th>概念</th><th>说明</th><th>特点</th></tr>
+        <tr><td><strong>Producer</strong></td><td>消息生产者</td><td>向Topic发送消息，支持同步/异步发送</td></tr>
+        <tr><td><strong>Consumer</strong></td><td>消息消费者</td><td>从Topic订阅并消费消息</td></tr>
+        <tr><td><strong>Broker</strong></td><td>消息服务器</td><td>Kafka服务节点，负责存储和转发消息</td></tr>
+        <tr><td><strong>Topic</strong></td><td>消息主题</td><td>消息的逻辑分类，生产者和消费者通过Topic交互</td></tr>
+        <tr><td><strong>Partition</strong></td><td>分区</td><td>Topic的物理分片，提高并行处理能力</td></tr>
+        <tr><td><strong>Consumer Group</strong></td><td>消费者组</td><td>实现负载均衡，同组消费者分担消费</td></tr>
+        <tr><td><strong>Offset</strong></td><td>消费位移</td><td>记录消费者在分区中的消费位置</td></tr>
+      </table>
+
+      <h3>Topic与Partition关系</h3>
+      <div class="mermaid">flowchart LR
+    subgraph "Topic: orders"
+    P0["Partition 0<br/>Offset: 0,1,2,3..."]
+    P1["Partition 1<br/>Offset: 0,1,2,3..."]
+    P2["Partition 2<br/>Offset: 0,1,2,3..."]
+    end
+    style P0 fill:#f0b429
+    style P1 fill:#4ecdc4
+    style P2 fill:#7ee787</div>
+
+      <div class="tip">
+        <strong>💡 分区的作用：</strong>1) 提高并行度（多分区可并行消费）2) 提高吞吐量 3) 分区内的消息有序。Topic是逻辑概念，Partition是物理概念。
+      </div>
+    </div>
+  </section>
+
+  <!-- 架构特点 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">架构特点</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>特性</th><th>说明</th><th>优势</th></tr>
+        <tr><td><strong>高吞吐</strong></td><td>顺序读写磁盘，批量处理</td><td>单机可达100万TPS</td></tr>
+        <tr><td><strong>持久化</strong></td><td>消息持久化到磁盘，支持多副本</td><td>数据可靠性高</td></tr>
+        <tr><td><strong>横向扩展</strong></td><td>通过增加分区数扩容</td><td>水平扩展能力强</td></tr>
+        <tr><td><strong>高可用</strong></td><td>多副本机制，自动故障转移</td><td>服务连续性保障</td></tr>
+        <tr><td><strong>流处理</strong></td><td>内置Streams API</td><td>支持实时数据处理</td></tr>
+      </table>
+
+      <h3>Kafka架构图</h3>
+      <div class="mermaid">flowchart TD
+    subgraph "Kafka Cluster"
+    B1[Broker 1<br/>Leader: P0,P2] --> B2[Broker 2<br/>Follower: P0,P1]
+    B2 --> B3[Broker 3<br/>Leader: P1<br/>Follower: P2]
+    end
+    P[Producer] --> B1
+    P --> B3
+    B1 --> C[Consumer Group]
+    B3 --> C
+    Z[ZooKeeper] -.->|协调| B1
+    Z -.-> B2
+    Z -.-> B3
+    style B1 fill:#f0b429
+    style B3 fill:#4ecdc4</div>
+    </div>
+  </section>
+
+  <!-- 生产者配置 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📤</div><h2 class="section-title">生产者配置</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="ack-config">ACK机制</button>
+        <button class="tab" data-tab="batch-config">批量发送</button>
+        <button class="tab" data-tab="producer-code">代码示例</button>
+      </div>
+
+      <div id="ack-config" class="tab-content active">
+        <h4>ACK机制 - 消息可靠性配置</h4>
+        <table>
+          <tr><th>acks配置</th><th>行为</th><th>可靠性</th><th>性能</th></tr>
+          <tr><td>acks=0</td><td>不等待确认，发送即认为成功</td><td>最低（可能丢失）</td><td>最高</td></tr>
+          <tr><td>acks=1</td><td>等待Leader确认（默认）</td><td>中等（Leader宕机可能丢失）</td><td>中等</td></tr>
+          <tr><td>acks=all</td><td>等待所有ISR确认</td><td>最高</td><td>最低</td></tr>
+        </table>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// ACK配置
+props.put(ProducerConfig.ACKS_CONFIG, "all");           // 最高可靠性
+props.put(ProducerConfig.RETRIES_CONFIG, 3);            // 发送失败重试次数
+props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 1); // 保证顺序</code></pre></div>
+        </div>
+      </div>
+
+      <div id="batch-config" class="tab-content">
+        <h4>批量发送与压缩</h4>
+        <table>
+          <tr><th>配置项</th><th>说明</th><th>建议值</th></tr>
+          <tr><td>batch.size</td><td>批量发送大小（字节）</td><td>16384（16KB）</td></tr>
+          <tr><td>linger.ms</td><td>发送等待时间（毫秒）</td><td>5-100</td></tr>
+          <tr><td>buffer.memory</td><td>缓冲区大小（字节）</td><td>33554432（32MB）</td></tr>
+          <tr><td>compression.type</td><td>压缩类型</td><td>lz4/snappy/gzip</td></tr>
+        </table>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 批量发送配置
+props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);      // 16KB批量
+props.put(ProducerConfig.LINGER_MS_CONFIG, 5);           // 等待5ms
+props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432); // 32MB缓冲区
+props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "lz4"); // 压缩算法</code></pre></div>
+        </div>
+      </div>
+
+      <div id="producer-code" class="tab-content">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>@Configuration
+public class KafkaProducerConfig {
+    @Bean
+    public ProducerFactory&lt;String, String&gt; producerFactory() {
+        Map&lt;String, Object&gt; config = new HashMap&lt;&gt;();
+        config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        config.put(ProducerConfig.ACKS_CONFIG, "all");
+        config.put(ProducerConfig.RETRIES_CONFIG, 3);
+        config.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
+        config.put(ProducerConfig.LINGER_MS_CONFIG, 5);
+        config.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
+        return new DefaultKafkaProducerFactory&lt;&gt;(config);
+    }
+
+    @Bean
+    public KafkaTemplate&lt;String, String&gt; kafkaTemplate() {
+        return new KafkaTemplate&lt;&gt;(producerFactory());
+    }
+}</code></pre></div>
+        </div>
+
+        <h4>发送消息示例</h4>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>@Service
+public class OrderProducer {
+    @Autowired
+    private KafkaTemplate&lt;String, String&gt; kafkaTemplate;
+
+    // 同步发送
+    public void sendSync(String topic, String key, String message) {
+        try {
+            SendResult&lt;String, String&gt; result = kafkaTemplate.send(topic, key, message).get();
+            RecordMetadata metadata = result.getRecordMetadata();
+            System.out.println("发送成功: " + metadata.partition() + "-" + metadata.offset());
+        } catch (Exception e) {
+            System.err.println("发送失败: " + e.getMessage());
+        }
+    }
+
+    // 异步发送
+    public void sendAsync(String topic, String message) {
+        CompletableFuture&lt;SendResult&lt;String, String&gt;&gt; future = kafkaTemplate.send(topic, message);
+        future.whenComplete((result, ex) -> {
+            if (ex == null) {
+                System.out.println("发送成功");
+            } else {
+                System.err.println("发送失败: " + ex.getMessage());
+            }
+        });
+    }
+
+    // 发送到指定分区
+    public void sendToPartition(String topic, int partition, String key, String message) {
+        kafkaTemplate.send(topic, partition, key, message);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 消费者组 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">👥</div><h2 class="section-title">消费者组与分区分配</h2></div>
+    <div class="section-body">
+      <h3>消费者组工作原理</h3>
+      <div class="mermaid">flowchart TD
+    subgraph "Consumer Group A"
+    C1[Consumer 1] --> P0[Partition 0]
+    C2[Consumer 2] --> P1[Partition 1]
+    C3[Consumer 3] --> P2[Partition 2]
+    end
+    subgraph "Consumer Group B"
+    C4[Consumer 4] --> P0
+    C4 --> P1
+    C4 --> P2
+    end
+    style C1 fill:#f0b429
+    style C2 fill:#f0b429
+    style C3 fill:#f0b429
+    style C4 fill:#4ecdc4</div>
+
+      <div class="tip">
+        <strong>💡 消费者组规则：</strong>1) 一个分区只能被同组一个消费者消费 2) 消费者数 > 分区数时，有消费者空闲 3) 消费者故障时触发Rebalance（再均衡）
+      </div>
+
+      <h3>Rebalance再均衡</h3>
+      <p>当消费者组成员变化时，Kafka会重新分配分区给消费者。</p>
+      <table>
+        <tr><th>触发条件</th><th>影响</th><th>优化方案</th></tr>
+        <tr><td>消费者加入/离开组</td><td>消费暂停</td><td>合理设置session.timeout.ms</td></tr>
+        <tr><td>消费者超时</td><td>Offset可能丢失</td><td>合理设置heartbeat.interval.ms</td></tr>
+        <tr><td>Topic分区数变化</td><td>重复消费</td><td>使用静态成员（group.instance.id）</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Configuration
+@EnableKafka
+public class KafkaConsumerConfig {
+    @Bean
+    public ConsumerFactory&lt;String, String&gt; consumerFactory() {
+        Map&lt;String, Object&gt; config = new HashMap&lt;&gt;();
+        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        config.put(ConsumerConfig.GROUP_ID_CONFIG, "order-group");
+        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        config.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+        // 避免频繁Rebalance
+        config.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 10000);
+        config.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 3000);
+        return new DefaultKafkaConsumerFactory&lt;&gt;(config);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory&lt;String, String&gt; kafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory&lt;String, String&gt; factory =
+            new ConcurrentKafkaListenerContainerFactory&lt;&gt;();
+        factory.setConsumerFactory(consumerFactory());
+        factory.setConcurrency(3);
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
+        return factory;
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Offset管理 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📍</div><h2 class="section-title">Offset管理</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="auto-commit">自动提交</button>
+        <button class="tab" data-tab="manual-commit">手动提交</button>
+        <button class="tab" data-tab="offset-strategy">提交策略对比</button>
+      </div>
+
+      <div id="auto-commit" class="tab-content active">
+        <h4>自动提交（不推荐生产环境使用）</h4>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 自动提交配置
+props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 5000); // 每5秒提交
+
+@KafkaListener(topics = "orders", groupId = "order-group")
+public void consume(String message) {
+    // 处理消息
+    processMessage(message);
+    // Offset自动提交，可能在处理失败前已提交，导致消息丢失
+}</code></pre></div>
+        </div>
+        <div class="warning">
+          <strong>⚠️ 风险：</strong>自动提交可能导致消息丢失。如果消费处理失败但Offset已自动提交，消息将不会被重新消费。
+        </div>
+      </div>
+
+      <div id="manual-commit" class="tab-content">
+        <h4>手动提交（推荐）</h4>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 手动提交配置
+props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+
+// 手动同步提交
+@KafkaListener(topics = "orders", groupId = "order-group")
+public void consumeWithSyncAck(ConsumerRecord&lt;String, String&gt; record, Acknowledgment ack) {
+    try {
+        processMessage(record.value());
+        ack.acknowledge(); // 业务处理成功后提交
+    } catch (Exception e) {
+        // 不提交，消息会重新投递
+        log.error("处理失败", e);
+    }
+}
+
+// 批量消费手动提交
+@KafkaListener(topics = "orders", groupId = "order-group",
+               containerFactory = "batchFactory")
+public void consumeBatch(List&lt;ConsumerRecord&lt;String, String&gt;&gt; records, Acknowledgment ack) {
+    try {
+        for (ConsumerRecord&lt;String, String&gt; record : records) {
+            processMessage(record.value());
+        }
+        ack.acknowledge(); // 批量提交
+    } catch (Exception e) {
+        log.error("批量处理失败", e);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="offset-strategy" class="tab-content">
+        <table>
+          <tr><th>提交方式</th><th>优点</th><th>缺点</th><th>适用场景</th></tr>
+          <tr><td>自动提交</td><td>实现简单</td><td>可能丢失消息</td><td>对丢失不敏感的场景</td></tr>
+          <tr><td>手动同步提交</td><td>不会丢失消息</td><td>阻塞，影响吞吐</td><td>一般业务场景</td></tr>
+          <tr><td>手动异步提交</td><td>性能好</td><td>可能重复消费</td><td>高性能要求场景</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 分区策略 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">分区策略</h2></div>
+    <div class="section-body">
+      <p>生产者发送消息时，需要决定消息发送到哪个分区。Kafka提供了多种分区策略。</p>
+
+      <table>
+        <tr><th>策略</th><th>实现方式</th><th>特点</th><th>适用场景</th></tr>
+        <tr><td><strong>RoundRobin</strong><br/>轮询</td><td>依次发送到每个分区</td><td>负载均衡，但可能打乱消息顺序</td><td>无顺序要求的场景</td></tr>
+        <tr><td><strong>Range</strong><br/>范围</td><td>按key的范围分配</td><td>相同前缀的key进入同一分区</td><td>需要局部有序</td></tr>
+        <tr><td><strong>Sticky</strong><br/>粘性</td><td>尽可能保持上次分配</td><td>减少Rebalance影响</td><td>消费者频繁变化的场景</td></tr>
+        <tr><td><strong>自定义</strong></td><td>实现Partitioner接口</td><td>完全自定义逻辑</td><td>特殊业务需求</td></tr>
+      </table>
+
+      <h4>分区策略配置</h4>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 指定分区发送
+kafkaTemplate.send(topic, partition, key, message);
+
+// 使用key的hash选择分区（默认）
+kafkaTemplate.send(topic, key, message);
+
+// 自定义分区器
+props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, CustomPartitioner.class);
+
+// 自定义分区器实现
+public class CustomPartitioner implements Partitioner {
+    @Override
+    public int partition(String topic, Object key, byte[] keyBytes,
+                         Object value, byte[] valueBytes, Cluster cluster) {
+        List&lt;PartitionInfo&gt; partitions = cluster.partitionsForTopic(topic);
+        int numPartitions = partitions.size();
+        // 自定义分区逻辑：例如按用户ID分区
+        return Math.abs(key.hashCode()) % numPartitions;
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ISR机制 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">ISR机制（副本同步）</h2></div>
+    <div class="section-body">
+      <h3>ISR（In-Sync Replicas）同步副本集合</h3>
+      <div class="mermaid">flowchart LR
+    subgraph "Partition 0"
+    L[Leader<br/>Broker 1<br/>读写入口]
+    F1[Follower<br/>Broker 2<br/>同步数据]
+    F2[Follower<br/>Broker 3<br/>同步数据]
+    end
+    L -.->|同步复制| F1
+    L -.->|同步复制| F2
+    ISR["ISR = [Leader, Follower1, Follower2]"]
+    style L fill:#f0b429
+    style ISR fill:#4ecdc4</div>
+
+      <table>
+        <tr><th>概念</th><th>说明</th></tr>
+        <tr><td><strong>Leader</strong></td><td>主副本，负责读写操作</td></tr>
+        <tr><td><strong>Follower</strong></td><td>从副本，从Leader同步数据</td></tr>
+        <tr><td><strong>ISR</strong></td><td>与Leader保持同步的副本集合</td></tr>
+        <tr><td><strong>AR</strong></td><td>所有副本（Assigned Replicas）</td></tr>
+        <tr><td><strong>OSR</strong></td><td>落后副本（Out-of-Sync Replicas）</td></tr>
+      </table>
+
+      <h4>副本同步流程</h4>
+      <div class="mermaid">sequenceDiagram
+    Producer->>Leader: 发送消息
+    Leader->>Follower1: 复制请求
+    Leader->>Follower2: 复制请求
+    Follower1-->>Leader: 确认
+    Follower2-->>Leader: 确认
+    Leader-->>Producer: 确认（acks=all）</div>
+
+      <h4>关键配置参数</h4>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Properties</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># Broker配置
+replica.lag.time.max.ms=10000    # Follower最大落后时间，超过则移出ISR
+min.insync.replicas=2            # 最小ISR副本数
+
+# Topic配置
+replication.factor=3             # 副本因子
+
+# Producer配置
+acks=all                         # 等待所有ISR确认
+retries=3                        # 发送失败重试次数</code></pre></div>
+      </div>
+
+      <div class="tip">
+        <strong>💡 ISR机制保证：</strong>只有当消息被ISR中的所有副本确认后，才认为消息已提交。即使Leader宕机，也能从ISR中选举新Leader，保证数据不丢失。
+      </div>
+    </div>
+  </section>
+
+  <!-- 对比表格 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">Kafka vs RocketMQ</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>特性</th><th>Kafka</th><th>RocketMQ</th></tr>
+        <tr><td><strong>定位</strong></td><td>日志/大数据/流处理</td><td>业务消息</td></tr>
+        <tr><td><strong>单机吞吐量</strong></td><td>100万级</td><td>10万级</td></tr>
+        <tr><td><strong>消息延迟</strong></td><td>毫秒级</td><td>毫秒级</td></tr>
+        <tr><td><strong>可用性</strong></td><td>分布式架构</td><td>主从架构</td></tr>
+        <tr><td><strong>消息可靠性</strong></td><td>可能丢失（acks=1默认）</td><td>高（同步刷盘）</td></tr>
+        <tr><td><strong>事务消息</strong></td><td>支持（有限）</td><td>支持</td></tr>
+        <tr><td><strong>延迟消息</strong></td><td>不支持</td><td>支持（18个固定级别）</td></tr>
+        <tr><td><strong>顺序消息</strong></td><td>分区内有序</td><td>队列内有序</td></tr>
+        <tr><td><strong>消息过滤</strong></td><td>不支持</td><td>支持（Tag、SQL）</td></tr>
+        <tr><td><strong>消息回溯</strong></td><td>支持（按Offset）</td><td>支持（按时间）</td></tr>
+        <tr><td><strong>消息堆积能力</strong></td><td>极强</td><td>较强</td></tr>
+        <tr><td><strong>依赖组件</strong></td><td>ZooKeeper（2.8+移除）</td><td>NameServer</td></tr>
+      </table>
+
+      <div class="tip">
+        <strong>💡 选型建议：</strong>
+        <ul style="margin-top: 8px;">
+          <li><strong>Kafka</strong>：日志收集、大数据流处理、高吞吐场景、实时数据处理</li>
+          <li><strong>RocketMQ</strong>：业务系统、事务消息、延迟消息、需要消息过滤的场景</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 最佳实践 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">✅</div><h2 class="section-title">最佳实践</h2></div>
+    <div class="section-body">
+      <h3>生产者最佳实践</h3>
+      <ul>
+        <li>合理设置acks（可靠性与性能平衡），业务场景建议acks=all</li>
+        <li>启用重试机制，设置适当的重试次数</li>
+        <li>使用批量发送提高吞吐，配合linger.ms使用</li>
+        <li>开启压缩（lz4/snappy）减少网络传输</li>
+        <li>异步发送提高性能，注意处理发送失败</li>
+      </ul>
+
+      <h3>消费者最佳实践</h3>
+      <ul>
+        <li>关闭自动提交（enable.auto.commit=false）</li>
+        <li>业务处理成功后再手动提交offset</li>
+        <li>实现消费幂等性，防止重复消费</li>
+        <li>合理设置消费者线程数，一般等于分区数</li>
+        <li>监控消费延迟（lag），及时处理积压</li>
+      </ul>
+
+      <h3>集群最佳实践</h3>
+      <ul>
+        <li>分区数 >= 消费者数，保证消费者不空闲</li>
+        <li>副本数 >= 3，保证高可用</li>
+        <li>合理设置min.insync.replicas</li>
+        <li>定期监控消费延迟和集群健康状态</li>
+        <li>为重要Topic设置数据保留策略</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) {
+  const container = btn.closest('.code-container');
+  const codeElement = container.querySelector('code');
+  const preElement = container.querySelector('pre');
+  const code = codeElement ? codeElement.textContent : (preElement ? preElement.textContent : '');
+  navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); });
+}
+</script>
+</body>
+</html>

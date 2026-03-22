@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API网关 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --text-dim: #4a5068; --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+    --amber-dim: rgba(240, 180, 41, 0.08); --cyan-dim: rgba(78, 205, 196, 0.15);
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --cyan: #0d7377; --text-primary: #1a1a2e;
+    --amber-dim: rgba(184, 134, 11, 0.06); --cyan-dim: rgba(13, 115, 119, 0.12);
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; line-height: 1.7; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--amber-dim), var(--cyan-dim)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul, .section-body ol { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .section-body h3 { font-weight: 600; font-size: 17px; color: var(--text-primary); margin: 24px 0 12px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body code { color: var(--text-primary); }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: var(--amber-dim); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .tip { background: var(--cyan-dim); border-left: 4px solid var(--cyan); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+  .warning { background: rgba(255, 123, 114, 0.1); border-left: 4px solid var(--red); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+  .highlight { color: var(--amber); font-weight: 600; }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring Cloud / API网关</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🌐 MICROSERVICE</div>
+    <h1 class="hero-title">API网关</h1>
+    <p class="hero-desc">API网关是微服务架构的单一入口，负责请求路由、负载均衡、认证鉴权、限流熔断等核心功能，统一处理所有客户端请求并转发到后端服务。</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">❓</div><h2 class="section-title">为什么需要API网关</h2></div>
+    <div class="section-body">
+      <p>在微服务架构中，服务数量众多且分散，客户端直接与各个服务通信会面临诸多问题：</p>
+      <ul>
+        <li><span class="highlight">统一入口：</span>客户端只需知道网关地址，无需了解众多后端服务的具体位置</li>
+        <li><span class="highlight">路由转发：</span>根据请求路径、Header等信息将请求转发到对应的服务</li>
+        <li><span class="highlight">认证鉴权：</span>统一处理身份验证和权限校验，避免每个服务重复实现</li>
+        <li><span class="highlight">限流熔断：</span>防止流量突增压垮后端服务，保障系统稳定性</li>
+        <li><span class="highlight">协议转换：</span>支持HTTP转RPC、WebSocket等协议适配</li>
+        <li><span class="highlight">日志监控：</span>统一记录请求日志、性能指标，便于问题排查</li>
+      </ul>
+      <div class="mermaid">
+graph TB
+    subgraph "客户端"
+        A[Web浏览器]
+        B[移动App]
+        C[第三方应用]
+    end
+
+    D[API网关<br/>统一入口]
+
+    subgraph "微服务集群"
+        E[用户服务]
+        F[订单服务]
+        G[商品服务]
+        H[支付服务]
+    end
+
+    A --> D
+    B --> D
+    C --> D
+    D --> E
+    D --> F
+    D --> G
+    D --> H
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚙️</div><h2 class="section-title">核心功能</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>功能</th><th>说明</th><th>典型场景</th></tr>
+        <tr><td>路由转发</td><td>根据URL路径、Header等将请求转发到对应服务</td><td>/api/user/** → 用户服务</td></tr>
+        <tr><td>负载均衡</td><td>从多个服务实例中选择合适的节点</td><td>轮询、权重、最少连接</td></tr>
+        <tr><td>鉴权认证</td><td>验证JWT Token、OAuth2.0等</td><td>统一登录校验</td></tr>
+        <tr><td>限流熔断</td><td>控制流量、熔断故障服务</td><td>防止雪崩效应</td></tr>
+        <tr><td>日志监控</td><td>记录请求日志、响应时间</td><td>链路追踪、性能分析</td></tr>
+        <tr><td>协议转换</td><td>HTTP转gRPC、WebSocket等</td><td>多端协议适配</td></tr>
+      </table>
+
+      <div class="mermaid">
+flowchart LR
+    A[客户端请求] --> B[API网关]
+    B --> C{认证鉴权}
+    C -->|未通过| D[返回401]
+    C -->|通过| E{限流检查}
+    E -->|超限| F[返回429]
+    E -->|通过| G{路由匹配}
+    G --> H[用户服务]
+    G --> I[订单服务]
+    G --> J[商品服务]
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🚀</div><h2 class="section-title">Spring Cloud Gateway</h2></div>
+    <div class="section-body">
+      <p>Spring Cloud Gateway是Spring官方推出的API网关组件，基于Spring 5、Spring Boot 2和Project Reactor构建，使用Netty作为运行时，支持高并发非阻塞IO。</p>
+
+      <h3>路由配置</h3>
+      <p>路由由三部分组成：ID、URI和Predicate（断言）：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>spring:
+  cloud:
+    gateway:
+      routes:
+        # 用户服务路由
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user/**
+            - Method=GET,POST
+          filters:
+            - StripPrefix=1
+
+        # 订单服务路由
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/order/**
+            - Header=X-Version, v1
+            - Query=token
+          filters:
+            - AddRequestHeader=X-Source, Gateway</code></pre></div>
+      </div>
+
+      <h3>Predicate断言工厂</h3>
+      <table>
+        <tr><th>断言</th><th>说明</th><th>示例</th></tr>
+        <tr><td>Path</td><td>路径匹配</td><td>- Path=/api/user/**</td></tr>
+        <tr><td>Method</td><td>请求方法匹配</td><td>- Method=GET,POST</td></tr>
+        <tr><td>Header</td><td>请求头匹配</td><td>- Header=X-Token, \d+</td></tr>
+        <tr><td>Query</td><td>查询参数匹配</td><td>- Query=token</td></tr>
+        <tr><td>Cookie</td><td>Cookie匹配</td><td>- Cookie=sessionId, .+</td></tr>
+        <tr><td>Host</td><td>主机名匹配</td><td>- Host=**.example.com</td></tr>
+        <tr><td>After/Before/Between</td><td>时间匹配</td><td>- After=2024-01-01T00:00:00+08:00</td></tr>
+        <tr><td>Weight</td><td>权重路由</td><td>- Weight=group1, 80</td></tr>
+      </table>
+
+      <h3>过滤器（GatewayFilter）</h3>
+      <table>
+        <tr><th>过滤器</th><th>说明</th><th>示例</th></tr>
+        <tr><td>AddRequestHeader</td><td>添加请求头</td><td>- AddRequestHeader=X-Request-Id, 123</td></tr>
+        <tr><td>AddRequestParameter</td><td>添加请求参数</td><td>- AddRequestParameter=source, gateway</td></tr>
+        <tr><td>StripPrefix</td><td>去除路径前缀</td><td>- StripPrefix=1 # /api/user/1 → /user/1</td></tr>
+        <tr><td>RewritePath</td><td>重写路径</td><td>- RewritePath=/api/(?&lt;segment&gt;.*), /$\{segment}</td></tr>
+        <tr><td>RequestRateLimiter</td><td>限流</td><td>- name: RequestRateLimiter</td></tr>
+        <tr><td>CircuitBreaker</td><td>熔断</td><td>- name: CircuitBreaker</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🛡️</div><h2 class="section-title">限流（RequestRateLimiter）</h2></div>
+    <div class="section-body">
+      <p>基于Redis的令牌桶算法实现分布式限流：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>spring:
+  cloud:
+    gateway:
+      routes:
+        - id: rate-limited-route
+          uri: lb://user-service
+          predicates:
+            - Path=/api/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 100    # 每秒填充100个令牌
+                redis-rate-limiter.burstCapacity: 200    # 桶容量200
+                key-resolver: "#{@ipKeyResolver}"        # 限流维度</code></pre></div>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Bean
+public KeyResolver ipKeyResolver() {
+    // 基于IP限流
+    return exchange -> Mono.just(
+        exchange.getRequest().getRemoteAddress().getAddress().getHostAddress()
+    );
+}
+
+@Bean
+public KeyResolver userKeyResolver() {
+    // 基于用户限流
+    return exchange -> Mono.just(
+        exchange.getRequest().getHeaders().getFirst("X-User-Id")
+    );
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔧</div><h2 class="section-title">自定义过滤器</h2></div>
+    <div class="section-body">
+      <h3>全局过滤器（GlobalFilter）</h3>
+      <p>所有请求都会经过全局过滤器，适合实现认证、日志等通用功能：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Component
+public class AuthGlobalFilter implements GlobalFilter, Ordered {
+
+    @Override
+    public Mono&lt;Void&gt; filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        String path = exchange.getRequest().getPath().value();
+
+        // 白名单放行
+        if (isWhiteList(path)) {
+            return chain.filter(exchange);
+        }
+
+        // 获取Token
+        String token = exchange.getRequest().getHeaders().getFirst("Authorization");
+        if (StringUtils.isEmpty(token)) {
+            return unauthorized(exchange);
+        }
+
+        // 验证Token
+        try {
+            Claims claims = JwtUtil.parseToken(token);
+            ServerHttpRequest request = exchange.getRequest().mutate()
+                .header("X-User-Id", claims.get("userId", String.class))
+                .build();
+            return chain.filter(exchange.mutate().request(request).build());
+        } catch (Exception e) {
+            return unauthorized(exchange);
+        }
+    }
+
+    @Override
+    public int getOrder() {
+        return -100; // 优先级高，数字越小优先级越高
+    }
+}</code></pre></div>
+      </div>
+
+      <h3>局部过滤器（GatewayFilterFactory）</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Component
+public class TimeLogGatewayFilterFactory
+        extends AbstractGatewayFilterFactory&lt;Config&gt; {
+
+    public TimeLogGatewayFilterFactory() {
+        super(Config.class);
+    }
+
+    @Override
+    public GatewayFilter apply(Config config) {
+        return (exchange, chain) -> {
+            long startTime = System.currentTimeMillis();
+            return chain.filter(exchange).then(Mono.fromRunnable(() -> {
+                long duration = System.currentTimeMillis() - startTime;
+                exchange.getResponse().getHeaders()
+                    .add("X-Response-Time", duration + "ms");
+                if (config.isLogEnabled()) {
+                    log.info("请求耗时: {}ms", duration);
+                }
+            }));
+        };
+    }
+
+    public static class Config {
+        private boolean logEnabled = true;
+        // getter/setter
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">Zuul vs Gateway对比</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>对比项</th><th>Netflix Zuul 1.x</th><th>Spring Cloud Gateway</th></tr>
+        <tr><td>基础框架</td><td>Servlet</td><td>WebFlux + Netty</td></tr>
+        <tr><td>IO模型</td><td>阻塞IO</td><td>非阻塞IO</td></tr>
+        <tr><td>性能</td><td>一般</td><td>高（约1.6倍）</td></tr>
+        <tr><td>长连接支持</td><td>较差</td><td>优秀（WebSocket）</td></tr>
+        <tr><td>编程模型</td><td>同步</td><td>异步响应式</td></tr>
+        <tr><td>限流支持</td><td>需集成</td><td>内置</td></tr>
+        <tr><td>熔断支持</td><td>集成Hystrix</td><td>集成Resilience4j</td></tr>
+        <tr><td>维护状态</td><td>停止维护</td><td>活跃维护</td></tr>
+      </table>
+      <div class="tip">
+        <strong>💡 选型建议：</strong>新项目建议使用Spring Cloud Gateway，Zuul 1.x已停止维护，Zuul 2.x与Spring Cloud整合不完善。
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">网关高可用部署</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+graph TB
+    subgraph "负载均衡层"
+        A[Nginx / SLB]
+    end
+
+    subgraph "网关集群"
+        B[Gateway Instance 1]
+        C[Gateway Instance 2]
+        D[Gateway Instance 3]
+    end
+
+    subgraph "注册中心"
+        E[Nacos / Eureka]
+    end
+
+    subgraph "后端服务"
+        F[服务A]
+        G[服务B]
+        H[服务C]
+    end
+
+    A --> B
+    A --> C
+    A --> D
+    B --> E
+    C --> E
+    D --> E
+    E --> F
+    E --> G
+    E --> H
+      </div>
+
+      <h3>高可用方案</h3>
+      <ul>
+        <li><span class="highlight">网关集群：</span>部署多个网关实例，通过Nginx/SLB进行负载均衡</li>
+        <li><span class="highlight">无状态设计：</span>网关不保存会话状态，请求可在任意实例处理</li>
+        <li><span class="highlight">健康检查：</span>注册中心定期检测网关实例健康状态</li>
+        <li><span class="highlight">动态扩缩容：</span>根据流量自动扩缩容网关实例</li>
+      </ul>
+
+      <div class="warning">
+        <strong>⚠️ 注意事项：</strong>网关作为流量入口，需要做好自身的限流保护，避免成为系统瓶颈。建议单机QPS控制在1万以内。
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', primaryTextColor: '#e8e6e3', primaryBorderColor: '#4ecdc4', lineColor: '#4ecdc4', secondaryColor: '#0a0e17', tertiaryColor: '#0a0e17', background: '#0a0e17', mainBkg: '#0a0e17', secondBkg: '#101624', tertiaryBkg: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

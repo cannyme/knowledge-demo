@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高级数据结构 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --text-dim: #4a5068; --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+    --amber-dim: rgba(240, 180, 41, 0.08); --cyan-dim: rgba(78, 205, 196, 0.15);
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --cyan: #0d7377; --text-primary: #1a1a2e;
+    --amber-dim: rgba(184, 134, 11, 0.06); --cyan-dim: rgba(13, 115, 119, 0.12);
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; line-height: 1.7; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--amber-dim), var(--cyan-dim)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul, .section-body ol { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .section-body h3 { font-weight: 600; font-size: 17px; color: var(--text-primary); margin: 24px 0 12px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body code { color: var(--text-primary); }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: var(--amber-dim); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .tip { background: var(--cyan-dim); border-left: 4px solid var(--cyan); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+  .warning { background: rgba(255, 123, 114, 0.1); border-left: 4px solid var(--red); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+  .highlight { color: var(--amber); font-weight: 600; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>数据结构与算法</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🗂️ DATA STRUCTURE</div>
+    <h1 class="hero-title">高级数据结构</h1>
+    <p class="hero-desc">高级数据结构是构建高性能系统的基石，包括跳表、布隆过滤器、LSM树、B+树、红黑树、一致性哈希等，广泛应用于数据库、缓存、分布式系统中。</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">数据结构概览</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>数据结构</th><th>时间复杂度</th><th>空间复杂度</th><th>典型应用</th></tr>
+        <tr><td>跳表（SkipList）</td><td>查找/插入/删除 O(log n)</td><td>O(n)</td><td>Redis ZSet</td></tr>
+        <tr><td>布隆过滤器（Bloom Filter）</td><td>插入/查询 O(k)</td><td>O(n)</td><td>缓存穿透防护</td></tr>
+        <tr><td>LSM树</td><td>写入 O(1)</td><td>O(n)</td><td>LevelDB、RocksDB</td></tr>
+        <tr><td>B+树</td><td>查找 O(log n)</td><td>O(n)</td><td>MySQL索引</td></tr>
+        <tr><td>红黑树</td><td>查找/插入/删除 O(log n)</td><td>O(n)</td><td>TreeMap、CFS</td></tr>
+        <tr><td>一致性哈希</td><td>查找 O(1)</td><td>O(n)</td><td>分布式缓存分片</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🪜</div><h2 class="section-title">跳表（SkipList）</h2></div>
+    <div class="section-body">
+      <p>跳表是一种基于链表的多层索引结构，通过随机化的方式构建多层索引，实现近似O(log n)的查找效率。Redis的有序集合（ZSet）就是基于跳表实现的。</p>
+
+      <h3>结构示意</h3>
+      <div class="mermaid">
+graph LR
+    subgraph "Level 3"
+        A1[HEAD] --> A2[50]
+    end
+    subgraph "Level 2"
+        B1[HEAD] --> B2[20] --> B3[50]
+    end
+    subgraph "Level 1"
+        C1[HEAD] --> C2[10] --> C3[20] --> C4[30] --> C5[50]
+    end
+    subgraph "Level 0"
+        D1[HEAD] --> D2[5] --> D3[10] --> D4[15] --> D5[20] --> D6[25] --> D7[30] --> D8[40] --> D9[50] --> D10[NIL]
+    end
+      </div>
+
+      <h3>跳表 vs 平衡树</h3>
+      <table>
+        <tr><th>特性</th><th>跳表</th><th>平衡树（AVL/红黑树）</th></tr>
+        <tr><td>实现难度</td><td>简单</td><td>复杂</td></tr>
+        <tr><td>范围查询</td><td>高效（底层链表）</td><td>需要中序遍历</td></tr>
+        <tr><td>并发友好</td><td>是（局部锁）</td><td>否（需要全局锁）</td></tr>
+        <tr><td>内存占用</td><td>较高（多层索引）</td><td>较低</td></tr>
+      </table>
+
+      <div class="tip">
+        <strong>💡 Redis使用跳表原因：</strong>实现简单、范围查询高效、并发性能好。
+      </div>
+
+      <h3>简化版跳表实现</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public class SkipList {
+    private static final int MAX_LEVEL = 16;
+    private final Node head = new Node(-1, MAX_LEVEL);
+    private int level = 0;
+    private final Random random = new Random();
+
+    static class Node {
+        int val;
+        Node[] next;
+        Node(int val, int level) {
+            this.val = val;
+            this.next = new Node[level];
+        }
+    }
+
+    public boolean search(int target) {
+        Node curr = head;
+        for (int i = level - 1; i >= 0; i--) {
+            while (curr.next[i] != null && curr.next[i].val < target) {
+                curr = curr.next[i];
+            }
+        }
+        curr = curr.next[0];
+        return curr != null && curr.val == target;
+    }
+
+    public void add(int val) {
+        Node[] update = new Node[MAX_LEVEL];
+        Node curr = head;
+        for (int i = level - 1; i >= 0; i--) {
+            while (curr.next[i] != null && curr.next[i].val < val) {
+                curr = curr.next[i];
+            }
+            update[i] = curr;
+        }
+        int lvl = randomLevel();
+        level = Math.max(level, lvl);
+        Node newNode = new Node(val, lvl);
+        for (int i = 0; i < lvl; i++) {
+            newNode.next[i] = update[i].next[i];
+            update[i].next[i] = newNode;
+        }
+    }
+
+    private int randomLevel() {
+        int lvl = 1;
+        while (random.nextDouble() < 0.5 && lvl < MAX_LEVEL) {
+            lvl++;
+        }
+        return lvl;
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔍</div><h2 class="section-title">布隆过滤器（Bloom Filter）</h2></div>
+    <div class="section-body">
+      <p>布隆过滤器是一种空间效率极高的概率型数据结构，用于判断一个元素是否可能存在于集合中。特点是<span class="highlight">可能存在误报（false positive），但绝不会漏报（false negative）</span>。</p>
+
+      <h3>原理</h3>
+      <div class="mermaid">
+graph LR
+    A[元素X] -->|哈希1| B[位数组]
+    A -->|哈希2| B
+    A -->|哈希3| B
+    B -->|判断| C{可能存在?}
+    C -->|是| D[可能存在于集合]
+    C -->|否| E[一定不存在]
+      </div>
+
+      <h3>误判率公式</h3>
+      <p>误判率 p ≈ (1 - e^(-kn/m))^k</p>
+      <ul>
+        <li>n：元素数量</li>
+        <li>m：位数组大小</li>
+        <li>k：哈希函数个数</li>
+      </ul>
+
+      <h3>使用场景</h3>
+      <ul>
+        <li><span class="highlight">缓存穿透防护：</span>判断请求的数据是否可能存在，避免查询不存在的key</li>
+        <li><span class="highlight">URL去重：</span>爬虫系统判断URL是否已抓取</li>
+        <li><span class="highlight">垃圾邮件过滤：</span>判断邮件是否可能是垃圾邮件</li>
+      </ul>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// Guava实现布隆过滤器
+BloomFilter&lt;String&gt; bloomFilter = BloomFilter.create(
+    Funnels.stringFunnel(Charset.defaultCharset()),
+    1000000,    // 预期插入数量
+    0.01        // 期望误判率
+);
+
+// 添加元素
+bloomFilter.put("user:1001");
+bloomFilter.put("user:1002");
+
+// 判断元素可能存在（可能有误判）
+if (bloomFilter.mightContain("user:1001")) {
+    // 可能存在，需要进一步查询数据库确认
+}
+
+if (!bloomFilter.mightContain("user:9999")) {
+    // 一定不存在，直接返回
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🌳</div><h2 class="section-title">LSM树（Log-Structured Merge Tree）</h2></div>
+    <div class="section-body">
+      <p>LSM树是一种针对写密集型应用优化的数据结构，通过将随机写转换为顺序写来提高写入性能。广泛应用于LevelDB、RocksDB、HBase等存储系统中。</p>
+
+      <h3>写入流程</h3>
+      <div class="mermaid">
+flowchart LR
+    A[写入请求] -->|追加| B[WAL日志]
+    A -->|插入| C[MemTable]
+    C -->|达到阈值| D[Immutable MemTable]
+    D -->|刷盘| E[SSTable L0]
+    E -->|合并| F[SSTable L1]
+    F -->|合并| G[SSTable L2]
+      </div>
+
+      <h3>核心组件</h3>
+      <table>
+        <tr><th>组件</th><th>说明</th></tr>
+        <tr><td>WAL</td><td>预写日志，保证数据持久性</td></tr>
+        <tr><td>MemTable</td><td>内存中的有序数据结构（跳表/红黑树）</td></tr>
+        <tr><td>SSTable</td><td>磁盘上的有序字符串表</td></tr>
+        <tr><td>Compaction</td><td>合并压缩，清理过期数据</td></tr>
+      </table>
+
+      <h3>LSM树 vs B+树</h3>
+      <table>
+        <tr><th>特性</th><th>LSM树</th><th>B+树</th></tr>
+        <tr><td>写入性能</td><td>极高（顺序写）</td><td>一般（随机写）</td></tr>
+        <tr><td>读取性能</td><td>一般（需查询多层）</td><td>高（直接定位）</td></tr>
+        <tr><td>空间放大</td><td>较大（需合并）</td><td>较小</td></tr>
+        <tr><td>适用场景</td><td>写多读少</td><td>读写均衡</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🍃</div><h2 class="section-title">B+树</h2></div>
+    <div class="section-body">
+      <p>B+树是B树的变种，是MySQL等数据库最常用的索引结构。所有数据存储在叶子节点，非叶子节点只存储键值作为索引。</p>
+
+      <h3>结构示意</h3>
+      <div class="mermaid">
+graph TB
+    A[30|60] --> B[10|20|30]
+    A --> C[30|40|50|60]
+    A --> D[60|70|80]
+
+    B --> B1[d1]
+    B --> B2[d2]
+    B --> B3[d3]
+
+    C --> C1[d4]
+    C --> C2[d5]
+    C --> C3[d6]
+    C --> C4[d7]
+
+    D --> D1[d8]
+    D --> D2[d9]
+    D --> D3[d10]
+
+    B1 --- B2 --- B3 --- C1 --- C2 --- C3 --- C4 --- D1 --- D2 --- D3
+      </div>
+
+      <h3>B+树特点</h3>
+      <ul>
+        <li>非叶子节点只存储键值，不存储数据</li>
+        <li>所有数据存储在叶子节点</li>
+        <li>叶子节点通过指针连接成链表，支持范围查询</li>
+        <li>树的高度低（通常3-4层），减少磁盘IO</li>
+      </ul>
+
+      <h3>为什么MySQL使用B+树</h3>
+      <ul>
+        <li><span class="highlight">范围查询高效：</span>叶子节点链表可直接遍历</li>
+        <li><span class="highlight">单节点存储更多键值：</span>非叶子节点不存数据，树更矮</li>
+        <li><span class="highlight">减少磁盘IO：</span>3层B+树可存储千万级数据</li>
+      </ul>
+
+      <div class="tip">
+        <strong>💡 InnoDB索引高度计算：</strong>假设页大小16KB，主键8字节，指针6字节。每个页可存储约1170个键值。3层B+树可存储约 1170 * 1170 * 16 ≈ 2000万 条记录。
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔴</div><h2 class="section-title">红黑树</h2></div>
+    <div class="section-body">
+      <p>红黑树是一种自平衡二叉搜索树，通过五条规则保证树的平衡，确保最坏情况下查找、插入、删除的时间复杂度都是O(log n)。</p>
+
+      <h3>红黑树五条规则</h3>
+      <ol>
+        <li>每个节点要么是红色，要么是黑色</li>
+        <li>根节点是黑色</li>
+        <li>每个叶子节点（NIL）是黑色</li>
+        <li>红色节点的子节点必须是黑色（不能有两个连续红节点）</li>
+        <li>从任一节点到其每个叶子节点的所有路径都包含相同数目的黑色节点</li>
+      </ol>
+
+      <h3>应用场景</h3>
+      <table>
+        <tr><th>应用</th><th>说明</th></tr>
+        <tr><td>Java TreeMap/TreeSet</td><td>基于红黑树实现的有序Map和Set</td></tr>
+        <tr><td>Linux CFS调度器</td><td>完全公平调度器使用红黑树管理进程</td></tr>
+        <tr><td>Epoll</td><td>Linux事件通知机制使用红黑树管理文件描述符</td></tr>
+      </table>
+
+      <div class="warning">
+        <strong>⚠️ 注意：</strong>红黑树的插入和删除操作需要维护平衡，实现复杂。Java中直接使用TreeMap/TreeSet即可，无需自己实现。
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔗</div><h2 class="section-title">一致性哈希</h2></div>
+    <div class="section-body">
+      <p>一致性哈希是一种特殊的哈希算法，在分布式系统中用于解决数据分片和数据迁移问题。当节点数量变化时，只需重新分配少量数据。</p>
+
+      <h3>普通哈希 vs 一致性哈希</h3>
+      <div class="mermaid">
+graph TB
+    subgraph "普通哈希（节点变化影响大）"
+        A1[key] -->|hash%3| B1[Node0]
+        A1 -->|节点增加| C1[hash%4]
+        C1 --> D1[数据几乎全部重新分配]
+    end
+
+    subgraph "一致性哈希（节点变化影响小）"
+        A2[key] -->|顺时针找| B2[Node Ring]
+        B2 --> C2[Node1]
+        B2 --> D2[Node2]
+        B2 --> E2[Node3]
+        B2 -->|新增Node4| F2[仅相邻节点数据迁移]
+    end
+      </div>
+
+      <h3>虚拟节点</h3>
+      <p>为解决数据倾斜问题，引入虚拟节点。每个物理节点对应多个虚拟节点，均匀分布在哈希环上。</p>
+      <div class="mermaid">
+graph LR
+    subgraph "哈希环"
+        A[Node1-V1] --> B[Node2-V1]
+        B --> C[Node1-V2]
+        C --> D[Node3-V1]
+        D --> E[Node2-V2]
+        E --> F[Node1-V3]
+        F --> A
+    end
+      </div>
+
+      <h3>应用场景</h3>
+      <ul>
+        <li><span class="highlight">分布式缓存：</span>Redis Cluster、Memcached的数据分片</li>
+        <li><span class="highlight">分布式存储：</span>Cassandra、DynamoDB的数据分布</li>
+        <li><span class="highlight">负载均衡：</span>Nginx的一致性哈希负载均衡</li>
+      </ul>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public class ConsistentHash&lt;T&gt; {
+    private final TreeMap&lt;Long, T&gt; circle = new TreeMap&lt;&gt;();
+    private final int virtualNodes;
+
+    public ConsistentHash(int virtualNodes, Collection&lt;T&gt; nodes) {
+        this.virtualNodes = virtualNodes;
+        for (T node : nodes) {
+            add(node);
+        }
+    }
+
+    public void add(T node) {
+        for (int i = 0; i < virtualNodes; i++) {
+            circle.put(hash(node.toString() + i), node);
+        }
+    }
+
+    public void remove(T node) {
+        for (int i = 0; i < virtualNodes; i++) {
+            circle.remove(hash(node.toString() + i));
+        }
+    }
+
+    public T get(Object key) {
+        if (circle.isEmpty()) return null;
+        long hash = hash(key.toString());
+        Map.Entry&lt;Long, T&gt; entry = circle.ceilingEntry(hash);
+        if (entry == null) {
+            entry = circle.firstEntry();
+        }
+        return entry.getValue();
+    }
+
+    private long hash(String key) {
+        // MD5哈希实现
+        // ...
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', primaryTextColor: '#e8e6e3', primaryBorderColor: '#4ecdc4', lineColor: '#4ecdc4', background: '#0a0e17', mainBkg: '#0a0e17', secondBkg: '#101624', tertiaryBkg: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

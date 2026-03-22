@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模板方法模式 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+    --text-dim: #4a5068; --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e; --text-dim: #7a7a8e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .highlight { background: linear-gradient(135deg, rgba(240, 180, 41, 0.2), rgba(78, 205, 196, 0.15)); padding: 16px; border-radius: 8px; border-left: 3px solid var(--amber); margin: 16px 0; }
+  .tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .tip-title { color: var(--green); font-weight: 600; margin-bottom: 8px; }
+  .warning { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .warning-title { color: var(--red); font-weight: 600; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>设计模式</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 DESIGN PATTERN</div>
+    <h1 class="hero-title">模板方法模式</h1>
+    <p class="hero-desc">定义一个操作中的算法骨架，而将一些步骤延迟到子类中。模板方法使得子类可以不改变一个算法的结构即可重定义该算法的某些特定步骤。</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">模式定义与意图</h2></div>
+    <div class="section-body">
+      <p><strong>模板方法模式（Template Method Pattern）</strong>是一种行为型设计模式，它在父类中定义一个算法的骨架，将某些步骤延迟到子类实现。模板方法让子类在不改变算法结构的情况下，重新定义算法的某些步骤。</p>
+      <div class="highlight">
+        <strong>核心思想：</strong>定义算法执行的固定步骤（骨架），其中部分步骤由抽象方法表示，子类通过实现这些抽象方法来定制算法的具体行为。
+      </div>
+      <p>生活中的类比：</p>
+      <ul>
+        <li>银行开户流程：填写资料 -> 身份验证 -> 开设账户 -> 发放卡片（各银行验证方式不同）</li>
+        <li>泡茶/咖啡：烧水 -> 冲泡 -> 倒入杯中 -> 添加调料（茶和咖啡冲泡方式不同）</li>
+        <li>简历模板：个人信息 -> 教育背景 -> 工作经历 -> 技能（各部分内容不同）</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">架构原理</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+classDiagram
+    class AbstractClass {
+        +templateMethod()
+        +primitiveOperation1()*
+        +primitiveOperation2()*
+        #hook()
+        +concreteOperation()
+    }
+    class ConcreteClass1 {
+        +primitiveOperation1()
+        +primitiveOperation2()
+    }
+    class ConcreteClass2 {
+        +primitiveOperation1()
+        +primitiveOperation2()
+    }
+    class Client
+    AbstractClass <|-- ConcreteClass1
+    AbstractClass <|-- ConcreteClass2
+    Client --> AbstractClass
+      </div>
+      <p><strong>角色说明：</strong></p>
+      <table>
+        <tr><th>角色</th><th>说明</th></tr>
+        <tr><td>AbstractClass</td><td>抽象类，定义模板方法和基本方法</td></tr>
+        <tr><td>ConcreteClass</td><td>具体子类，实现抽象方法，完成特定步骤</td></tr>
+        <tr><td>templateMethod</td><td>模板方法，定义算法骨架，final修饰防止重写</td></tr>
+        <tr><td>primitiveOperation</td><td>抽象操作，子类必须实现</td></tr>
+        <tr><td>hook</td><td>钩子方法，子类可选择性覆盖</td></tr>
+        <tr><td>concreteOperation</td><td>具体方法，子类直接使用或覆盖</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📝</div><h2 class="section-title">代码实现</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="basic">基础实现</button>
+        <button class="tab" data-tab="order">订单处理</button>
+        <button class="tab" data-tab="callback">回调方式</button>
+      </div>
+
+      <div id="basic" class="tab-content active">
+        <p><strong>基础模板方法实现</strong></p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 抽象模板类
+abstract class DataProcessor {
+    /**
+     * 模板方法：定义算法骨架（final防止子类覆盖）
+     */
+    public final void process(String data) {
+        // 1. 验证数据
+        if (!validate(data)) {
+            System.out.println("数据验证失败，终止处理");
+            return;
+        }
+
+        // 2. 解析数据
+        Object parsedData = parse(data);
+
+        // 3. 处理数据（具体实现由子类决定）
+        Object result = doProcess(parsedData);
+
+        // 4. 保存结果
+        save(result);
+
+        // 5. 记录日志（钩子方法，子类可选实现）
+        log();
+    }
+
+    // 具体方法：通用实现
+    protected boolean validate(String data) {
+        if (data == null || data.isEmpty()) {
+            System.out.println("数据为空");
+            return false;
+        }
+        System.out.println("数据验证通过");
+        return true;
+    }
+
+    protected Object parse(String data) {
+        System.out.println("解析数据：" + data);
+        return data;
+    }
+
+    // 抽象方法：子类必须实现
+    protected abstract Object doProcess(Object data);
+
+    // 具体方法：通用实现
+    protected void save(Object result) {
+        System.out.println("保存结果：" + result);
+    }
+
+    // 钩子方法：子类可选实现
+    protected void log() {
+        // 默认空实现
+    }
+}
+
+// JSON处理器
+class JsonDataProcessor extends DataProcessor {
+    @Override
+    protected Object doProcess(Object data) {
+        System.out.println("处理JSON数据：" + data);
+        return "{\"processed\": \"" + data + "\"}";
+    }
+
+    @Override
+    protected void log() {
+        System.out.println("[JSON处理器] 记录处理日志");
+    }
+}
+
+// XML处理器
+class XmlDataProcessor extends DataProcessor {
+    @Override
+    protected Object doProcess(Object data) {
+        System.out.println("处理XML数据：" + data);
+        return "&lt;processed&gt;" + data + "&lt;/processed&gt;";
+    }
+
+    @Override
+    protected Object parse(String data) {
+        System.out.println("特殊XML解析：" + data);
+        return data.toUpperCase();
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="order" class="tab-content">
+        <p><strong>订单处理模板</strong></p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 订单处理模板
+abstract class OrderProcessor {
+    // 模板方法
+    public final void processOrder(Order order) {
+        // 1. 验证订单
+        validateOrder(order);
+
+        // 2. 计算价格
+        double totalPrice = calculatePrice(order);
+        order.setTotalPrice(totalPrice);
+
+        // 3. 扣减库存
+        deductStock(order);
+
+        // 4. 支付（抽象步骤）
+        boolean paid = doPayment(order);
+        if (!paid) {
+            rollback(order);
+            return;
+        }
+
+        // 5. 创建物流
+        createShipping(order);
+
+        // 6. 发送通知（钩子）
+        sendNotification(order);
+    }
+
+    protected void validateOrder(Order order) {
+        if (order.getItems() == null || order.getItems().isEmpty()) {
+            throw new RuntimeException("订单商品为空");
+        }
+        System.out.println("订单验证通过");
+    }
+
+    protected double calculatePrice(Order order) {
+        return order.getItems().stream()
+            .mapToDouble(Item::getPrice)
+            .sum();
+    }
+
+    protected void deductStock(Order order) {
+        System.out.println("扣减库存");
+    }
+
+    // 抽象方法：不同订单类型不同支付方式
+    protected abstract boolean doPayment(Order order);
+
+    protected void rollback(Order order) {
+        System.out.println("订单回滚");
+    }
+
+    protected void createShipping(Order order) {
+        System.out.println("创建物流");
+    }
+
+    // 钩子方法
+    protected void sendNotification(Order order) {
+        // 默认不发送
+    }
+}
+
+// 普通订单
+class NormalOrderProcessor extends OrderProcessor {
+    @Override
+    protected boolean doPayment(Order order) {
+        System.out.println("普通订单支付：" + order.getTotalPrice() + "元");
+        return true;
+    }
+}
+
+// VIP订单
+class VipOrderProcessor extends OrderProcessor {
+    @Override
+    protected double calculatePrice(Order order) {
+        double basePrice = super.calculatePrice(order);
+        return basePrice * 0.9;  // 9折优惠
+    }
+
+    @Override
+    protected boolean doPayment(Order order) {
+        System.out.println("VIP订单支付：" + order.getTotalPrice() + "元（已优惠）");
+        return true;
+    }
+
+    @Override
+    protected void sendNotification(Order order) {
+        System.out.println("发送VIP专属通知");
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="callback" class="tab-content">
+        <p><strong>回调方式（更灵活）</strong></p>
+        <p>模板方法使用继承，回调使用组合。Java 8+使用Lambda更简洁。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>import java.util.function.*;
+
+class DataProcessorWithCallback {
+    public void process(String data,
+                       Function&lt;String, Object&gt; parser,
+                       Function&lt;Object, Object&gt; processor) {
+        // 1. 验证
+        if (data == null || data.isEmpty()) {
+            return;
+        }
+
+        // 2. 解析（回调）
+        Object parsed = parser.apply(data);
+
+        // 3. 处理（回调）
+        Object result = processor.apply(parsed);
+
+        // 4. 保存
+        System.out.println("保存结果：" + result);
+    }
+}
+
+// 使用Lambda
+DataProcessorWithCallback callbackProcessor = new DataProcessorWithCallback();
+callbackProcessor.process(
+    "test data",
+    s -&gt; "解析后：" + s,
+    o -&gt; "处理后：" + o
+);
+
+// 对比：JDBCTemplate使用回调
+callbackProcessor.process(
+    "SELECT * FROM user WHERE id = ?",
+    sql -&gt; createPreparedStatement(sql),  // 解析
+    stmt -&gt; executeQuery(stmt)            // 处理
+);</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔧</div><h2 class="section-title">框架中的应用</h2></div>
+    <div class="section-body">
+      <h3>1. HttpServlet</h3>
+      <p>Servlet的service()方法是经典的模板方法：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// HttpServlet中的模板方法
+public abstract class HttpServlet extends GenericServlet {
+    // 模板方法
+    protected void service(HttpServletRequest req, HttpServletResponse resp) {
+        String method = req.getMethod();
+        switch (method) {
+            case "GET":
+                doGet(req, resp);   // 钩子方法
+                break;
+            case "POST":
+                doPost(req, resp);  // 钩子方法
+                break;
+            case "PUT":
+                doPut(req, resp);
+                break;
+            case "DELETE":
+                doDelete(req, resp);
+                break;
+            // ...
+        }
+    }
+
+    // 钩子方法：默认空实现
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
+        // 默认返回405错误
+    }
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
+        // 默认返回405错误
+    }
+}
+
+// 开发者只需覆盖需要的方法
+public class MyServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
+        // 处理GET请求
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
+        // 处理POST请求
+    }
+}</code></pre></div>
+      </div>
+
+      <h3>2. Spring JdbcTemplate</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// JdbcTemplate使用模板方法模式
+public class JdbcTemplate {
+    public &lt;T&gt; T query(String sql, RowMapper&lt;T&gt; rowMapper, Object... params) {
+        // 1. 获取连接（固定）
+        Connection conn = getConnection();
+        try {
+            // 2. 创建语句（固定）
+            PreparedStatement stmt = createStatement(conn, sql, params);
+
+            // 3. 执行查询（固定）
+            ResultSet rs = stmt.executeQuery();
+
+            // 4. 映射结果（变化部分，由调用者实现）
+            T result = rowMapper.mapRow(rs);
+
+            // 5. 返回结果（固定）
+            return result;
+        } finally {
+            // 6. 关闭连接（固定）
+            closeConnection(conn);
+        }
+    }
+}
+
+// 使用
+User user = jdbcTemplate.query(
+    "SELECT * FROM user WHERE id = ?",
+    (rs, rowNum) -> {  // RowMapper回调
+        User u = new User();
+        u.setId(rs.getLong("id"));
+        u.setName(rs.getString("name"));
+        return u;
+    },
+    userId
+);</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💡</div><h2 class="section-title">适用场景</h2></div>
+    <div class="section-body">
+      <ul>
+        <li><strong>流程固定：</strong>算法骨架固定，但某些步骤的具体实现不同</li>
+        <li><strong>代码复用：</strong>多个类有共同的行为，只在特定步骤上有差异</li>
+        <li><strong>控制子类扩展：</strong>只允许在特定点扩展行为（钩子方法）</li>
+        <li><strong>框架设计：</strong>为框架提供扩展点，子类实现具体逻辑</li>
+      </ul>
+      <div class="tip">
+        <div class="tip-title">💡 常见应用场景</div>
+        <ul>
+          <li>数据处理流程（解析 -> 转换 -> 存储）</li>
+          <li>业务流程（审批、支付、订单处理）</li>
+          <li>测试框架（JUnit的setUp/test/tearDown）</li>
+          <li>IO流（InputStream的read模板方法）</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">与策略模式对比</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>维度</th><th>模板方法模式</th><th>策略模式</th></tr>
+        <tr><td>复用级别</td><td>代码级别（继承）</td><td>算法级别（组合）</td></tr>
+        <tr><td>控制方式</td><td>父类控制流程，子类实现细节</td><td>客户端选择算法</td></tr>
+        <tr><td>扩展方式</td><td>继承抽象类</td><td>实现策略接口</td></tr>
+        <tr><td>依赖关系</td><td>子类依赖父类</td><td>上下文依赖策略</td></tr>
+        <tr><td>适用场景</td><td>算法骨架固定，部分步骤变化</td><td>多个可互换的算法</td></tr>
+        <tr><td>灵活性</td><td>较低（继承是强耦合）</td><td>较高（运行时切换策略）</td></tr>
+      </table>
+      <div class="highlight">
+        <strong>选择建议：</strong>如果算法骨架固定，使用模板方法；如果需要完全替换算法或运行时切换，使用策略模式。
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">优缺点分析</h2></div>
+    <div class="section-body">
+      <div class="tip">
+        <div class="tip-title">✅ 优点</div>
+        <ul>
+          <li><strong>代码复用：</strong>将公共代码放在父类，减少重复</li>
+          <li><strong>反向控制：</strong>好莱坞原则"Don't call us, we'll call you"</li>
+          <li><strong>符合开闭原则：</strong>通过扩展子类而非修改父类来增加功能</li>
+          <li><strong>统一流程：</strong>确保算法骨架的一致性</li>
+        </ul>
+      </div>
+      <div class="warning">
+        <div class="warning-title">❌ 缺点</div>
+        <ul>
+          <li>类数量增加：每个变体都需要一个子类</li>
+          <li>继承限制：Java单继承限制了扩展性</li>
+          <li>复杂性：模板方法和钩子方法设计需要仔细考虑</li>
+          <li>违反里氏替换：父类修改可能影响所有子类</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📋</div><h2 class="section-title">最佳实践</h2></div>
+    <div class="section-body">
+      <div class="highlight">
+        <strong>设计要点：</strong>
+        <ul>
+          <li>模板方法使用final修饰，防止子类重写算法骨架</li>
+          <li>抽象方法必须是protected，不需要对外暴露</li>
+          <li>钩子方法可以提供默认空实现，让子类选择是否覆盖</li>
+          <li>尽量减少具体方法的数量，保持模板类的简洁</li>
+        </ul>
+      </div>
+      <div class="tip">
+        <div class="tip-title">💡 好莱坞原则</div>
+        <p>"Don't call us, we'll call you" - 父类决定何时调用子类的方法，而不是子类主动调用父类。这是一种反向控制，让高层组件决定何时、如何调用低层组件。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

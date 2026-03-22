@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据库连接池详解 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+
+  :root {
+    --bg-deep: #0a0e17;
+    --bg-card: rgba(16, 22, 36, 0.7);
+    --bg-card-hover: rgba(22, 30, 50, 0.85);
+    --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12);
+    --border-card-hover: rgba(240, 180, 41, 0.4);
+    --amber: #f0b429;
+    --amber-light: #ffd166;
+    --amber-dim: rgba(240, 180, 41, 0.08);
+    --cyan: #4ecdc4;
+    --cyan-dim: rgba(78, 205, 196, 0.15);
+    --cyan-light: #6ee7df;
+    --text-primary: #e8e6e3;
+    --text-secondary: #8a8f98;
+    --text-dim: #4a5068;
+    --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+    --glow-cyan: 0 0 25px rgba(78, 205, 196, 0.12);
+    --font-code: 'JetBrains Mono', monospace;
+    --font-heading: 'Outfit', sans-serif;
+  }
+
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18);
+    --border-card-hover: rgba(160, 120, 20, 0.4);
+    --amber: #b8860b;
+    --amber-light: #996600;
+    --amber-dim: rgba(184, 134, 11, 0.06);
+    --cyan: #0d7377;
+    --cyan-dim: rgba(13, 115, 119, 0.12);
+    --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e;
+    --text-dim: #7a7a8e;
+    --glow-amber: 0 0 20px rgba(184, 134, 11, 0.08);
+    --glow-cyan: 0 0 20px rgba(13, 115, 119, 0.08);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-heading);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.4s ease, color 0.4s ease;
+    line-height: 1.7;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  [data-theme="light"] body::before {
+    background-image:
+      linear-gradient(rgba(160, 120, 20, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(160, 120, 20, 0.06) 1px, transparent 1px);
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 30%, rgba(78, 205, 196, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 60%, rgba(240, 180, 41, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 999;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border-card);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    box-shadow: var(--glow-amber);
+  }
+  .theme-toggle:hover {
+    border-color: var(--amber);
+    transform: scale(1.1);
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 32px;
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .breadcrumb a {
+    color: var(--cyan);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--amber);
+  }
+
+  .breadcrumb .sep {
+    color: var(--text-dim);
+  }
+
+  .kp-header {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 32px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kp-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber));
+  }
+
+  .kp-tag {
+    display: inline-block;
+    font-family: var(--font-code);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cyan);
+    background: var(--cyan-dim);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    border-radius: 6px;
+    padding: 4px 14px;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .kp-title {
+    font-weight: 800;
+    font-size: clamp(28px, 5vw, 42px);
+    line-height: 1.2;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--amber-light) 0%, var(--amber) 50%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .kp-package {
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .kp-desc {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .kp-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+  }
+
+  .kp-section:hover {
+    border-color: var(--border-card-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--glow-amber);
+  }
+
+  .section-title {
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-card);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(180deg, var(--amber), var(--cyan));
+    border-radius: 2px;
+  }
+
+  .section-content {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .section-content h3 {
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--text-primary);
+    margin: 24px 0 12px;
+  }
+
+  .section-content h4 {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--amber);
+    margin: 20px 0 10px;
+  }
+
+  .section-content p {
+    margin-bottom: 12px;
+  }
+
+  .section-content ul, .section-content ol {
+    margin: 12px 0;
+    padding-left: 24px;
+  }
+
+  .section-content li {
+    margin-bottom: 8px;
+  }
+
+  .section-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-family: var(--font-code);
+    font-size: 13px;
+  }
+
+  .section-content th,
+  .section-content td {
+    padding: 12px 16px;
+    text-align: left;
+    border: 1px solid var(--border-card);
+  }
+
+  .section-content th {
+    background: var(--amber-dim);
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .section-content tr:hover {
+    background: rgba(240, 180, 41, 0.03);
+  }
+
+  /* Tip and Warning Boxes */
+  .tip-box {
+    background: var(--cyan-dim);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    position: relative;
+  }
+
+  .tip-box::before {
+    content: 'TIP';
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--bg-card);
+    padding: 0 8px;
+    font-family: var(--font-code);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cyan);
+    letter-spacing: 1px;
+  }
+
+  .warning-box {
+    background: rgba(240, 180, 41, 0.08);
+    border: 1px solid rgba(240, 180, 41, 0.25);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    position: relative;
+  }
+
+  .warning-box::before {
+    content: 'WARNING';
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--bg-card);
+    padding: 0 8px;
+    font-family: var(--font-code);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--amber);
+    letter-spacing: 1px;
+  }
+
+  /* Highlight Text */
+  .highlight {
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .code-term {
+    font-family: var(--font-code);
+    background: var(--bg-code);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--cyan);
+  }
+
+  /* Code Blocks */
+  .code-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+
+  .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(240, 180, 41, 0.05);
+    border-bottom: 1px solid var(--border-card);
+  }
+
+  .code-title {
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .copy-btn {
+    font-family: var(--font-code);
+    font-size: 11px;
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid var(--border-card);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  .code-block pre {
+    padding: 20px;
+    overflow-x: auto;
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .code-block code {
+    color: var(--text-primary);
+    background: transparent;
+  }
+
+  /* Syntax Highlighting */
+  .code-block .keyword { color: #c792ea; }
+  .code-block .string { color: #c3e88d; }
+  .code-block .comment { color: #676e95; font-style: italic; }
+  .code-block .number { color: #f78c6c; }
+  .code-block .class-name { color: #ffcb6b; }
+  .code-block .method { color: #82aaff; }
+
+  [data-theme="light"] .code-block .keyword { color: #7c4dff; }
+  [data-theme="light"] .code-block .string { color: #448c27; }
+  [data-theme="light"] .code-block .comment { color: #8e908c; }
+  [data-theme="light"] .code-block .number { color: #f5871f; }
+  [data-theme="light"] .code-block .class-name { color: #c99e00; }
+  [data-theme="light"] .code-block .method { color: #4271ae; }
+
+  /* ASCII Art */
+  .ascii-art {
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--bg-code);
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    color: var(--cyan);
+    margin: 16px 0;
+  }
+
+  /* Mermaid Diagrams */
+  .mermaid-container {
+    background: var(--bg-code);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+  }
+
+  .mermaid {
+    display: inline-block;
+  }
+
+  /* Performance Bar */
+  .perf-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0;
+  }
+
+  .perf-label {
+    font-family: var(--font-code);
+    font-size: 12px;
+    width: 100px;
+    color: var(--text-secondary);
+  }
+
+  .perf-track {
+    flex: 1;
+    height: 8px;
+    background: var(--bg-code);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .perf-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .perf-fill.excellent { background: linear-gradient(90deg, #4ecdc4, #44a08d); width: 95%; }
+  .perf-fill.good { background: linear-gradient(90deg, #f0b429, #e8a319); width: 80%; }
+  .perf-fill.medium { background: linear-gradient(90deg, #ff6b6b, #ee5a5a); width: 50%; }
+  .perf-fill.poor { background: linear-gradient(90deg, #ff4757, #ff3344); width: 30%; }
+
+  /* Back to top */
+  .back-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border-card);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    z-index: 100;
+  }
+
+  .back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .back-to-top:hover {
+    border-color: var(--amber);
+    transform: translateY(-4px);
+    box-shadow: var(--glow-amber);
+  }
+
+  /* Footer */
+  .kp-footer {
+    text-align: center;
+    margin-top: 60px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border-card);
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .container { padding: 24px 16px 60px; }
+    .kp-header { padding: 24px; }
+    .kp-section { padding: 20px; }
+    .code-block pre { padding: 16px; font-size: 12px; }
+    .perf-label { width: 80px; }
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+
+<div class="container">
+  <nav class="breadcrumb">
+    <a href="knowledge-map.html">📚 知识地图</a>
+    <span class="sep">/</span>
+    <a href="knowledge/database-mysql.html">database.mysql</a>
+    <span class="sep">/</span>
+    <span>ConnectionPool</span>
+  </nav>
+
+  <header class="kp-header">
+    <div class="kp-tag">MySQL</div>
+    <h1 class="kp-title">数据库连接池详解</h1>
+    <div class="kp-package">ConnectionPool.java</div>
+    <p class="kp-desc">通过复用数据库连接，减少连接创建和销毁的开销，提高系统性能和稳定性。了解连接池原理、配置参数和最佳实践。</p>
+  </header>
+
+  <main class="kp-content">
+    <!-- 为什么要用连接池 -->
+    <section class="kp-section">
+      <h2 class="section-title">为什么要用连接池</h2>
+      <div class="section-content">
+        <h3>数据库连接的创建开销</h3>
+        <p>每次创建数据库连接都需要经过以下步骤：</p>
+        <ol>
+          <li><strong>TCP三次握手</strong>：建立与数据库服务器的网络连接（约几十毫秒）</li>
+          <li><strong>身份认证</strong>：验证用户名密码（约几毫秒）</li>
+          <li><strong>初始化资源</strong>：分配内存、建立会话等</li>
+        </ol>
+
+        <div class="mermaid-container">
+          <div class="mermaid">
+sequenceDiagram
+    participant App as 应用程序
+    participant Pool as 连接池
+    participant DB as 数据库
+
+    rect rgb(240, 180, 41, 0.1)
+        Note over App,DB: 传统方式（每次新建连接）
+        App->>DB: 创建连接（TCP+认证）
+        DB-->>App: 连接建立
+        App->>DB: 执行SQL
+        DB-->>App: 返回结果
+        App->>DB: 关闭连接
+    end
+
+    rect rgb(78, 205, 196, 0.1)
+        Note over App,DB: 使用连接池
+        Pool->>DB: 预创建连接
+        DB-->>Pool: 连接就绪
+        App->>Pool: 获取连接
+        Pool-->>App: 返回已有连接
+        App->>DB: 执行SQL
+        DB-->>App: 返回结果
+        App->>Pool: 归还连接
+    end
+          </div>
+        </div>
+
+        <h3>连接池的优势</h3>
+        <table>
+          <tr>
+            <th>优势</th>
+            <th>说明</th>
+          </tr>
+          <tr>
+            <td><span class="highlight">性能提升</span></td>
+            <td>复用已有连接，避免频繁创建/销毁的开销</td>
+          </tr>
+          <tr>
+            <td><span class="highlight">资源控制</span></td>
+            <td>限制最大连接数，防止数据库连接耗尽</td>
+          </tr>
+          <tr>
+            <td><span class="highlight">连接管理</span></td>
+            <td>自动检测失效连接、超时回收等</td>
+          </tr>
+          <tr>
+            <td><span class="highlight">监控统计</span></td>
+            <td>提供连接使用情况的监控数据</td>
+          </tr>
+          <tr>
+            <td><span class="highlight">异常处理</span></td>
+            <td>连接泄漏检测、自动重连等</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- 连接池核心参数 -->
+    <section class="kp-section">
+      <h2 class="section-title">连接池核心参数</h2>
+      <div class="section-content">
+        <h3>基本配置参数</h3>
+        <table>
+          <tr>
+            <th>参数</th>
+            <th>说明</th>
+            <th>建议值</th>
+          </tr>
+          <tr>
+            <td><span class="code-term">initialSize</span></td>
+            <td>初始连接数，应用启动时创建的连接数</td>
+            <td>5-10</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">minIdle</span></td>
+            <td>最小空闲连接数，连接池保持的最小空闲连接</td>
+            <td>与max相同或略小</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">maxActive</span>/<span class="code-term">maxPoolSize</span></td>
+            <td>最大活跃连接数，连接池能创建的最大连接数</td>
+            <td>10-20（根据负载）</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">maxWait</span>/<span class="code-term">connectionTimeout</span></td>
+            <td>获取连接的最大等待时间</td>
+            <td>30秒</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">idleTimeout</span></td>
+            <td>空闲连接超时时间，超过此时间被回收</td>
+            <td>10分钟</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">maxLifetime</span></td>
+            <td>连接最大存活时间，超过强制关闭</td>
+            <td>30分钟</td>
+          </tr>
+        </table>
+
+        <h3>验证与检测参数</h3>
+        <table>
+          <tr>
+            <th>参数</th>
+            <th>说明</th>
+          </tr>
+          <tr>
+            <td><span class="code-term">validationQuery</span></td>
+            <td>连接验证SQL，如"SELECT 1"</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">testOnBorrow</span></td>
+            <td>获取连接时验证，建议false（影响性能）</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">testOnReturn</span></td>
+            <td>归还连接时验证，建议false</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">testWhileIdle</span></td>
+            <td>空闲时验证，建议true</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">timeBetweenEvictionRuns</span></td>
+            <td>空闲检测线程运行间隔</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">leakDetectionThreshold</span></td>
+            <td>连接泄漏检测阈值，超过时间未归还打印警告</td>
+          </tr>
+        </table>
+
+        <div class="tip-box">
+          <p><strong>连接数计算公式：</strong></p>
+          <p><span class="code-term">connections = (CPU核心数 × 2) + 有效磁盘数</span></p>
+          <p>例如：4核CPU + 1块SSD = 4×2+1 = <strong>9个连接</strong></p>
+          <p>注意：这是单机理想值，实际应根据并发量、SQL复杂度调整。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 常用连接池对比 -->
+    <section class="kp-section">
+      <h2 class="section-title">常用连接池对比</h2>
+      <div class="section-content">
+        <h3>性能对比</h3>
+        <div style="margin: 20px 0;">
+          <div class="perf-bar">
+            <span class="perf-label">HikariCP</span>
+            <div class="perf-track"><div class="perf-fill excellent"></div></div>
+            <span style="font-size: 12px; color: var(--cyan);">95%</span>
+          </div>
+          <div class="perf-bar">
+            <span class="perf-label">Druid</span>
+            <div class="perf-track"><div class="perf-fill good"></div></div>
+            <span style="font-size: 12px; color: var(--amber);">80%</span>
+          </div>
+          <div class="perf-bar">
+            <span class="perf-label">C3P0</span>
+            <div class="perf-track"><div class="perf-fill medium"></div></div>
+            <span style="font-size: 12px; color: var(--text-secondary);">50%</span>
+          </div>
+          <div class="perf-bar">
+            <span class="perf-label">DBCP</span>
+            <div class="perf-track"><div class="perf-fill poor"></div></div>
+            <span style="font-size: 12px; color: var(--text-secondary);">30%</span>
+          </div>
+        </div>
+
+        <table>
+          <tr>
+            <th>连接池</th>
+            <th>性能</th>
+            <th>监控</th>
+            <th>特点</th>
+            <th>推荐场景</th>
+          </tr>
+          <tr>
+            <td><span class="highlight">HikariCP</span></td>
+            <td>最高</td>
+            <td>基础</td>
+            <td>轻量、快速、Spring Boot默认</td>
+            <td>追求性能的所有场景</td>
+          </tr>
+          <tr>
+            <td><span class="highlight">Druid</span></td>
+            <td>高</td>
+            <td>丰富</td>
+            <td>阿里开源、监控强大、SQL防注入</td>
+            <td>需要监控和SQL防护</td>
+          </tr>
+          <tr>
+            <td>C3P0</td>
+            <td>一般</td>
+            <td>基础</td>
+            <td>老牌连接池、历史悠久</td>
+            <td>遗留系统维护</td>
+          </tr>
+          <tr>
+            <td>DBCP</td>
+            <td>较低</td>
+            <td>基础</td>
+            <td>Apache开源、Tomcat默认</td>
+            <td>不推荐新项目使用</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- HikariCP配置与原理 -->
+    <section class="kp-section">
+      <h2 class="section-title">HikariCP配置与原理</h2>
+      <div class="section-content">
+        <h3>为什么HikariCP最快？</h3>
+        <div class="mermaid-container">
+          <div class="mermaid">
+flowchart LR
+    subgraph 优化1["字节码优化"]
+        A1[Javassist生成代理类]
+        A2[避免反射调用]
+    end
+    subgraph 优化2["并发设计"]
+        B1[ConcurrentBag]
+        B2[ThreadLocal缓存]
+        B3[CAS操作]
+    end
+    subgraph 优化3["代码精简"]
+        C1[无锁数据结构]
+        C2[精简代理逻辑]
+        C3[快速路径判断]
+    end
+    优化1 --> 性能[极致性能]
+    优化2 --> 性能
+    优化3 --> 性能
+    style 性能 fill:#f0b429,stroke:#0a0e17,stroke-width:2px
+          </div>
+        </div>
+
+        <h4>1. 字节码优化</h4>
+        <p>使用Javassist在运行时生成代理类，避免反射带来的性能开销。</p>
+
+        <h4>2. ConcurrentBag设计</h4>
+        <div class="ascii-art">
+┌─────────────────────────────────────────────────────────────┐
+│                     ConcurrentBag                           │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │ sharedList  │  │ threadList  │  │  waiters    │         │
+│  │ (共享列表)   │  │ (线程本地)  │  │ (等待队列)  │         │
+│  │  CAS操作    │  │  无锁获取   │  │  阻塞等待   │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+        </div>
+
+        <h4>3. 快速获取连接流程</h4>
+        <ol>
+          <li>先从<span class="code-term">ThreadLocal</span>获取（无竞争，最快）</li>
+          <li>未命中则从<span class="code-term">sharedList</span>获取（CAS竞争）</li>
+          <li>都没有则等待其他连接归还（阻塞等待）</li>
+        </ol>
+
+        <h3>HikariCP配置示例</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">Spring Boot + HikariCP配置</span>
+            <button class="copy-btn" onclick="copyCode(this)">复制</button>
+          </div>
+          <pre><code><span class="comment"># application.yml</span>
+<span class="key">spring</span>:
+  <span class="key">datasource</span>:
+    <span class="key">driver-class-name</span>: <span class="string">com.mysql.cj.jdbc.Driver</span>
+    <span class="key">url</span>: <span class="string">jdbc:mysql://localhost:3306/mydb?useSSL=false&serverTimezone=UTC</span>
+    <span class="key">username</span>: <span class="string">root</span>
+    <span class="key">password</span>: <span class="string">123456</span>
+    <span class="key">hikari</span>:
+      <span class="comment"># 连接池名称</span>
+      <span class="key">pool-name</span>: <span class="string">MyHikariPool</span>
+
+      <span class="comment"># 连接池大小配置</span>
+      <span class="key">minimum-idle</span>: <span class="number">10</span>           <span class="comment"># 最小空闲连接数</span>
+      <span class="key">maximum-pool-size</span>: <span class="number">20</span>      <span class="comment"># 最大连接数</span>
+
+      <span class="comment"># 连接超时配置</span>
+      <span class="key">connection-timeout</span>: <span class="number">30000</span>  <span class="comment"># 获取连接超时（毫秒）</span>
+      <span class="key">idle-timeout</span>: <span class="number">600000</span>       <span class="comment"># 空闲连接超时（毫秒）</span>
+      <span class="key">max-lifetime</span>: <span class="number">1800000</span>      <span class="comment"># 连接最大存活时间（毫秒）</span>
+
+      <span class="comment"># 连接验证配置</span>
+      <span class="key">validation-timeout</span>: <span class="number">5000</span>   <span class="comment"># 连接验证超时</span>
+      <span class="key">connection-test-query</span>: <span class="string">SELECT 1</span>  <span class="comment"># 连接测试SQL</span>
+
+      <span class="comment"># 泄漏检测（开发环境建议开启）</span>
+      <span class="key">leak-detection-threshold</span>: <span class="number">60000</span>  <span class="comment"># 60秒未归还打印警告</span></code></pre>
+        </div>
+
+        <div class="tip-box">
+          <p><strong>HikariCP最佳配置建议：</strong></p>
+          <ul>
+            <li><span class="code-term">minimum-idle</span> 建议与 <span class="code-term">maximum-pool-size</span> 相同，避免连接频繁创建销毁</li>
+            <li><span class="code-term">max-lifetime</span> 应小于数据库的 <span class="code-term">wait_timeout</span></li>
+            <li><span class="code-term">leak-detection-threshold</span> 只在开发环境开启，生产环境关闭</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Druid配置与监控 -->
+    <section class="kp-section">
+      <h2 class="section-title">Druid配置与监控功能</h2>
+      <div class="section-content">
+        <h3>Druid的特点</h3>
+        <ul>
+          <li><strong>监控功能强大</strong>：内置监控页面，实时查看SQL执行情况</li>
+          <li><strong>SQL防注入</strong>：内置WallFilter防止SQL注入攻击</li>
+          <li><strong>SQL执行日志</strong>：记录慢SQL、错误SQL等</li>
+          <li><strong>扩展性好</strong>：支持多种Filter扩展</li>
+        </ul>
+
+        <h3>Druid配置示例</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">Spring Boot + Druid配置</span>
+            <button class="copy-btn" onclick="copyCode(this)">复制</button>
+          </div>
+          <pre><code><span class="comment"># application.yml</span>
+<span class="key">spring</span>:
+  <span class="key">datasource</span>:
+    <span class="key">type</span>: <span class="string">com.alibaba.druid.pool.DruidDataSource</span>
+    <span class="key">druid</span>:
+      <span class="comment"># 基本配置</span>
+      <span class="key">driver-class-name</span>: <span class="string">com.mysql.cj.jdbc.Driver</span>
+      <span class="key">url</span>: <span class="string">jdbc:mysql://localhost:3306/mydb</span>
+      <span class="key">username</span>: <span class="string">root</span>
+      <span class="key">password</span>: <span class="string">123456</span>
+
+      <span class="comment"># 连接池大小配置</span>
+      <span class="key">initial-size</span>: <span class="number">5</span>       <span class="comment"># 初始连接数</span>
+      <span class="key">min-idle</span>: <span class="number">5</span>           <span class="comment"># 最小空闲连接</span>
+      <span class="key">max-active</span>: <span class="number">20</span>        <span class="comment"># 最大活跃连接</span>
+      <span class="key">max-wait</span>: <span class="number">60000</span>       <span class="comment"># 最大等待时间</span>
+
+      <span class="comment"># 连接检测配置</span>
+      <span class="key">time-between-eviction-runs-millis</span>: <span class="number">60000</span>   <span class="comment"># 检测间隔</span>
+      <span class="key">min-evictable-idle-time-millis</span>: <span class="number">300000</span>      <span class="comment"># 最小空闲时间</span>
+      <span class="key">validation-query</span>: <span class="string">SELECT 1</span>
+      <span class="key">test-while-idle</span>: <span class="keyword">true</span>
+      <span class="key">test-on-borrow</span>: <span class="keyword">false</span>
+      <span class="key">test-on-return</span>: <span class="keyword">false</span>
+
+      <span class="comment"># 预编译语句缓存</span>
+      <span class="key">pool-prepared-statements</span>: <span class="keyword">true</span>
+      <span class="key">max-pool-prepared-statement-per-connection-size</span>: <span class="number">20</span>
+
+      <span class="comment"># 监控配置</span>
+      <span class="key">stat-view-servlet</span>:
+        <span class="key">enabled</span>: <span class="keyword">true</span>
+        <span class="key">url-pattern</span>: <span class="string">/druid/*</span>
+        <span class="key">login-username</span>: <span class="string">admin</span>
+        <span class="key">login-password</span>: <span class="string">admin</span>
+      <span class="key">web-stat-filter</span>:
+        <span class="key">enabled</span>: <span class="keyword">true</span>
+        <span class="key">url-pattern</span>: <span class="string">/*</span>
+
+      <span class="comment"># 防火墙配置（SQL防注入）</span>
+      <span class="key">filters</span>: <span class="string">wall,stat,slf4j</span>
+      <span class="key">connection-properties</span>: <span class="string">druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000</span></code></pre>
+        </div>
+
+        <h3>Druid监控功能</h3>
+        <p>启动应用后，访问 <span class="code-term">http://localhost:8080/druid/index.html</span> 可查看监控页面：</p>
+
+        <table>
+          <tr>
+            <th>监控项</th>
+            <th>说明</th>
+          </tr>
+          <tr>
+            <td>数据源</td>
+            <td>连接池状态、活跃连接数、空闲连接数等</td>
+          </tr>
+          <tr>
+            <td>SQL监控</td>
+            <td>SQL执行次数、执行时间、最慢SQL等</td>
+          </tr>
+          <tr>
+            <td>URL监控</td>
+            <td>HTTP请求统计</td>
+          </tr>
+          <tr>
+            <td>Web应用</td>
+            <td>Session监控、URI访问统计</td>
+          </tr>
+          <tr>
+            <td>防火墙</td>
+            <td>SQL注入拦截记录</td>
+          </tr>
+        </table>
+
+        <div class="warning-box">
+          <p><strong>生产环境注意：</strong></p>
+          <ul>
+            <li>Druid监控页面在生产环境应关闭或设置强密码</li>
+            <li>WallFilter可能影响部分特殊SQL的执行</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 连接池最佳实践 -->
+    <section class="kp-section">
+      <h2 class="section-title">连接池最佳实践</h2>
+      <div class="section-content">
+        <h3>1. 连接数配置</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">连接数配置建议</span>
+            <button class="copy-btn" onclick="copyCode(this)">复制</button>
+          </div>
+          <pre><code><span class="comment">// 计算公式：connections = (CPU核心数 * 2) + 有效磁盘数</span>
+<span class="comment">// 例如：4核 + 1块SSD = 4*2+1 = 9个连接</span>
+
+<span class="comment">// 实际配置应考虑：</span>
+<span class="comment">// 1. 应用的并发请求数</span>
+<span class="comment">// 2. 单个请求的执行时间</span>
+<span class="comment">// 3. 数据库的承载能力</span>
+
+<span class="comment">// 高并发场景配置示例：</span>
+<span class="key">maximum-pool-size</span>: <span class="number">50</span>     <span class="comment"># 峰值并发量</span>
+<span class="key">minimum-idle</span>: <span class="number">20</span>          <span class="comment"># 常规并发量</span>
+
+<span class="comment">// 低并发场景配置示例：</span>
+<span class="key">maximum-pool-size</span>: <span class="number">10</span>
+<span class="key">minimum-idle</span>: <span class="number">5</span></code></pre>
+        </div>
+
+        <h3>2. 超时配置</h3>
+        <table>
+          <tr>
+            <th>参数</th>
+            <th>建议值</th>
+            <th>说明</th>
+          </tr>
+          <tr>
+            <td>connection-timeout</td>
+            <td>30秒</td>
+            <td>根据业务响应时间调整</td>
+          </tr>
+          <tr>
+            <td>idle-timeout</td>
+            <td>10分钟</td>
+            <td>空闲连接回收时间</td>
+          </tr>
+          <tr>
+            <td>max-lifetime</td>
+            <td>30分钟</td>
+            <td>必须小于数据库wait_timeout</td>
+          </tr>
+        </table>
+
+        <h3>3. 连接验证配置</h3>
+        <div class="tip-box">
+          <p><strong>推荐配置：</strong></p>
+          <ul>
+            <li><span class="code-term">test-while-idle = true</span>：空闲时检测连接有效性</li>
+            <li><span class="code-term">test-on-borrow = false</span>：获取时不检测（影响性能）</li>
+            <li><span class="code-term">test-on-return = false</span>：归还时不检测</li>
+            <li><span class="code-term">validation-query = SELECT 1</span>：简单验证SQL</li>
+          </ul>
+        </div>
+
+        <h3>4. 正确的连接使用方式</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">try-with-resources方式</span>
+            <button class="copy-btn" onclick="copyCode(this)">复制</button>
+          </div>
+          <pre><code><span class="comment">// ✅ 正确：使用try-with-resources自动关闭</span>
+<span class="keyword">public void</span> <span class="method">correctUsage</span>() {
+    <span class="keyword">try</span> (Connection conn = dataSource.getConnection();
+         PreparedStatement ps = conn.prepareStatement(<span class="string">"SELECT * FROM user"</span>);
+         ResultSet rs = ps.executeQuery()) {
+
+        <span class="keyword">while</span> (rs.next()) {
+            <span class="comment">// 处理结果</span>
+        }
+    } <span class="keyword">catch</span> (SQLException e) {
+        e.printStackTrace();
+    }
+    <span class="comment">// 连接自动归还到连接池</span>
+}
+
+<span class="comment">// ✅ 正确：Spring事务管理</span>
+<span class="keyword">@Transactional</span>
+<span class="keyword">public void</span> <span class="method">withTransaction</span>() {
+    <span class="comment">// Spring自动管理连接获取和释放</span>
+    userRepository.findById(1L);
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 连接池常见问题 -->
+    <section class="kp-section">
+      <h2 class="section-title">连接池常见问题</h2>
+      <div class="section-content">
+        <h3>1. 连接泄漏（Connection Leak）</h3>
+        <p>获取连接后未正确归还，导致连接池耗尽。</p>
+
+        <h4>常见原因</h4>
+        <ul>
+          <li>忘记调用<span class="code-term">close()</span></li>
+          <li>异常导致<span class="code-term">close()</span>未执行</li>
+          <li>长时间持有连接不释放</li>
+        </ul>
+
+        <h4>解决方案</h4>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">连接泄漏检测配置</span>
+            <button class="copy-btn" onclick="copyCode(this)">复制</button>
+          </div>
+          <pre><code><span class="comment"># HikariCP连接泄漏检测</span>
+<span class="key">hikari</span>:
+  <span class="key">leak-detection-threshold</span>: <span class="number">60000</span>  <span class="comment"># 60秒未归还打印警告日志</span>
+
+<span class="comment"># 日志输出示例：</span>
+<span class="comment"># APPARENT DEADLOCK: Creating emergency threads for unassigned pending tasks!</span>
+<span class="comment"># Connection leak detection triggered for connection xxxx</span></code></pre>
+        </div>
+
+        <h3>2. 连接池满（Pool Exhausted）</h3>
+        <p>所有连接都被占用，新请求无法获取连接。</p>
+
+        <h4>排查步骤</h4>
+        <ol>
+          <li>检查是否有连接泄漏</li>
+          <li>检查活跃连接数是否持续高位</li>
+          <li>检查SQL执行时间是否过长</li>
+          <li>检查是否配置了合理的超时时间</li>
+        </ol>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">监控SQL排查问题</span>
+            <button class="copy-btn" onclick="copyCode(this)">复制</button>
+          </div>
+          <pre><code><span class="comment">-- 查看当前连接数</span>
+<span class="keyword">SHOW STATUS LIKE</span> <span class="string">'Threads_connected'</span>;
+
+<span class="comment">-- 查看正在执行的SQL</span>
+<span class="keyword">SHOW FULL PROCESSLIST</span>;
+
+<span class="comment">-- 查看执行时间长的SQL</span>
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> information_schema.processlist
+<span class="keyword">WHERE</span> command != <span class="string">'Sleep'</span>
+<span class="keyword">ORDER BY</span> time <span class="keyword">DESC</span>;</code></pre>
+        </div>
+
+        <h3>3. 连接数设置不合理</h3>
+        <div class="warning-box">
+          <p><strong>连接数过多：</strong></p>
+          <ul>
+            <li>数据库压力过大</li>
+            <li>内存消耗增加</li>
+            <li>上下文切换开销增大</li>
+          </ul>
+          <p><strong>连接数过少：</strong></p>
+          <ul>
+            <li>并发请求等待</li>
+            <li>应用响应变慢</li>
+            <li>超时异常增多</li>
+          </ul>
+        </div>
+
+        <h3>4. 常见问题速查表</h3>
+        <table>
+          <tr>
+            <th>问题</th>
+            <th>可能原因</th>
+            <th>解决方案</th>
+          </tr>
+          <tr>
+            <td>获取连接超时</td>
+            <td>连接池满、连接泄漏</td>
+            <td>增大连接池、排查泄漏、优化SQL</td>
+          </tr>
+          <tr>
+            <td>连接失效异常</td>
+            <td>连接被数据库关闭</td>
+            <td>配置test-while-idle、调整max-lifetime</td>
+          </tr>
+          <tr>
+            <td>应用启动慢</td>
+            <td>initialSize过大</td>
+            <td>减小初始连接数</td>
+          </tr>
+          <tr>
+            <td>内存占用高</td>
+            <td>连接数过多、缓存过大</td>
+            <td>减少连接数、关闭不必要的缓存</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- 总结 -->
+    <section class="kp-section">
+      <h2 class="section-title">连接池核心要点总结</h2>
+      <div class="section-content">
+        <div class="mermaid-container">
+          <div class="mermaid">
+flowchart TB
+    subgraph 配置["核心配置"]
+        C1[initialSize<br/>初始连接]
+        C2[minIdle/maxActive<br/>连接数]
+        C3[各类timeout<br/>超时设置]
+        C4[validation<br/>连接验证]
+    end
+
+    subgraph 选型["连接池选型"]
+        P1[HikariCP<br/>性能优先]
+        P2[Druid<br/>监控优先]
+    end
+
+    subgraph 使用["正确使用"]
+        U1[try-with-resources]
+        U2[及时归还连接]
+        U3[避免长事务]
+    end
+
+    subgraph 监控["监控排查"]
+        M1[活跃连接数]
+        M2[泄漏检测]
+        M3[慢SQL分析]
+    end
+
+    配置 --> 性能[高性能连接池]
+    选型 --> 性能
+    使用 --> 稳定[稳定运行]
+    监控 --> 稳定
+    性能 --> 目标[目标]
+    稳定 --> 目标
+
+    style 目标 fill:#f0b429,stroke:#0a0e17,stroke-width:3px
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <p><strong>关键要点回顾：</strong></p>
+          <ul>
+            <li><strong>连接数公式：</strong>(CPU核心数 × 2) + 有效磁盘数</li>
+            <li><strong>HikariCP：</strong>性能最优，Spring Boot默认，适合大多数场景</li>
+            <li><strong>Druid：</strong>监控功能强大，适合需要SQL监控和防护的场景</li>
+            <li><strong>连接泄漏：</strong>使用try-with-resources，开启leak-detection</li>
+            <li><strong>连接验证：</strong>test-while-idle=true，避免test-on-borrow</li>
+            <li><strong>超时配置：</strong>max-lifetime应小于数据库wait_timeout</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="kp-footer">
+    Java Knowledge Review Demo - 50 Knowledge Points<br>
+    <a href="knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a>
+  </footer>
+</div>
+
+<button class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</button>
+
+<script>
+(function() {
+  // Initialize Mermaid
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#f0b429',
+      primaryTextColor: '#0a0e17',
+      primaryBorderColor: '#f0b429',
+      lineColor: '#4ecdc4',
+      secondaryColor: '#4ecdc4',
+      tertiaryColor: '#1a1a2e',
+      background: '#0a0e17',
+      mainBkg: '#f0b429',
+      secondBkg: '#4ecdc4',
+      tertiaryBkg: '#1a1a2e'
+    },
+    flowchart: {
+      useMaxWidth: true,
+      htmlLabels: true,
+      curve: 'basis'
+    },
+    sequence: {
+      useMaxWidth: true
+    }
+  });
+
+  // Theme toggle
+  var themeToggle = document.getElementById('themeToggle');
+  function toggleTheme() {
+    var html = document.documentElement;
+    if (html.getAttribute('data-theme') === 'light') {
+      html.removeAttribute('data-theme');
+      themeToggle.textContent = '🌙';
+      localStorage.setItem('theme', 'dark');
+      mermaid.initialize({ theme: 'dark' });
+    } else {
+      html.setAttribute('data-theme', 'light');
+      themeToggle.textContent = '☀️';
+      localStorage.setItem('theme', 'light');
+      mermaid.initialize({ theme: 'default' });
+    }
+  }
+  themeToggle.addEventListener('click', toggleTheme);
+  if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = '☀️';
+  }
+
+  // Back to top
+  var backToTop = document.getElementById('backToTop');
+  window.addEventListener('scroll', function() {
+    if (window.pageYOffset > 300) {
+      backToTop.classList.add('visible');
+    } else {
+      backToTop.classList.remove('visible');
+    }
+  });
+
+  window.scrollToTop = function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Copy code
+  window.copyCode = function(btn) {
+    var code = btn.closest('.code-block').querySelector('code').textContent;
+    navigator.clipboard.writeText(code).then(function() {
+      var original = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.style.color = '#4ecdc4';
+      setTimeout(function() {
+        btn.textContent = original;
+        btn.style.color = '';
+      }, 2000);
+    });
+  };
+})();
+</script>
+</body>
+</html>

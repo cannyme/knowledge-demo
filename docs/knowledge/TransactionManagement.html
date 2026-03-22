@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring事务管理 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  /* Table styles */
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+  th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.08); font-weight: 600; color: var(--amber); font-family: var(--font-code); font-size: 13px; text-transform: uppercase; }
+  td { color: var(--text-secondary); }
+  tr:hover td { background: rgba(240, 180, 41, 0.03); }
+  tr:last-child td { border-bottom: none; }
+  /* Tip, Warning, Highlight boxes */
+  .tip { background: rgba(78, 205, 196, 0.08); border-left: 4px solid var(--cyan); padding: 16px 20px; border-radius: 0 12px 12px 0; margin: 20px 0; }
+  .tip-title { font-weight: 700; color: var(--cyan); margin-bottom: 8px; font-size: 14px; }
+  .warning { background: rgba(255, 123, 114, 0.08); border-left: 4px solid var(--red); padding: 16px 20px; border-radius: 0 12px 12px 0; margin: 20px 0; }
+  .warning-title { font-weight: 700; color: var(--red); margin-bottom: 8px; font-size: 14px; }
+  .highlight { background: rgba(240, 180, 41, 0.08); border-left: 4px solid var(--amber); padding: 16px 20px; border-radius: 0 12px 12px 0; margin: 20px 0; }
+  .highlight-title { font-weight: 700; color: var(--amber); margin-bottom: 8px; font-size: 14px; }
+  /* Code styles */
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body code { font-family: var(--font-code); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">Spring事务管理</h1>
+    <p class="hero-desc">Spring事务管理的详细解析和最佳实践，包括声明式事务、传播行为、隔离级别及常见失效场景</p>
+  </header>
+
+  <!-- ACID特性 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔒</div><h2 class="section-title">事务ACID特性</h2></div>
+    <div class="section-body">
+      <p>事务是保证数据一致性的核心机制，ACID是事务的四个基本特性：</p>
+      <table>
+        <tr>
+          <th>特性</th>
+          <th>英文</th>
+          <th>说明</th>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--amber);">A</strong></td>
+          <td>Atomicity（原子性）</td>
+          <td>事务是不可分割的最小单位，要么全部成功，要么全部失败回滚</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--amber);">C</strong></td>
+          <td>Consistency（一致性）</td>
+          <td>事务前后数据完整性约束不变，如余额不能为负数</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--amber);">I</strong></td>
+          <td>Isolation（隔离性）</td>
+          <td>并发事务之间互不干扰，一个事务的中间状态对其他事务不可见</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--amber);">D</strong></td>
+          <td>Durability（持久性）</td>
+          <td>事务提交后永久保存，即使系统崩溃也不会丢失</td>
+        </tr>
+      </table>
+      <div class="tip">
+        <div class="tip-title">💡 理解要点</div>
+        <p>Spring事务管理是对数据库事务的封装，通过AOP实现声明式事务，让开发者专注于业务逻辑而无需手动管理事务边界。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Spring事务方式 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🛠️</div><h2 class="section-title">Spring事务两种方式</h2></div>
+    <div class="section-body">
+      <table>
+        <tr>
+          <th>方式</th>
+          <th>实现方式</th>
+          <th>适用场景</th>
+          <th>优缺点</th>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--cyan);">声明式事务</strong></td>
+          <td>@Transactional注解</td>
+          <td>大多数业务场景（推荐）</td>
+          <td>简洁、与业务解耦；但粒度控制不够灵活</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--cyan);">编程式事务</strong></td>
+          <td>TransactionTemplate</td>
+          <td>复杂事务逻辑、需要精细控制</td>
+          <td>灵活、可控；但代码侵入性强</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- @Transactional注解属性 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏷️</div><h2 class="section-title">@Transactional 注解属性详解</h2></div>
+    <div class="section-body">
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>@Transactional(
+    // 事务管理器名称（多数据源时指定）
+    transactionManager = "transactionManager",
+
+    // 传播行为（默认REQUIRED）
+    propagation = Propagation.REQUIRED,
+
+    // 隔离级别（默认使用数据库默认）
+    isolation = Isolation.READ_COMMITTED,
+
+    // 超时时间（秒）
+    timeout = 30,
+
+    // 是否只读（可优化）
+    readOnly = false,
+
+    // 回滚异常（默认RuntimeException）
+    rollbackFor = Exception.class,
+
+    // 不回滚异常
+    noRollbackFor = BusinessException.class
+)
+public void createOrder(Order order) {
+    // 业务逻辑
+}</pre></div>
+      </div>
+
+      <table>
+        <tr>
+          <th>属性</th>
+          <th>类型</th>
+          <th>默认值</th>
+          <th>说明</th>
+        </tr>
+        <tr>
+          <td>transactionManager</td>
+          <td>String</td>
+          <td>""</td>
+          <td>指定事务管理器，多数据源时必须指定</td>
+        </tr>
+        <tr>
+          <td>propagation</td>
+          <td>Propagation</td>
+          <td>REQUIRED</td>
+          <td>事务传播行为，见下节详述</td>
+        </tr>
+        <tr>
+          <td>isolation</td>
+          <td>Isolation</td>
+          <td>DEFAULT</td>
+          <td>事务隔离级别，见下节详述</td>
+        </tr>
+        <tr>
+          <td>timeout</td>
+          <td>int</td>
+          <td>-1</td>
+          <td>事务超时时间（秒），-1表示不限制</td>
+        </tr>
+        <tr>
+          <td>readOnly</td>
+          <td>boolean</td>
+          <td>false</td>
+          <td>标记为只读事务，可优化性能（如MySQL不生成undo log）</td>
+        </tr>
+        <tr>
+          <td>rollbackFor</td>
+          <td>Class[]</td>
+          <td>{}</td>
+          <td>指定哪些异常触发回滚（默认RuntimeException）</td>
+        </tr>
+        <tr>
+          <td>noRollbackFor</td>
+          <td>Class[]</td>
+          <td>{}</td>
+          <td>指定哪些异常不触发回滚</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 传播行为 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📡</div><h2 class="section-title">事务传播行为（7种）</h2></div>
+    <div class="section-body">
+      <p>传播行为定义事务如何传播，即当前方法如何与已有事务交互：</p>
+      <table>
+        <tr>
+          <th>传播行为</th>
+          <th>说明</th>
+          <th>使用场景</th>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--amber);">REQUIRED</strong>（默认）</td>
+          <td>有事务就加入，没有就新建</td>
+          <td>大多数业务方法，默认即可</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--amber);">SUPPORTS</strong></td>
+          <td>有事务就加入，没有就以非事务运行</td>
+          <td>查询方法，事务非必须</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--amber);">MANDATORY</strong></td>
+          <td>必须在事务中调用，否则抛异常</td>
+          <td>强制要求有事务的公共方法</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--amber);">REQUIRES_NEW</strong></td>
+          <td>总是新建事务，挂起当前事务</td>
+          <td>日志记录、审计等独立操作</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--amber);">NOT_SUPPORTED</strong></td>
+          <td>以非事务运行，挂起当前事务</td>
+          <td>无需事务的方法，避免事务开销</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--amber);">NEVER</strong></td>
+          <td>以非事务运行，有事务则抛异常</td>
+          <td>严禁在事务中执行的方法</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--amber);">NESTED</strong></td>
+          <td>有事务就嵌套执行，没有就新建</td>
+          <td>子操作可独立回滚的场景</td>
+        </tr>
+      </table>
+
+      <div class="highlight">
+        <div class="highlight-title">📌 REQUIRED vs REQUIRES_NEW 对比</div>
+        <p><strong>REQUIRED：</strong>所有操作在同一个事务中，任何失败都会全部回滚</p>
+        <p><strong>REQUIRES_NEW：</strong>挂起当前事务 -> 新建事务执行 -> 恢复原事务，独立提交/回滚</p>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>// 主业务方法
+@Transactional
+public void createOrder(Order order) {
+    saveOrder(order);           // 加入当前事务
+    deductStock(order);         // 加入当前事务
+    saveLog("创建订单");         // 独立事务，即使主事务失败也会记录
+}
+
+// 默认 REQUIRED - 加入现有事务
+@Transactional
+public void deductStock(Order order) {
+    // 扣减库存
+}
+
+// REQUIRES_NEW - 新建独立事务
+@Transactional(propagation = Propagation.REQUIRES_NEW)
+public void saveLog(String operation) {
+    // 保存日志，独立提交
+}
+
+// NESTED - 嵌套事务（基于Savepoint）
+@Transactional(propagation = Propagation.NESTED)
+public void processItem(Item item) {
+    // 内部事务回滚不影响外部，但外部回滚会影响内部
+}</pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 隔离级别 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🛡️</div><h2 class="section-title">事务隔离级别</h2></div>
+    <div class="section-body">
+      <p>隔离级别决定事务之间相互影响的程度，解决并发事务带来的三种问题：</p>
+      <ul>
+        <li><strong style="color: var(--red);">脏读：</strong>读到其他事务未提交的数据</li>
+        <li><strong style="color: var(--red);">不可重复读：</strong>同一事务两次读取结果不同（被其他事务修改）</li>
+        <li><strong style="color: var(--red);">幻读：</strong>同一事务两次读取记录数不同（被其他事务插入/删除）</li>
+      </ul>
+
+      <table>
+        <tr>
+          <th>隔离级别</th>
+          <th>脏读</th>
+          <th>不可重复读</th>
+          <th>幻读</th>
+          <th>说明</th>
+        </tr>
+        <tr>
+          <td>READ_UNCOMMITTED</td>
+          <td style="color: var(--red);">✗ 可能</td>
+          <td style="color: var(--red);">✗ 可能</td>
+          <td style="color: var(--red);">✗ 可能</td>
+          <td>性能最好，数据一致性最差</td>
+        </tr>
+        <tr>
+          <td>READ_COMMITTED</td>
+          <td style="color: var(--green);">✓ 解决</td>
+          <td style="color: var(--red);">✗ 可能</td>
+          <td style="color: var(--red);">✗ 可能</td>
+          <td>Oracle默认级别</td>
+        </tr>
+        <tr>
+          <td>REPEATABLE_READ</td>
+          <td style="color: var(--green);">✓ 解决</td>
+          <td style="color: var(--green);">✓ 解决</td>
+          <td style="color: var(--green);">✓ 解决*</td>
+          <td>MySQL默认（MVCC解决幻读）</td>
+        </tr>
+        <tr>
+          <td>SERIALIZABLE</td>
+          <td style="color: var(--green);">✓ 解决</td>
+          <td style="color: var(--green);">✓ 解决</td>
+          <td style="color: var(--green);">✓ 解决</td>
+          <td>完全串行，性能最差</td>
+        </tr>
+      </table>
+
+      <div class="tip">
+        <div class="tip-title">💡 默认选择建议</div>
+        <p>大多数情况下使用<strong style="color: var(--cyan);">数据库默认级别</strong>即可。MySQL InnoDB的REPEATABLE_READ通过MVCC机制已能解决幻读问题。</p>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>// 指定隔离级别
+@Transactional(isolation = Isolation.READ_COMMITTED)
+public void queryData() {
+    // 查询逻辑
+}</pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 事务失效场景 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">事务失效场景（6种）</h2></div>
+    <div class="section-body">
+
+      <div class="warning">
+        <div class="warning-title">❌ 1. 方法不是 public</div>
+        <p>@Transactional 只对 public 方法有效，protected/private 方法不会生成代理</p>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>// ❌ 错误：非public方法
+@Transactional
+private void internalMethod() {  // 事务不会生效！
+    // ...
+}
+
+// ✓ 正确：public方法
+@Transactional
+public void publicMethod() {
+    // ...
+}</pre></div>
+      </div>
+
+      <div class="warning">
+        <div class="warning-title">❌ 2. 自调用问题（最常见）</div>
+        <p>同一个类中，A方法调用B方法，B方法的@Transactional失效。原因：Spring AOP基于代理，自调用不走代理。</p>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>@Service
+public class OrderService {
+
+    @Autowired
+    private OrderService self;  // 注入自己（解决方案1）
+
+    // 主方法
+    public void methodA() {
+        // ❌ 自调用，事务失效！
+        this.methodB();
+
+        // ✓ 解决方案1：通过注入的代理调用
+        self.methodB();
+
+        // ✓ 解决方案2：使用AopContext
+        ((OrderService) AopContext.currentProxy()).methodB();
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void methodB() {
+        // 新事务
+    }
+}</pre></div>
+      </div>
+
+      <div class="tip">
+        <div class="tip-title">💡 自调用解决方案</div>
+        <ul>
+          <li><strong>注入自己：</strong>@Autowired private OrderService self; 然后通过self调用</li>
+          <li><strong>AopContext：</strong>((Service) AopContext.currentProxy()).method()</li>
+          <li><strong>拆分到另一个类：</strong>将方法B移到另一个Service类中</li>
+        </ul>
+      </div>
+
+      <div class="warning">
+        <div class="warning-title">❌ 3. 异常被捕获</div>
+        <p>如果捕获异常后没有抛出，事务不会回滚</p>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>// ❌ 错误：捕获异常未抛出
+@Transactional
+public void wrongCatch() {
+    try {
+        // 业务操作
+        updateData();
+    } catch (Exception e) {
+        // 只打印不抛出，事务不会回滚！
+        e.printStackTrace();
+    }
+}
+
+// ✓ 正确：抛出异常或手动标记回滚
+@Transactional(rollbackFor = Exception.class)
+public void correctCatch() {
+    try {
+        updateData();
+    } catch (Exception e) {
+        // 手动标记回滚
+        TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+    }
+}</pre></div>
+      </div>
+
+      <div class="warning">
+        <div class="warning-title">❌ 4. 异常类型不对</div>
+        <p>默认只回滚 RuntimeException 和 Error，checked 异常（如 IOException）不会回滚</p>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>// ❌ 默认不回滚checked异常
+@Transactional
+public void checkedException() throws IOException {
+    // 抛出IOException不会触发回滚
+    throw new IOException("IO错误");
+}
+
+// ✓ 指定回滚所有异常
+@Transactional(rollbackFor = Exception.class)
+public void rollbackAll() throws IOException {
+    throw new IOException("IO错误");  // 会回滚
+}</pre></div>
+      </div>
+
+      <div class="warning">
+        <div class="warning-title">❌ 5. 数据库引擎不支持事务</div>
+        <p>MySQL 的 MyISAM 引擎不支持事务，必须用 InnoDB</p>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">SQL</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>-- 查看表使用的引擎
+SHOW CREATE TABLE orders;
+
+-- 修改引擎为InnoDB
+ALTER TABLE orders ENGINE=InnoDB;</pre></div>
+      </div>
+
+      <div class="warning">
+        <div class="warning-title">❌ 6. 传播行为设置错误</div>
+        <p>如 NOT_SUPPORTED、NEVER 会导致不在事务中执行</p>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>// NOT_SUPPORTED - 以非事务运行
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public void noTransaction() {
+    // 此方法不在事务中执行
+}</pre></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 编程式事务 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⌨️</div><h2 class="section-title">编程式事务</h2></div>
+    <div class="section-body">
+      <p>使用 TransactionTemplate 进行细粒度事务控制：</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>@Service
+public class OrderService {
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
+    // 无返回值
+    public void doSomething() {
+        transactionTemplate.execute(status -> {
+            try {
+                // 业务操作
+                saveOrder();
+                deductStock();
+            } catch (Exception e) {
+                status.setRollbackOnly();
+            }
+            return null;
+        });
+    }
+
+    // 带返回值
+    public String doSomethingWithResult() {
+        return transactionTemplate.execute(status -> {
+            // 业务操作
+            saveOrder();
+            return "success";
+        });
+    }
+
+    // 设置事务属性
+    public void doWithConfig() {
+        transactionTemplate.setPropagationBehavior(
+            TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.setIsolationLevel(
+            TransactionDefinition.ISOLATION_READ_COMMITTED);
+        transactionTemplate.setTimeout(30);
+
+        transactionTemplate.execute(status -> {
+            // 业务操作
+            return null;
+        });
+    }
+}</pre></div>
+      </div>
+
+      <div class="tip">
+        <div class="tip-title">💡 何时使用编程式事务</div>
+        <ul>
+          <li>需要在事务中执行条件判断（根据条件决定是否回滚）</li>
+          <li>需要在循环中批量提交（每N条提交一次）</li>
+          <li>需要获取事务状态（如是否已回滚）</li>
+          <li>复杂的嵌套事务控制</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 长事务问题 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⏱️</div><h2 class="section-title">长事务问题及优化</h2></div>
+    <div class="section-body">
+      <div class="warning">
+        <div class="warning-title">⚠️ 长事务的危害</div>
+        <ul>
+          <li>数据库连接占用时间长，连接池耗尽风险</li>
+          <li>锁资源占用时间长，影响并发性能</li>
+          <li>回滚代价大（大量undo log）</li>
+          <li>主从延迟增加（长事务提交后才同步）</li>
+        </ul>
+      </div>
+
+      <div class="highlight">
+        <div class="highlight-title">✅ 优化方案</div>
+        <ul>
+          <li><strong>缩小事务范围：</strong>非必要操作移到事务外</li>
+          <li><strong>REQUIRES_NEW：</strong>让独立操作使用单独事务</li>
+          <li><strong>批量分批：</strong>大数据量分批处理，每批独立事务</li>
+          <li><strong>异步处理：</strong>非核心逻辑异步执行</li>
+        </ul>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre>@Service
+public class OrderService {
+
+    // ❌ 不推荐：事务范围过大
+    @Transactional
+    public void createOrderBad(Order order) {
+        saveOrder(order);           // 核心业务
+        deductStock(order);         // 核心业务
+        sendNotification(order);    // 非核心：应该移出事务
+        updateStatistics(order);    // 非核心：应该移出事务
+        writeLog(order);            // 非核心：应该独立事务
+    }
+
+    // ✓ 推荐：精简事务范围
+    @Transactional
+    public void createOrderGood(Order order) {
+        // 事务内只保留核心业务
+        saveOrder(order);
+        deductStock(order);
+    }
+
+    // 事务外：发送通知
+    public void afterCreateOrder(Order order) {
+        createOrderGood(order);
+        sendNotification(order);    // 事务外执行
+        updateStatistics(order);    // 事务外执行
+    }
+
+    // 独立事务：记录日志
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void writeLog(Order order) {
+        // 独立提交，不影响主事务
+    }
+
+    // 事务提交后执行（事件监听）
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void afterOrderCreated(OrderCreatedEvent event) {
+        // 事务提交后异步发送通知
+        sendNotification(event.getOrder());
+    }
+}</pre></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) {
+    const container = btn.closest('.code-container');
+    const code = container.querySelector('pre')?.textContent || container.querySelector('code')?.textContent || '';
+    navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); });
+}
+</script>
+</body>
+</html>

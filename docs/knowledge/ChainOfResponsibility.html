@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>责任链模式 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+    --text-dim: #4a5068; --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e; --text-dim: #7a7a8e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .highlight { background: linear-gradient(135deg, rgba(240, 180, 41, 0.2), rgba(78, 205, 196, 0.15)); padding: 16px; border-radius: 8px; border-left: 3px solid var(--amber); margin: 16px 0; }
+  .tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .tip-title { color: var(--green); font-weight: 600; margin-bottom: 8px; }
+  .warning { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .warning-title { color: var(--red); font-weight: 600; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>设计模式</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 DESIGN PATTERN</div>
+    <h1 class="hero-title">责任链模式</h1>
+    <p class="hero-desc">将请求沿着处理链传递，直到有对象处理它为止。避免请求发送者和接收者耦合，让多个对象都有机会处理请求。</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">模式定义与意图</h2></div>
+    <div class="section-body">
+      <p><strong>责任链模式（Chain of Responsibility Pattern）</strong>是一种行为型设计模式，它允许多个对象有机会处理请求，从而避免请求的发送者和接收者之间的耦合。将这些对象连成一条链，并沿着这条链传递请求，直到有一个对象处理它为止。</p>
+      <div class="highlight">
+        <strong>核心思想：</strong>解耦请求发送者和接收者，让多个处理器按顺序依次处理请求，直到请求被处理或到达链尾。
+      </div>
+      <p>生活中的类比：</p>
+      <ul>
+        <li>公司审批流程：员工请假 -> 组长 -> 经理 -> 总监</li>
+        <li>客服转接：普通客服无法解决 -> 转接高级客服 -> 转接技术专家</li>
+        <li>异常处理：try-catch块中异常沿调用栈向上传递</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">架构原理</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+sequenceDiagram
+    participant C as Client
+    participant H1 as Handler1
+    participant H2 as Handler2
+    participant H3 as Handler3
+
+    C->>H1: handleRequest(request)
+    H1->>H1: 能处理吗？
+    alt 不能处理
+        H1->>H2: passToNext(request)
+        H2->>H2: 能处理吗？
+        alt 不能处理
+            H2->>H3: passToNext(request)
+            H3->>H3: 处理请求
+            H3-->>C: 返回结果
+        else 能处理
+            H2->>H2: 处理请求
+            H2-->>C: 返回结果
+        end
+    else 能处理
+        H1->>H1: 处理请求
+        H1-->>C: 返回结果
+    end
+      </div>
+      <div class="mermaid">
+classDiagram
+    class Handler {
+        <<abstract>>
+        -next: Handler
+        +setNext(Handler)
+        +handle(Request)*
+        #passToNext(Request)
+    }
+    class ConcreteHandler1 {
+        +handle(Request)
+    }
+    class ConcreteHandler2 {
+        +handle(Request)
+    }
+    class ConcreteHandler3 {
+        +handle(Request)
+    }
+    class Request
+    class Client
+    Handler --> Handler: next
+    Handler <|-- ConcreteHandler1
+    Handler <|-- ConcreteHandler2
+    Handler <|-- ConcreteHandler3
+    Client --> Handler
+      </div>
+      <p><strong>角色说明：</strong></p>
+      <table>
+        <tr><th>角色</th><th>说明</th></tr>
+        <tr><td>Handler</td><td>抽象处理器，定义处理请求的接口，持有对下一个处理器的引用</td></tr>
+        <tr><td>ConcreteHandler</td><td>具体处理器，处理它所负责的请求，或传递给下一个处理器</td></tr>
+        <tr><td>Request</td><td>请求对象，封装请求信息</td></tr>
+        <tr><td>Client</td><td>客户端，创建责任链并向第一个处理器提交请求</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📝</div><h2 class="section-title">代码实现</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="basic">基础实现</button>
+        <button class="tab" data-tab="filter">Filter模式</button>
+        <button class="tab" data-tab="approval">审批流程</button>
+      </div>
+
+      <div id="basic" class="tab-content active">
+        <p><strong>基础责任链实现</strong></p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 请求类
+class Request {
+    private String data;
+    private boolean authenticated;
+    private boolean authorized;
+    private boolean validated;
+
+    // getters and setters
+    public String getData() { return data; }
+    public void setData(String data) { this.data = data; }
+    public boolean isAuthenticated() { return authenticated; }
+    public void setAuthenticated(boolean auth) { this.authenticated = auth; }
+    public boolean isAuthorized() { return authorized; }
+    public void setAuthorized(boolean auth) { this.authorized = auth; }
+    public boolean isValidated() { return validated; }
+    public void setValidated(boolean valid) { this.validated = valid; }
+}
+
+// 抽象处理器
+abstract class Handler {
+    protected Handler next;
+
+    // 链式设置下一个处理器
+    public Handler setNext(Handler next) {
+        this.next = next;
+        return next;
+    }
+
+    // 抽象处理方法
+    public abstract void handle(Request request);
+
+    // 传递给下一个处理器
+    protected void passToNext(Request request) {
+        if (next != null) {
+            next.handle(request);
+        }
+    }
+}
+
+// 具体处理器：认证
+class AuthHandler extends Handler {
+    @Override
+    public void handle(Request request) {
+        System.out.println("【认证】检查用户身份...");
+        if (request.getData().contains("token")) {
+            request.setAuthenticated(true);
+            System.out.println("【认证】认证通过");
+            passToNext(request);
+        } else {
+            System.out.println("【认证】认证失败，终止请求");
+        }
+    }
+}
+
+// 具体处理器：授权
+class AuthorizationHandler extends Handler {
+    @Override
+    public void handle(Request request) {
+        System.out.println("【授权】检查用户权限...");
+        if (request.isAuthenticated()) {
+            request.setAuthorized(true);
+            System.out.println("【授权】授权通过");
+            passToNext(request);
+        } else {
+            System.out.println("【授权】未认证，无法授权");
+        }
+    }
+}
+
+// 具体处理器：业务处理
+class BusinessHandler extends Handler {
+    @Override
+    public void handle(Request request) {
+        if (request.isAuthenticated() && request.isAuthorized()) {
+            System.out.println("【业务】执行业务逻辑：" + request.getData());
+        } else {
+            System.out.println("【业务】前置检查未通过，无法执行");
+        }
+    }
+}
+
+// 客户端使用
+Handler auth = new AuthHandler();
+Handler authz = new AuthorizationHandler();
+Handler business = new BusinessHandler();
+
+// 构建责任链
+auth.setNext(authz).setNext(business);
+
+Request request = new Request();
+request.setData("token:abc123, data:hello");
+auth.handle(request);</code></pre></div>
+        </div>
+      </div>
+
+      <div id="filter" class="tab-content">
+        <p><strong>Servlet Filter模式</strong></p>
+        <p>模拟Tomcat中FilterChain的实现方式：</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// Filter接口
+interface Filter {
+    void doFilter(Request request, FilterChain chain);
+}
+
+// FilterChain接口
+interface FilterChain {
+    void doFilter(Request request);
+}
+
+// FilterChain实现
+class ApplicationFilterChain implements FilterChain {
+    private final List&lt;Filter&gt; filters = new ArrayList&lt;&gt;();
+    private int pos = 0;
+
+    public void addFilter(Filter filter) {
+        filters.add(filter);
+    }
+
+    @Override
+    public void doFilter(Request request) {
+        if (pos &lt; filters.size()) {
+            Filter filter = filters.get(pos++);
+            filter.doFilter(request, this);
+        } else {
+            // 所有Filter执行完毕，执行目标Servlet
+            System.out.println("执行目标Servlet");
+        }
+    }
+}
+
+// 具体Filter：日志
+class LoggingFilter implements Filter {
+    @Override
+    public void doFilter(Request request, FilterChain chain) {
+        System.out.println("[Filter] 请求开始：" + request.getData());
+        chain.doFilter(request);  // 传递给下一个
+        System.out.println("[Filter] 请求结束");
+    }
+}
+
+// 具体Filter：编码
+class EncodingFilter implements Filter {
+    @Override
+    public void doFilter(Request request, FilterChain chain) {
+        System.out.println("[Filter] 设置编码UTF-8");
+        chain.doFilter(request);
+    }
+}
+
+// 使用
+ApplicationFilterChain chain = new ApplicationFilterChain();
+chain.addFilter(new LoggingFilter());
+chain.addFilter(new EncodingFilter());
+chain.doFilter(request);</code></pre></div>
+        </div>
+      </div>
+
+      <div id="approval" class="tab-content">
+        <p><strong>审批流程示例</strong></p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 请假申请
+class LeaveRequest {
+    private String name;
+    private int days;
+    public LeaveRequest(String name, int days) {
+        this.name = name; this.days = days;
+    }
+    public String getName() { return name; }
+    public int getDays() { return days; }
+}
+
+// 审批人抽象类
+abstract class Approver {
+    protected Approver next;
+    protected String name;
+
+    public Approver(String name) { this.name = name; }
+
+    public Approver setNext(Approver next) {
+        this.next = next;
+        return next;
+    }
+
+    public abstract void approve(LeaveRequest request);
+}
+
+// 组长：1-3天
+class TeamLeader extends Approver {
+    public TeamLeader(String name) { super(name); }
+
+    @Override
+    public void approve(LeaveRequest request) {
+        if (request.getDays() &lt;= 3) {
+            System.out.println("组长 " + name + " 审批通过："
+                + request.getName() + " 请假 " + request.getDays() + " 天");
+        } else if (next != null) {
+            System.out.println("组长 " + name + " 无权审批，转交上级");
+            next.approve(request);
+        }
+    }
+}
+
+// 经理：4-7天
+class Manager extends Approver {
+    public Manager(String name) { super(name); }
+
+    @Override
+    public void approve(LeaveRequest request) {
+        if (request.getDays() &lt;= 7) {
+            System.out.println("经理 " + name + " 审批通过："
+                + request.getName() + " 请假 " + request.getDays() + " 天");
+        } else if (next != null) {
+            System.out.println("经理 " + name + " 无权审批，转交上级");
+            next.approve(request);
+        }
+    }
+}
+
+// 总监：7天以上
+class Director extends Approver {
+    public Director(String name) { super(name); }
+
+    @Override
+    public void approve(LeaveRequest request) {
+        System.out.println("总监 " + name + " 审批通过："
+            + request.getName() + " 请假 " + request.getDays() + " 天");
+    }
+}
+
+// 使用
+TeamLeader leader = new TeamLeader("张组长");
+Manager manager = new Manager("李经理");
+Director director = new Director("王总监");
+
+leader.setNext(manager).setNext(director);
+
+leader.approve(new LeaveRequest("小明", 2));   // 组长审批
+leader.approve(new LeaveRequest("小红", 5));   // 经理审批
+leader.approve(new LeaveRequest("小刚", 10));  // 总监审批</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔧</div><h2 class="section-title">框架中的应用</h2></div>
+    <div class="section-body">
+      <h3>1. Servlet Filter Chain</h3>
+      <p>Tomcat的过滤器链是责任链模式的经典应用：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// web.xml中配置Filter
+&lt;filter&gt;
+    &lt;filter-name&gt;encodingFilter&lt;/filter-name&gt;
+    &lt;filter-class&gt;EncodingFilter&lt;/filter-class&gt;
+&lt;/filter&gt;
+&lt;filter-mapping&gt;
+    &lt;filter-name&gt;encodingFilter&lt;/filter-name&gt;
+    &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+&lt;/filter-mapping&gt;
+
+// Spring Boot中配置
+@Bean
+public FilterRegistrationBean&lt;Filter&gt; loggingFilter() {
+    FilterRegistrationBean&lt;Filter&gt; registration = new FilterRegistrationBean&lt;&gt;();
+    registration.setFilter(new LoggingFilter());
+    registration.addUrlPatterns("/*");
+    registration.setOrder(1);  // 指定顺序
+    return registration;
+}</code></pre></div>
+      </div>
+
+      <h3>2. Spring Interceptor</h3>
+      <p>Spring MVC拦截器链：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// HandlerInterceptor接口
+public interface HandlerInterceptor {
+    default boolean preHandle(HttpServletRequest request,
+                             HttpServletResponse response,
+                             Object handler) { return true; }
+
+    default void postHandle(HttpServletRequest request,
+                           HttpServletResponse response,
+                           Object handler,
+                           ModelAndView modelAndView) {}
+
+    default void afterCompletion(HttpServletRequest request,
+                                HttpServletResponse response,
+                                Object handler,
+                                Exception ex) {}
+}
+
+// 执行顺序
+// preHandle1 -> preHandle2 -> Controller -> postHandle2 -> postHandle1
+//           -> afterCompletion2 -> afterCompletion1</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">优缺点分析</h2></div>
+    <div class="section-body">
+      <div class="tip">
+        <div class="tip-title">✅ 优点</div>
+        <ul>
+          <li><strong>降低耦合：</strong>请求发送者和接收者解耦，发送者不需要知道谁处理请求</li>
+          <li><strong>灵活性高：</strong>可以动态改变链中的成员或调整顺序</li>
+          <li><strong>易于扩展：</strong>增加新的处理器只需要扩展类，无需修改原有代码</li>
+          <li><strong>单一职责：</strong>每个处理器只负责自己的处理逻辑</li>
+        </ul>
+      </div>
+      <div class="warning">
+        <div class="warning-title">❌ 缺点</div>
+        <ul>
+          <li>性能问题：链过长时，请求传递可能影响性能</li>
+          <li>调试困难：请求可能在多个处理器间传递，难以追踪</li>
+          <li>不保证处理：请求可能到达链尾仍没有被处理</li>
+          <li>可能导致循环：设置不当可能形成循环链</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

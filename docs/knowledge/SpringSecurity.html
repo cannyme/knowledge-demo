@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring Security核心概念 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --text-dim: #6a6f78; --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --cyan: #2a9d8f;
+    --green: #2e7d32; --red: #c62828; --text-primary: #1a1a2e; --text-secondary: #4a4a5a;
+    --text-dim: #6a6a7a;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul, .section-body ol { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body code { font-family: var(--font-code); }
+
+  /* Table Styles */
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+  th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; font-family: var(--font-code); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  td:first-child { font-weight: 600; color: var(--cyan); font-family: var(--font-code); }
+
+  /* Tip Box */
+  .tip-box { background: rgba(78, 205, 196, 0.08); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 12px; padding: 20px 24px; margin: 20px 0; position: relative; }
+  .tip-box::before { content: '💡'; position: absolute; top: -12px; left: 20px; background: var(--bg-card); padding: 0 8px; font-size: 16px; }
+  .tip-box-title { color: var(--cyan); font-weight: 700; font-size: 14px; margin-bottom: 8px; margin-top: 4px; }
+
+  /* Warning Box */
+  .warning-box { background: rgba(255, 123, 114, 0.08); border: 1px solid rgba(255, 123, 114, 0.25); border-radius: 12px; padding: 20px 24px; margin: 20px 0; position: relative; }
+  .warning-box::before { content: '⚠️'; position: absolute; top: -12px; left: 20px; background: var(--bg-card); padding: 0 8px; font-size: 16px; }
+  .warning-box-title { color: var(--red); font-weight: 700; font-size: 14px; margin-bottom: 8px; margin-top: 4px; }
+
+  /* Highlight */
+  .highlight { background: rgba(240, 180, 41, 0.15); padding: 2px 6px; border-radius: 4px; color: var(--amber); font-family: var(--font-code); font-size: 0.9em; }
+
+  /* Q&A Styles */
+  .qa-item { margin-bottom: 20px; padding: 20px; background: rgba(240, 180, 41, 0.03); border-radius: 12px; border-left: 3px solid var(--amber); }
+  .qa-question { color: var(--amber); font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+  .qa-answer { color: var(--text-secondary); }
+
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring生态</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🛡️ SPRING SECURITY</div>
+    <h1 class="hero-title">Spring Security核心概念</h1>
+    <p class="hero-desc">Spring Security是一个功能强大且高度可定制的安全框架，为Java应用提供认证、授权和防护功能。本文详细解析其核心组件、认证流程、JWT实现、OAuth2.0以及最佳实践。</p>
+  </header>
+
+  <!-- 核心功能 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">核心功能</h2></div>
+    <div class="section-body">
+      <p>Spring Security提供三大核心安全功能：</p>
+      <table>
+        <tr><th>功能</th><th>说明</th><th>典型应用场景</th></tr>
+        <tr><td>认证（Authentication）</td><td>验证用户身份，确认"你是谁"</td><td>用户登录验证、JWT令牌校验</td></tr>
+        <tr><td>授权（Authorization）</td><td>验证用户权限，确认"你能做什么"</td><td>角色权限控制、方法级安全</td></tr>
+        <tr><td>防护（Protection）</td><td>防御常见Web攻击</td><td>CSRF防护、CORS配置、Session固定攻击防护</td></tr>
+      </table>
+
+      <div class="tip-box">
+        <div class="tip-box-title">认证 vs 授权的区别</div>
+        <p><strong>认证</strong>解决的是"证明你是你"的问题，通常通过用户名密码、指纹、Token等方式验证身份。<strong>授权</strong>解决的是"你能做什么"的问题，在认证通过后决定用户可以访问哪些资源。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 核心组件 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">核心组件</h2></div>
+    <div class="section-body">
+      <p>Spring Security的核心组件构成了完整的认证授权体系：</p>
+      <table>
+        <tr><th>组件</th><th>职责</th><th>说明</th></tr>
+        <tr><td>SecurityContext</td><td>安全上下文容器</td><td>存储当前线程的Authentication对象，通过SecurityContextHolder访问</td></tr>
+        <tr><td>Authentication</td><td>认证信息封装</td><td>包含principal（用户信息）、credentials（凭证）、authorities（权限列表）</td></tr>
+        <tr><td>UserDetails</td><td>用户详情接口</td><td>定义用户核心属性：用户名、密码、权限、账户状态等</td></tr>
+        <tr><td>UserDetailsService</td><td>用户加载服务</td><td>根据用户名加载UserDetails，是连接数据库的桥梁</td></tr>
+        <tr><td>AuthenticationProvider</td><td>认证提供者</td><td>执行实际认证逻辑，如DaoAuthenticationProvider验证用户名密码</td></tr>
+        <tr><td>FilterChain</td><td>过滤器链</td><td>Spring Security基于Filter实现，多个安全过滤器串联处理请求</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 认证流程 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">认证流程详解</h2></div>
+    <div class="section-body">
+      <p>Spring Security的认证流程是一个多阶段的协作过程：</p>
+      <div class="mermaid">
+sequenceDiagram
+    actor User as 用户
+    participant Filter as UsernamePassword<br/>AuthenticationFilter
+    participant AuthMgr as AuthenticationManager
+    participant Provider as DaoAuthenticationProvider
+    participant UDS as UserDetailsService
+    participant Encoder as PasswordEncoder
+    participant Context as SecurityContext
+
+    User->>Filter: 提交用户名密码
+    Filter->>Filter: 创建UsernamePasswordAuthenticationToken
+    Filter->>AuthMgr: authenticate(token)
+    AuthMgr->>Provider: 委托认证
+    Provider->>UDS: loadUserByUsername(username)
+    UDS-->>Provider: 返回UserDetails
+    Provider->>Encoder: matches(rawPwd, encodedPwd)
+    Encoder-->>Provider: 验证结果
+    Provider-->>AuthMgr: 返回认证成功的Authentication
+    AuthMgr-->>Filter: 返回认证结果
+    Filter->>Context: SecurityContextHolder.setContext()
+    Filter-->>User: 认证成功，进入系统
+      </div>
+
+      <div class="tip-box">
+        <div class="tip-box-title">流程要点</div>
+        <ul>
+          <li><span class="highlight">UsernamePasswordAuthenticationToken</span>是未认证时的载体，包含用户提交的凭据</li>
+          <li><span class="highlight">ProviderManager</span>是AuthenticationManager的默认实现，管理多个Provider</li>
+          <li>认证成功后，Token会被标记为已认证，并存入SecurityContext</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 基础配置 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚙️</div><h2 class="section-title">基础配置示例</h2></div>
+    <div class="section-body">
+      <p>Spring Security 6.x推荐使用<span class="highlight">SecurityFilterChain</span>进行配置：</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            // ========== 授权配置 ==========
+            .authorizeHttpRequests(auth -> auth
+                // 公开路径
+                .requestMatchers("/public/**", "/login", "/register").permitAll()
+                // 管理员权限
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                // 用户权限（支持多个角色）
+                .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
+                // 特定权限
+                .requestMatchers("/api/orders").hasAuthority("ORDER_READ")
+                // 其他请求需认证
+                .anyRequest().authenticated()
+            )
+
+            // ========== 表单登录 ==========
+            .formLogin(form -> form
+                .loginPage("/login")              // 自定义登录页
+                .loginProcessingUrl("/doLogin")   // 登录处理URL
+                .defaultSuccessUrl("/home")       // 登录成功跳转
+                .failureUrl("/login?error")       // 登录失败跳转
+                .usernameParameter("username")    // 用户名参数名
+                .passwordParameter("password")    // 密码参数名
+                .permitAll()
+            )
+
+            // ========== 注销配置 ==========
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/login?logout")
+                .invalidateHttpSession(true)      // 使Session失效
+                .deleteCookies("JSESSIONID")      // 删除Cookie
+                .permitAll()
+            )
+
+            // ========== CSRF配置 ==========
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/api/**") // API路径禁用CSRF
+                // .disable()  // 完全禁用（不推荐）
+            )
+
+            // ========== Session管理 ==========
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .maximumSessions(1)               // 单点登录
+                .maxSessionsPreventsLogin(false)  // 后登录踢掉先登录
+            )
+
+            // ========== 记住我 ==========
+            .rememberMe(remember -> remember
+                .key("uniqueAndSecretKey")
+                .tokenValiditySeconds(86400)      // 1天
+            );
+
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- UserDetailsService -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">👤</div><h2 class="section-title">UserDetailsService实现</h2></div>
+    <div class="section-body">
+      <p><span class="highlight">UserDetailsService</span>是连接Spring Security与数据库的桥梁，负责根据用户名加载用户信息：</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Service
+public class CustomUserDetailsService implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // 1. 查询数据库
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("用户不存在: " + username));
+
+        // 2. 构建权限列表
+        List&lt;SimpleGrantedAuthority&gt; authorities = user.getRoles().stream()
+            .flatMap(role -> {
+                // 添加角色权限
+                Stream&lt;String&gt; perms = Stream.of("ROLE_" + role.getName());
+                // 添加具体权限
+                Stream&lt;String&gt; rolePerms = role.getPermissions().stream()
+                    .map(Permission::getName);
+                return Stream.concat(perms, rolePerms);
+            })
+            .map(SimpleGrantedAuthority::new)
+            .collect(Collectors.toList());
+
+        // 3. 返回UserDetails对象
+        return new org.springframework.security.core.userdetails.User(
+            user.getUsername(),
+            user.getPassword(),
+            user.isEnabled(),                    // 账户是否可用
+            user.isAccountNonExpired(),          // 账户是否过期
+            user.isCredentialsNonExpired(),      // 凭证是否过期
+            user.isAccountNonLocked(),           // 账户是否锁定
+            authorities
+        );
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="warning-box">
+        <div class="warning-box-title">实现注意事项</div>
+        <ul>
+          <li>用户不存在时应抛出<span class="highlight">UsernameNotFoundException</span>，不要返回null</li>
+          <li>角色名需要添加"ROLE_"前缀，权限名不需要</li>
+          <li>建议将账户状态（锁定、过期等）也持久化到数据库</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- JWT认证 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔐</div><h2 class="section-title">JWT认证实现</h2></div>
+    <div class="section-body">
+      <p>JWT（JSON Web Token）是现代前后端分离应用的首选认证方案，具有无状态、跨域、易扩展等优势。</p>
+
+      <h3 style="margin-top: 24px; margin-bottom: 12px; color: var(--amber);">1. JWT工具类</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Component
+public class JwtUtils {
+
+    @Value("${jwt.secret}")
+    private String secret;
+
+    @Value("${jwt.expiration:86400000}")
+    private Long expiration;  // 默认1天
+
+    // 生成签名密钥
+    private SecretKey getSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    /**
+     * 生成JWT令牌
+     */
+    public String generateToken(UserDetails userDetails) {
+        Map&lt;String, Object&gt; claims = new HashMap&lt;&gt;();
+        claims.put("roles", userDetails.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .collect(Collectors.toList()));
+
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expiration);
+
+        return Jwts.builder()
+            .claims(claims)
+            .subject(userDetails.getUsername())
+            .issuedAt(now)
+            .expiration(expiryDate)
+            .signWith(getSigningKey(), Jwts.SIG.HS256)
+            .compact();
+    }
+
+    /**
+     * 从Token中提取用户名
+     */
+    public String extractUsername(String token) {
+        Claims claims = Jwts.parser()
+            .verifyWith(getSigningKey())
+            .build()
+            .parseSignedClaims(token)
+            .getPayload();
+        return claims.getSubject();
+    }
+
+    /**
+     * 验证Token是否有效
+     */
+    public boolean validateToken(String token, UserDetails userDetails) {
+        try {
+            String username = extractUsername(token);
+            return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * 检查Token是否过期
+     */
+    private boolean isTokenExpired(String token) {
+        Date expiration = Jwts.parser()
+            .verifyWith(getSigningKey())
+            .build()
+            .parseSignedClaims(token)
+            .getPayload()
+            .getExpiration();
+        return expiration.before(new Date());
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="margin-top: 24px; margin-bottom: 12px; color: var(--amber);">2. JWT过滤器</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+                                    throws ServletException, IOException {
+        try {
+            // 1. 从请求中提取Token
+            String token = extractToken(request);
+
+            // 2. 验证Token并设置认证
+            if (token != null && jwtUtils.validateToken(token)) {
+                String username = jwtUtils.extractUsername(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                // 3. 创建认证对象
+                UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                    );
+
+                // 4. 设置请求详情
+                authentication.setDetails(
+                    new WebAuthenticationDetailsSource().buildDetails(request)
+                );
+
+                // 5. 存入SecurityContext
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        } catch (Exception e) {
+            logger.error("无法设置用户认证: {}", e.getMessage());
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    /**
+     * 从Authorization头提取Bearer Token
+     */
+    private String extractToken(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+        return null;
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="margin-top: 24px; margin-bottom: 12px; color: var(--amber);">3. 注册过滤器</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Bean
+public SecurityFilterChain filterChain(HttpSecurity http,
+                                       JwtAuthenticationFilter jwtFilter) throws Exception {
+    http
+        // 禁用Session（JWT无状态）
+        .sessionManagement(session ->
+            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        // 禁用CSRF（使用JWT代替）
+        .csrf(csrf -> csrf.disable())
+        // 添加JWT过滤器
+        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/api/auth/**").permitAll()
+            .anyRequest().authenticated()
+        );
+    return http.build();
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 方法级安全 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔒</div><h2 class="section-title">方法级安全</h2></div>
+    <div class="section-body">
+      <p>通过<span class="highlight">@EnableMethodSecurity</span>注解启用方法级安全控制，实现更细粒度的权限管理。</p>
+
+      <h3 style="margin-top: 20px; margin-bottom: 12px; color: var(--amber);">启用配置</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Configuration
+@EnableMethodSecurity(
+    prePostEnabled = true,   // 启用@PreAuthorize, @PostAuthorize
+    securedEnabled = true,   // 启用@Secured
+    jsr250Enabled = true     // 启用@RolesAllowed
+)
+public class MethodSecurityConfig {
+}</code></pre></div>
+      </div>
+
+      <h3 style="margin-top: 20px; margin-bottom: 12px; color: var(--amber);">常用注解</h3>
+      <table>
+        <tr><th>注解</th><th>作用时机</th><th>示例</th></tr>
+        <tr><td>@PreAuthorize</td><td>方法执行前</td><td>@PreAuthorize("hasRole('ADMIN')")</td></tr>
+        <tr><td>@PostAuthorize</td><td>方法执行后</td><td>@PostAuthorize("returnObject.owner == authentication.name")</td></tr>
+        <tr><td>@PostFilter</td><td>方法返回后</td><td>@PostFilter("filterObject.userId == authentication.name")</td></tr>
+        <tr><td>@PreFilter</td><td>方法执行前过滤参数</td><td>@PreFilter("filterObject.status == 'ACTIVE'")</td></tr>
+        <tr><td>@Secured</td><td>JSR-250风格</td><td>@Secured("ROLE_ADMIN")</td></tr>
+      </table>
+
+      <h3 style="margin-top: 20px; margin-bottom: 12px; color: var(--amber);">使用示例</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Service
+public class OrderService {
+
+    @Autowired
+    private OrderRepository orderRepository;
+
+    // 只有ADMIN可以删除订单
+    @PreAuthorize("hasRole('ADMIN')")
+    public void deleteOrder(Long orderId) {
+        orderRepository.deleteById(orderId);
+    }
+
+    // 只有订单所有者或ADMIN可以查看
+    @PreAuthorize("@orderService.canAccessOrder(#orderId, authentication.name) or hasRole('ADMIN')")
+    public Order getOrder(Long orderId) {
+        return orderRepository.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException(orderId));
+    }
+
+    // 方法执行后验证：确保返回的订单属于当前用户
+    @PostAuthorize("returnObject.userId == authentication.name")
+    public Order getOwnOrder(Long orderId) {
+        return orderRepository.findById(orderId).orElse(null);
+    }
+
+    // 过滤返回列表，只保留当前用户的数据
+    @PostFilter("filterObject.userId == authentication.name")
+    public List&lt;Order&gt; getMyOrders() {
+        return orderRepository.findAll();
+    }
+
+    // 自定义权限评估方法
+    public boolean canAccessOrder(Long orderId, String username) {
+        Order order = orderRepository.findById(orderId).orElse(null);
+        return order != null && order.getUserId().equals(username);
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="tip-box">
+        <div class="tip-box-title">SpEL表达式支持</div>
+        <p>注解中可以使用Spring Expression Language (SpEL)：</p>
+        <ul>
+          <li><span class="highlight">authentication</span> - 当前认证对象</li>
+          <li><span class="highlight">#paramName</span> - 方法参数（需要@Param或编译带参数名）</li>
+          <li><span class="highlight">returnObject</span> - 返回值（仅@PostAuthorize）</li>
+          <li><span class="highlight">filterObject</span> - 集合中的元素（仅@PreFilter/@PostFilter）</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- OAuth2.0 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔑</div><h2 class="section-title">OAuth2.0授权流程</h2></div>
+    <div class="section-body">
+      <p>OAuth2.0是业界标准的授权协议，允许第三方应用获取有限的资源访问权限，而无需暴露用户凭据。</p>
+
+      <h3 style="margin-top: 20px; margin-bottom: 12px; color: var(--amber);">授权码模式流程</h3>
+      <div class="mermaid">
+sequenceDiagram
+    actor User as 用户
+    participant Client as 客户端应用
+    participant Auth as 授权服务器<br/>(Authorization Server)
+    participant Resource as 资源服务器<br/>(Resource Server)
+
+    User->>Client: 1. 点击登录按钮
+    Client->>Auth: 2. 重定向到授权服务器
+    Auth->>User: 3. 展示登录/授权页面
+    User->>Auth: 4. 登录并同意授权
+    Auth->>Client: 5. 重定向回调（携带授权码code）
+    Client->>Auth: 6. 用code + client_secret换取Token
+    Auth->>Client: 7. 返回access_token + refresh_token
+    Client->>Resource: 8. 携带access_token访问API
+    Resource->>Resource: 9. 验证Token有效性
+    Resource->>Client: 10. 返回受保护资源
+      </div>
+
+      <h3 style="margin-top: 24px; margin-bottom: 12px; color: var(--amber);">授权模式对比</h3>
+      <table>
+        <tr><th>模式</th><th>适用场景</th><th>安全性</th><th>推荐度</th></tr>
+        <tr><td>授权码模式</td><td>Web应用、移动端</td><td>高</td><td>⭐⭐⭐ 推荐</td></tr>
+        <tr><td>简化模式（Implicit）</td><td>单页应用（已废弃）</td><td>中</td><td>不推荐</td></tr>
+        <tr><td>密码凭证</td><td>可信的第一方应用</td><td>低</td><td>谨慎使用</td></tr>
+        <tr><td>客户端凭证</td><td>服务间调用</td><td>中</td><td>适用</td></tr>
+        <tr><td>设备码</td><td>智能电视等输入受限设备</td><td>中</td><td>适用</td></tr>
+        <tr><td>PKCE</td><td>移动端/SPA（授权码增强）</td><td>高</td><td>⭐⭐⭐ 推荐</td></tr>
+      </table>
+
+      <h3 style="margin-top: 20px; margin-bottom: 12px; color: var(--amber);">资源服务器配置</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Configuration
+public class OAuth2ResourceServerConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/public/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2
+                // JWT Token配置
+                .jwt(jwt -> jwt
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                    .decoder(jwtDecoder())
+                )
+                // 或Opaque Token配置（远程校验）
+                // .opaqueToken(opaque -> opaque
+                //     .introspectionUri("/oauth2/introspect")
+                //     .introspectionClientCredentials("client", "secret")
+                // )
+            );
+        return http.build();
+    }
+
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        // 配置权限映射
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            List&lt;String&gt; roles = jwt.getClaimAsStringList("roles");
+            return roles.stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                .collect(Collectors.toList());
+        });
+        // 配置principal映射
+        converter.setPrincipalClaimName("sub");
+        return converter;
+    }
+
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        return ReactiveJwtDecoders.fromIssuerLocation("https://auth-server.com");
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CSRF防护 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🛡️</div><h2 class="section-title">CSRF防护原理</h2></div>
+    <div class="section-body">
+      <p>CSRF（Cross-Site Request Forgery，跨站请求伪造）是一种常见的Web攻击方式，Spring Security默认提供防护。</p>
+
+      <h3 style="margin-top: 20px; margin-bottom: 12px; color: var(--amber);">攻击原理</h3>
+      <div class="mermaid">
+sequenceDiagram
+    actor User as 用户
+    participant Bank as 银行网站A
+    participant Evil as 恶意网站B
+
+    User->>Bank: 1. 登录银行网站，获取Cookie
+    Bank-->>User: Set-Cookie: sessionId=xxx
+    Note over User: 用户保持登录状态
+
+    User->>Evil: 2. 访问恶意网站B
+    Evil->>Evil: 3. 页面包含隐藏表单<br/>&lt;form action="bank.com/transfer"&gt;
+    Evil->>Bank: 4. 自动提交表单（携带用户Cookie）
+    Bank->>Bank: 5. 验证通过（有合法Cookie）
+    Bank-->>User: 6. 转账完成（用户不知情）
+      </div>
+
+      <h3 style="margin-top: 24px; margin-bottom: 12px; color: var(--amber);">防护方案</h3>
+      <table>
+        <tr><th>方案</th><th>原理</th><th>Spring Security支持</th></tr>
+        <tr><td>CSRF Token</td><td>服务端生成随机Token，校验请求时携带</td><td>默认开启，支持Cookie/Session存储</td></tr>
+        <tr><td>SameSite Cookie</td><td>限制Cookie在跨站请求中发送</td><td>需浏览器+服务器配合</td></tr>
+        <tr><td>Referer检查</td><td>验证请求来源域名</td><td>可自定义过滤器实现</td></tr>
+        <tr><td>自定义Header</td><td>要求请求携带特定Header</td><td>适合AJAX请求</td></tr>
+      </table>
+
+      <h3 style="margin-top: 20px; margin-bottom: 12px; color: var(--amber);">前后端分离的CSRF处理</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http
+        // API路径使用JWT，禁用CSRF
+        .csrf(csrf -> csrf
+            .ignoringRequestMatchers("/api/**")
+        )
+        // 或：完全禁用（不推荐用于传统Web应用）
+        // .csrf(csrf -> csrf.disable())
+
+        // SPA应用配置：将CSRF Token存入Cookie
+        .csrf(csrf -> csrf
+            .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+            .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+        );
+    return http.build();
+}</code></pre></div>
+      </div>
+
+      <div class="warning-box">
+        <div class="warning-box-title">重要提醒</div>
+        <ul>
+          <li>传统表单提交应用：<strong>必须开启CSRF防护</strong></li>
+          <li>前后端分离+JWT应用：可以禁用CSRF，因为JWT本身不依赖Cookie</li>
+          <li>混合应用：对API路径禁用，对表单路径保持开启</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 常见问题 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">❓</div><h2 class="section-title">常见问题Q&A</h2></div>
+    <div class="section-body">
+
+      <div class="qa-item">
+        <div class="qa-question">Q1: Session和JWT应该怎么选择？</div>
+        <div class="qa-answer">
+          <p><strong>选择Session：</strong>传统Web应用、服务端渲染、需要服务端控制会话（如强制下线）、小规模应用。</p>
+          <p><strong>选择JWT：</strong>前后端分离、移动端API、微服务架构、需要水平扩展、无状态要求高的场景。</p>
+        </div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-question">Q2: 如何实现"记住我"功能？</div>
+        <div class="qa-answer">
+          <p>Spring Security提供Remember-Me功能，基于持久化Token或Cookie实现：</p>
+          <div class="code-container">
+            <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code>.rememberMe(remember -> remember
+    .key("uniqueAndSecretKey")  // 加密密钥
+    .tokenValiditySeconds(86400) // Token有效期（秒）
+    .tokenRepository(persistentTokenRepository()) // 持久化存储
+    .userDetailsService(userDetailsService)
+)</code></pre></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-question">Q3: 密码加密应该选择什么算法？</div>
+        <div class="qa-answer">
+          <p><strong>强烈推荐使用BCrypt</strong>，它是目前最安全的哈希算法之一：</p>
+          <ul>
+            <li>自动加盐，每个密码的盐值不同</li>
+            <li>可配置工作因子（strength），默认10，越高越安全但越慢</li>
+            <li>Spring Security的<span class="highlight">BCryptPasswordEncoder</span>已内置</li>
+          </ul>
+          <p>避免使用：MD5、SHA-1（已被彩虹表破解）；避免自定义加密方案。</p>
+        </div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-question">Q4: 如何动态加载权限？</div>
+        <div class="qa-answer">
+          <p>默认权限在启动时加载，动态权限需要自定义<span class="highlight">FilterInvocationSecurityMetadataSource</span>：</p>
+          <div class="code-container">
+            <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code>@Component
+public class DynamicSecurityMetadataSource implements FilterInvocationSecurityMetadataSource {
+
+    @Autowired
+    private PermissionService permissionService;
+
+    @Override
+    public Collection&lt;ConfigAttribute&gt; getAttributes(Object object) {
+        // 从数据库实时查询URL对应的权限
+        FilterInvocation fi = (FilterInvocation) object;
+        String url = fi.getRequestUrl();
+        return permissionService.getAttributesByUrl(url);
+    }
+}</code></pre></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-question">Q5: 如何处理跨域（CORS）？</div>
+        <div class="qa-answer">
+          <div class="code-container">
+            <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code>@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        // ...其他配置
+    return http.build();
+}
+
+@Bean
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration config = new CorsConfiguration();
+    config.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+    config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
+    config.setAllowedHeaders(Arrays.asList("*"));
+    config.setAllowCredentials(true);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);
+    return source;
+}</code></pre></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#f0b429',
+    primaryTextColor: '#0a0e17',
+    primaryBorderColor: '#f0b429',
+    lineColor: '#4ecdc4',
+    secondaryColor: '#4ecdc4',
+    tertiaryColor: '#0a0e17',
+    background: '#0a0e17',
+    mainBkg: '#0a0e17',
+    secondBkg: '#101624',
+    actorBorder: '#f0b429',
+    actorBkg: '#101624',
+    actorTextColor: '#e8e6e3',
+    actorLineColor: '#4ecdc4',
+    signalColor: '#e8e6e3',
+    signalTextColor: '#e8e6e3',
+    labelBoxBkgColor: '#101624',
+    labelBoxBorderColor: '#f0b429',
+    labelTextColor: '#e8e6e3',
+    loopTextColor: '#e8e6e3',
+    noteBorderColor: '#4ecdc4',
+    noteBkgColor: '#101624',
+    noteTextColor: '#e8e6e3',
+    activationBorderColor: '#f0b429',
+    activationBkgColor: '#f0b429',
+    sectionBkgColor: '#101624',
+    altSectionBkgColor: '#0a0e17',
+    gridColor: '#1a1f2e'
+  },
+  sequence: {
+    mirrorActors: false,
+    bottomMarginAdj: 10
+  }
+});
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const html = document.documentElement;
+  if (html.getAttribute('data-theme') === 'light') {
+    html.removeAttribute('data-theme');
+    document.getElementById('themeToggle').textContent = '🌙';
+    mermaid.initialize({ theme: 'dark' });
+  } else {
+    html.setAttribute('data-theme', 'light');
+    document.getElementById('themeToggle').textContent = '☀️';
+    mermaid.initialize({ theme: 'default' });
+  }
+});
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const parent = tab.closest('.section');
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
+  });
+});
+
+function copyCode(btn) {
+  const codeBlock = btn.closest('.code-container').querySelector('pre, code');
+  const code = codeBlock ? codeBlock.textContent : '';
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = '✓ 已复制';
+    btn.style.color = '#4ecdc4';
+    setTimeout(() => {
+      btn.textContent = '📋 复制';
+      btn.style.color = '';
+    }, 2000);
+  }).catch(err => {
+    console.error('复制失败:', err);
+  });
+}
+</script>
+</body>
+</html>

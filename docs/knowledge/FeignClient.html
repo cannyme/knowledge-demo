@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feign声明式HTTP客户端 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --text-dim: #4a5068; --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+    --amber-dim: rgba(240, 180, 41, 0.08); --cyan-dim: rgba(78, 205, 196, 0.15);
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --cyan: #0d7377; --text-primary: #1a1a2e;
+    --amber-dim: rgba(184, 134, 11, 0.06); --cyan-dim: rgba(13, 115, 119, 0.12);
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; line-height: 1.7; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--amber-dim), var(--cyan-dim)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul, .section-body ol { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .section-body h3 { font-weight: 600; font-size: 17px; color: var(--text-primary); margin: 24px 0 12px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body code { color: var(--text-primary); }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: var(--amber-dim); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .tip { background: var(--cyan-dim); border-left: 4px solid var(--cyan); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+  .warning { background: rgba(255, 123, 114, 0.1); border-left: 4px solid var(--red); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+  .highlight { color: var(--amber); font-weight: 600; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring Cloud / Feign</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🔗 OPENFEIGN</div>
+    <h1 class="hero-title">Feign声明式HTTP客户端</h1>
+    <p class="hero-desc">Feign是Netflix开源的声明式HTTP客户端，通过接口和注解的方式调用远程服务，让HTTP调用像调用本地方法一样简单，实现服务间的优雅通信。</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">❓</div><h2 class="section-title">什么是Feign</h2></div>
+    <div class="section-body">
+      <p>Feign是<span class="highlight">声明式REST客户端</span>，通过注解定义接口，自动生成实现类。类似于MyBatis的Mapper接口方式，让调用远程服务像调用本地方法一样简单。</p>
+      <div class="mermaid">
+flowchart LR
+    A[服务消费者] -->|Feign调用| B[Feign Client]
+    B -->|HTTP请求| C[服务提供者]
+    C -->|返回数据| B
+    B -->|返回对象| A
+      </div>
+      <h3>Feign vs RestTemplate</h3>
+      <table>
+        <tr><th>对比项</th><th>RestTemplate</th><th>Feign</th></tr>
+        <tr><td>代码风格</td><td>命令式编程</td><td>声明式编程</td></tr>
+        <tr><td>代码量</td><td>较多（手动拼接URL）</td><td>简洁（接口+注解）</td></tr>
+        <tr><td>可读性</td><td>一般</td><td>高（像调用本地方法）</td></tr>
+        <tr><td>维护性</td><td>URL分散，难维护</td><td>接口集中，易维护</td></tr>
+        <tr><td>负载均衡</td><td>需手动集成Ribbon</td><td>自动集成</td></tr>
+        <tr><td>服务降级</td><td>需手动实现</td><td>支持Fallback</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🚀</div><h2 class="section-title">基本使用</h2></div>
+    <div class="section-body">
+      <h3>1. 启用Feign</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@EnableFeignClients
+@SpringBootApplication
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}</code></pre></div>
+      </div>
+
+      <h3>2. 定义Feign客户端</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@FeignClient(
+    name = "user-service",           // 服务名
+    url = "http://localhost:8081",   // 指定URL（可选）
+    fallback = UserServiceFallback.class,  // 降级处理
+    configuration = FeignConfig.class      // 自定义配置
+)
+public interface UserFeignClient {
+
+    @GetMapping("/user/{id}")
+    User getUser(@PathVariable("id") Long id);
+
+    @PostMapping("/user")
+    User createUser(@RequestBody User user);
+
+    @GetMapping("/users")
+    List&lt;User&gt; listUsers(@RequestParam("name") String name);
+
+    @RequestMapping(method = RequestMethod.GET, value = "/search")
+    User search(@RequestHeader("X-Token") String token,
+                @RequestParam("keyword") String keyword);
+}</code></pre></div>
+      </div>
+
+      <h3>3. 使用Feign客户端</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Service
+@RequiredArgsConstructor
+public class OrderService {
+
+    private final UserFeignClient userFeignClient;
+
+    public Order createOrder(Long userId) {
+        // 像调用本地方法一样调用远程服务
+        User user = userFeignClient.getUser(userId);
+
+        Order order = new Order();
+        order.setUserId(userId);
+        order.setUserName(user.getName());
+        return order;
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚙️</div><h2 class="section-title">配置详解</h2></div>
+    <div class="section-body">
+      <h3>@FeignClient注解参数</h3>
+      <table>
+        <tr><th>参数</th><th>说明</th><th>示例</th></tr>
+        <tr><td>name/value</td><td>服务名（注册中心）</td><td>name = "user-service"</td></tr>
+        <tr><td>url</td><td>直接指定URL（绕过注册中心）</td><td>url = "http://localhost:8081"</td></tr>
+        <tr><td>fallback</td><td>降级处理类</td><td>fallback = UserFallback.class</td></tr>
+        <tr><td>fallbackFactory</td><td>降级工厂（可获取异常）</td><td>fallbackFactory = UserFallbackFactory.class</td></tr>
+        <tr><td>configuration</td><td>自定义配置类</td><td>configuration = FeignConfig.class</td></tr>
+        <tr><td>path</td><td>统一路径前缀</td><td>path = "/api"</td></tr>
+        <tr><td>contextId</td><td>防止Bean名称冲突</td><td>contextId = "userClient"</td></tr>
+      </table>
+
+      <h3>YAML配置</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>feign:
+  client:
+    config:
+      # 全局默认配置
+      default:
+        connectTimeout: 5000      # 连接超时
+        readTimeout: 5000         # 读取超时
+        loggerLevel: full         # 日志级别
+      # 指定服务配置
+      user-service:
+        connectTimeout: 3000
+        readTimeout: 3000
+        loggerLevel: headers
+  compression:
+    request:
+      enabled: true
+      mime-types: text/xml,application/xml,application/json
+    response:
+      enabled: true</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🛡️</div><h2 class="section-title">服务降级</h2></div>
+    <div class="section-body">
+      <h3>Fallback实现</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Component
+public class UserServiceFallback implements UserFeignClient {
+
+    @Override
+    public User getUser(Long id) {
+        // 返回默认值
+        User user = new User();
+        user.setId(id);
+        user.setName("默认用户");
+        return user;
+    }
+
+    @Override
+    public User createUser(User user) {
+        throw new RuntimeException("用户服务不可用");
+    }
+
+    @Override
+    public List&lt;User&gt; listUsers(String name) {
+        return Collections.emptyList();
+    }
+}</code></pre></div>
+      </div>
+
+      <h3>FallbackFactory（可获取异常信息）</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Component
+public class UserServiceFallbackFactory implements FallbackFactory&lt;UserFeignClient&gt; {
+
+    @Override
+    public UserFeignClient create(Throwable cause) {
+        log.error("用户服务调用失败", cause);
+        return new UserFeignClient() {
+            @Override
+            public User getUser(Long id) {
+                return User.builder()
+                    .id(id)
+                    .name("服务降级用户")
+                    .build();
+            }
+            // ... 其他方法
+        };
+    }
+}
+
+// 使用FallbackFactory
+@FeignClient(name = "user-service", fallbackFactory = UserServiceFallbackFactory.class)
+public interface UserFeignClient { }</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📝</div><h2 class="section-title">日志配置</h2></div>
+    <div class="section-body">
+      <h3>日志级别</h3>
+      <table>
+        <tr><th>级别</th><th>说明</th></tr>
+        <tr><td>NONE</td><td>无日志（默认）</td></tr>
+        <tr><td>BASIC</td><td>请求方法、URL、响应状态码、执行时间</td></tr>
+        <tr><td>HEADERS</td><td>BASIC + 请求头和响应头</td></tr>
+        <tr><td>FULL</td><td>HEADERS + 请求体和响应体</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># Feign日志配置
+feign:
+  client:
+    config:
+      default:
+        loggerLevel: full
+
+# 日志输出级别（必须设置为DEBUG）
+logging:
+  level:
+    com.example.demo.feign.UserFeignClient: DEBUG</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔧</div><h2 class="section-title">自定义Feign配置</h2></div>
+    <div class="section-body">
+      <h3>自定义配置类</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Configuration
+public class FeignConfig {
+
+    // 日志级别
+    @Bean
+    Logger.Level feignLoggerLevel() {
+        return Logger.Level.FULL;
+    }
+
+    // 超时配置
+    @Bean
+    public Request.Options options() {
+        return new Request.Options(5000, TimeUnit.MILLISECONDS,
+                                   10000, TimeUnit.MILLISECONDS, true);
+    }
+
+    // 重试策略
+    @Bean
+    public Retryer feignRetryer() {
+        // 初始间隔100ms，最大间隔1s，最多重试3次
+        return new Retryer.Default(100, TimeUnit.SECONDS.toMillis(1), 3);
+    }
+
+    // 请求拦截器
+    @Bean
+    public RequestInterceptor requestInterceptor() {
+        return template -> {
+            // 添加全局请求头
+            template.header("X-Source", "feign");
+            template.header("X-Request-Time",
+                String.valueOf(System.currentTimeMillis()));
+        };
+    }
+}</code></pre></div>
+      </div>
+
+      <h3>请求拦截器</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Component
+public class AuthFeignInterceptor implements RequestInterceptor {
+
+    @Override
+    public void apply(RequestTemplate template) {
+        // 从上下文获取Token
+        String token = SecurityContextHolder.getContext().getToken();
+
+        // 添加请求头
+        template.header("Authorization", "Bearer " + token);
+
+        // 添加查询参数
+        template.query("source", "feign");
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔗</div><h2 class="section-title">与Ribbon整合（负载均衡）</h2></div>
+    <div class="section-body">
+      <p>Feign默认集成Ribbon实现客户端负载均衡，通过服务名从注册中心获取实例列表：</p>
+      <div class="mermaid">
+graph LR
+    A[Feign Client] -->|1. 获取服务列表| B[服务注册中心]
+    B -->|返回实例列表| A
+    A -->|2. 负载均衡选择| C[实例1]
+    A -->|2. 负载均衡选择| D[实例2]
+    A -->|2. 负载均衡选择| E[实例3]
+      </div>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># Ribbon负载均衡配置
+user-service:  # 服务名
+  ribbon:
+    NFLoadBalancerRuleClassName: com.netflix.loadbalancer.RoundRobinRule
+    ConnectTimeout: 1000
+    ReadTimeout: 3000
+    OkToRetryOnAllOperations: true
+    MaxAutoRetries: 1
+    MaxAutoRetriesNextServer: 2</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">与Sentinel整合（熔断降级）</h2></div>
+    <div class="section-body">
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># Feign整合Sentinel
+feign:
+  sentinel:
+    enabled: true
+
+# Sentinel配置
+spring:
+  cloud:
+    sentinel:
+      transport:
+        dashboard: localhost:8080</code></pre></div>
+      </div>
+      <div class="tip">
+        <strong>💡 说明：</strong>开启Sentinel后，Feign调用会被Sentinel监控，可以配置限流、熔断规则。fallback机制仍然有效。
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">Feign调用流程</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+flowchart TD
+    A[调用Feign接口方法] --> B[JDK动态代理拦截]
+    B --> C[Contract解析注解]
+    C --> D[RequestInterceptor处理]
+    D --> E[Encoder编码请求]
+    E --> F[Client发送HTTP请求]
+    F --> G[Decoder解码响应]
+    G --> H[返回结果]
+
+    I[发生异常] --> J{是否有Fallback}
+    J -->|是| K[执行Fallback]
+    J -->|否| L[抛出异常]
+      </div>
+      <ol>
+        <li><span class="highlight">动态代理：</span>Spring启动时为@FeignClient接口创建JDK动态代理</li>
+        <li><span class="highlight">方法拦截：</span>方法调用时被FeignInvocationHandler拦截</li>
+        <li><span class="highlight">注解解析：</span>Contract解析@RequestMapping等注解构建请求模板</li>
+        <li><span class="highlight">拦截器处理：</span>RequestInterceptor统一添加请求头等信息</li>
+        <li><span class="highlight">编码请求：</span>Encoder将请求对象编码为HTTP请求体</li>
+        <li><span class="highlight">发送请求：</span>Client（默认HttpURLConnection）发送HTTP请求</li>
+        <li><span class="highlight">解码响应：</span>Decoder将HTTP响应解码为Java对象</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', primaryTextColor: '#e8e6e3', primaryBorderColor: '#4ecdc4', lineColor: '#4ecdc4', background: '#0a0e17', mainBkg: '#0a0e17', secondBkg: '#101624', tertiaryBkg: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

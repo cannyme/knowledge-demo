@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>负载均衡策略 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .tip { background: rgba(78, 205, 196, 0.1); border-left: 4px solid var(--cyan); padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+  .tip-icon { color: var(--cyan); font-weight: bold; }
+  .warning { background: rgba(255, 123, 114, 0.1); border-left: 4px solid var(--red); padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+  .warning-icon { color: var(--red); font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .param-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+  .param-card { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; }
+  .param-name { font-family: var(--font-code); font-size: 14px; color: var(--amber); font-weight: 600; margin-bottom: 8px; }
+  .param-desc { font-size: 13px; line-height: 1.6; }
+  .algo-card { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; margin: 16px 0; }
+  .algo-title { font-weight: 700; font-size: 16px; color: var(--amber); margin-bottom: 12px; }
+  .algo-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } .param-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">负载均衡策略</h1>
+    <p class="hero-desc">负载均衡是将请求分发到多个服务实例的技术，用于提高系统吞吐量和可用性。本文详解各类负载均衡算法及Spring Cloud中的实现方案。</p>
+  </header>
+
+  <!-- 为什么需要负载均衡 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">❓</div><h2 class="section-title">为什么需要负载均衡</h2></div>
+    <div class="section-body">
+      <p>随着业务增长，单机服务无法满足高并发需求，需要通过<strong>水平扩展</strong>部署多个服务实例。负载均衡器作为流量入口，负责将请求合理分配到各实例。</p>
+
+      <div class="mermaid">
+flowchart TD
+    A[客户端请求] --> B[负载均衡器]
+    B --> C[服务实例1]
+    B --> D[服务实例2]
+    B --> E[服务实例3]
+    B --> F[服务实例N]
+    C --> G[(数据库)]
+    D --> G
+    E --> G
+    F --> G
+      </div>
+
+      <p><strong>负载均衡的核心价值：</strong></p>
+      <ul>
+        <li><strong>高可用：</strong>单点故障自动剔除，请求转发到健康实例</li>
+        <li><strong>高并发：</strong>多实例分担流量，提升系统整体处理能力</li>
+        <li><strong>高性能：</strong>根据服务器负载动态分配，避免单点过载</li>
+        <li><strong>横向扩展：</strong>无缝添加新实例，应对业务增长</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 负载均衡分类 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📂</div><h2 class="section-title">负载均衡分类</h2></div>
+    <div class="section-body">
+      <p>根据实现位置和方式，负载均衡可分为以下几类：</p>
+
+      <table>
+        <tr>
+          <th>分类</th>
+          <th>代表产品</th>
+          <th>特点</th>
+          <th>适用场景</th>
+        </tr>
+        <tr>
+          <td><strong>硬件负载均衡</strong></td>
+          <td>F5、A10</td>
+          <td>性能极高，成本高，功能丰富</td>
+          <td>大型企业核心系统</td>
+        </tr>
+        <tr>
+          <td><strong>软件负载均衡</strong></td>
+          <td>Nginx、HAProxy</td>
+          <td>灵活可配置，成本低，功能强大</td>
+          <td>互联网应用主流方案</td>
+        </tr>
+        <tr>
+          <td><strong>DNS负载均衡</strong></td>
+          <td>DNS轮询</td>
+          <td>简单，但生效慢，无法感知服务状态</td>
+          <td>地域级流量分发</td>
+        </tr>
+        <tr>
+          <td><strong>客户端负载均衡</strong></td>
+          <td>Ribbon、Spring Cloud LoadBalancer</td>
+          <td>无单点，直接连接服务，性能高</td>
+          <td>微服务内部调用</td>
+        </tr>
+      </table>
+
+      <div class="mermaid">
+flowchart LR
+    subgraph 服务端负载均衡
+        A[客户端] --> B[Nginx/F5]
+        B --> C[服务集群]
+    end
+    subgraph 客户端负载均衡
+        D[客户端<br/>Ribbon] --> E[服务1]
+        D --> F[服务2]
+        D --> G[服务3]
+    end
+      </div>
+
+      <div class="tip">
+        <span class="tip-icon">💡</span> <strong>选型建议</strong><br>
+        外部流量入口使用Nginx/硬件LB，微服务间调用使用客户端负载均衡（Ribbon/LoadBalancer），实现双层负载均衡架构。
+      </div>
+    </div>
+  </section>
+
+  <!-- 负载均衡算法 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎲</div><h2 class="section-title">负载均衡算法详解</h2></div>
+    <div class="section-body">
+      <p>负载均衡算法决定了请求如何分配到各个服务实例，不同算法适用于不同场景。</p>
+
+      <!-- 轮询 -->
+      <div class="algo-card">
+        <div class="algo-title">1. 轮询（Round Robin）</div>
+        <div class="algo-desc">按顺序依次将请求分发到每个实例，循环往复。实现简单，适用于服务器性能相近的场景。</div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * 轮询负载均衡算法
+ * 按顺序依次分发请求
+ */
+public class RoundRobinLoadBalancer {
+    private final List&lt;ServiceInstance&gt; instances;
+    private final AtomicInteger position = new AtomicInteger(0);
+
+    public RoundRobinLoadBalancer(List&lt;ServiceInstance&gt; instances) {
+        this.instances = instances;
+    }
+
+    public ServiceInstance choose() {
+        if (instances.isEmpty()) return null;
+        int pos = Math.abs(position.getAndIncrement() % instances.size());
+        return instances.get(pos);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <!-- 加权轮询 -->
+      <div class="algo-card">
+        <div class="algo-title">2. 加权轮询（Weighted Round Robin）</div>
+        <div class="algo-desc">根据服务器权重比例分配请求，权重高的服务器获得更多请求。适用于服务器性能差异较大的场景。</div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * 加权轮询负载均衡
+ * 按权重比例分发请求
+ */
+public class WeightedRoundRobinLoadBalancer {
+    private final List&lt;ServiceInstance&gt; instances;
+    private final AtomicInteger position = new AtomicInteger(0);
+    private List&lt;ServiceInstance&gt; expandedList;
+
+    public WeightedRoundRobinLoadBalancer(List&lt;ServiceInstance&gt; instances) {
+        this.instances = instances;
+        this.expandedList = expandInstances();
+    }
+
+    // 按权重展开实例列表
+    private List&lt;ServiceInstance&gt; expandInstances() {
+        List&lt;ServiceInstance&gt; expanded = new ArrayList&lt;&gt;();
+        for (ServiceInstance instance : instances) {
+            for (int i = 0; i &lt; instance.getWeight(); i++) {
+                expanded.add(instance);
+            }
+        }
+        return expanded;
+    }
+
+    public ServiceInstance choose() {
+        if (expandedList.isEmpty()) return null;
+        int pos = Math.abs(position.getAndIncrement() % expandedList.size());
+        return expandedList.get(pos);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <!-- 平滑加权轮询 -->
+      <div class="algo-card">
+        <div class="algo-title">3. 平滑加权轮询（Smooth Weighted Round Robin）</div>
+        <div class="algo-desc">Nginx默认算法，解决加权轮询请求分布不均的问题。通过动态调整当前权重，使请求分布更加平滑均匀。</div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * 平滑加权轮询 - Nginx默认算法
+ * 原理：currentWeight += weight，选最大者，然后减去totalWeight
+ */
+public class SmoothWeightedRoundRobinLoadBalancer {
+    private final List&lt;ServiceInstance&gt; instances;
+    private final Map&lt;ServiceInstance, Integer&gt; currentWeights = new ConcurrentHashMap&lt;&gt;();
+
+    public SmoothWeightedRoundRobinLoadBalancer(List&lt;ServiceInstance&gt; instances) {
+        this.instances = instances;
+        for (ServiceInstance instance : instances) {
+            currentWeights.put(instance, 0);
+        }
+    }
+
+    public ServiceInstance choose() {
+        if (instances.isEmpty()) return null;
+
+        int totalWeight = instances.stream()
+            .mapToInt(ServiceInstance::getWeight).sum();
+        ServiceInstance selected = null;
+        int maxWeight = Integer.MIN_VALUE;
+
+        // currentWeight += weight，找出最大值
+        for (ServiceInstance instance : instances) {
+            int currentWeight = currentWeights.get(instance) + instance.getWeight();
+            currentWeights.put(instance, currentWeight);
+
+            if (currentWeight > maxWeight) {
+                maxWeight = currentWeight;
+                selected = instance;
+            }
+        }
+
+        // 被选中的实例currentWeight -= totalWeight
+        currentWeights.put(selected, currentWeights.get(selected) - totalWeight);
+        return selected;
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <!-- 随机 -->
+      <div class="algo-card">
+        <div class="algo-title">4. 随机（Random）</div>
+        <div class="algo-desc">随机选择一个服务实例。实现简单，在大量请求下分布均匀，适用于服务器性能相近的场景。</div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * 随机负载均衡算法
+ */
+public class RandomLoadBalancer {
+    private final List&lt;ServiceInstance&gt; instances;
+    private final Random random = new Random();
+
+    public RandomLoadBalancer(List&lt;ServiceInstance&gt; instances) {
+        this.instances = instances;
+    }
+
+    public ServiceInstance choose() {
+        if (instances.isEmpty()) return null;
+        int pos = random.nextInt(instances.size());
+        return instances.get(pos);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <!-- 加权随机 -->
+      <div class="algo-card">
+        <div class="algo-title">5. 加权随机（Weighted Random）</div>
+        <div class="algo-desc">根据权重随机选择实例，权重高的实例被选中的概率更大。适用于服务器性能不均的场景。</div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * 加权随机负载均衡
+ */
+public class WeightedRandomLoadBalancer {
+    private final List&lt;ServiceInstance&gt; instances;
+    private final Random random = new Random();
+    private final int totalWeight;
+    private final List&lt;Integer&gt; weights;
+
+    public WeightedRandomLoadBalancer(List&lt;ServiceInstance&gt; instances) {
+        this.instances = instances;
+        this.weights = new ArrayList&lt;&gt;();
+        int sum = 0;
+        for (ServiceInstance instance : instances) {
+            sum += instance.getWeight();
+            weights.add(sum);
+        }
+        this.totalWeight = sum;
+    }
+
+    public ServiceInstance choose() {
+        if (instances.isEmpty()) return null;
+
+        int randomWeight = random.nextInt(totalWeight);
+        for (int i = 0; i &lt; weights.size(); i++) {
+            if (randomWeight &lt; weights.get(i)) {
+                return instances.get(i);
+            }
+        }
+        return instances.get(0);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <!-- 最少连接 -->
+      <div class="algo-card">
+        <div class="algo-title">6. 最少连接（Least Connections）</div>
+        <div class="algo-desc">选择当前连接数最少的服务器。适合长连接场景（如WebSocket），能够动态感知服务器负载。</div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * 最少连接数负载均衡
+ * 适合长连接场景
+ */
+public class LeastConnectionsLoadBalancer {
+    private final Map&lt;ServiceInstance, AtomicInteger&gt; connections = new ConcurrentHashMap&lt;&gt;();
+
+    public ServiceInstance choose(List&lt;ServiceInstance&gt; instances) {
+        if (instances.isEmpty()) return null;
+
+        ServiceInstance selected = null;
+        int minConnections = Integer.MAX_VALUE;
+
+        for (ServiceInstance instance : instances) {
+            int conn = connections.computeIfAbsent(
+                instance, k -> new AtomicInteger(0)).get();
+            if (conn &lt; minConnections) {
+                minConnections = conn;
+                selected = instance;
+            }
+        }
+
+        connections.get(selected).incrementAndGet();
+        return selected;
+    }
+
+    public void release(ServiceInstance instance) {
+        connections.get(instance).decrementAndGet();
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <!-- IP哈希 -->
+      <div class="algo-card">
+        <div class="algo-title">7. IP哈希（IP Hash）</div>
+        <div class="algo-desc">根据客户端IP地址计算哈希值，选择对应服务器。同一IP的请求总是路由到同一服务器，适合需要会话保持的场景。</div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * IP Hash负载均衡
+ * 相同IP总是路由到同一服务器
+ */
+public class IpHashLoadBalancer {
+    private final List&lt;ServiceInstance&gt; instances;
+
+    public IpHashLoadBalancer(List&lt;ServiceInstance&gt; instances) {
+        this.instances = instances;
+    }
+
+    public ServiceInstance choose(String clientIp) {
+        if (instances.isEmpty()) return null;
+
+        int hash = clientIp.hashCode();
+        int index = Math.abs(hash) % instances.size();
+        return instances.get(index);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <!-- 一致性哈希 -->
+      <div class="algo-card">
+        <div class="algo-title">8. 一致性哈希（Consistent Hash）</div>
+        <div class="algo-desc">使用一致性哈希环，相同请求Key总是路由到同一服务器。当服务器增减时，只有少量请求需要重新路由。适合缓存等有状态场景。</div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * 一致性哈希负载均衡
+ * 适合有状态场景（缓存、会话）
+ */
+public class ConsistentHashLoadBalancer {
+    // 虚拟节点数，解决数据倾斜
+    private static final int VIRTUAL_NODES = 150;
+    private final TreeMap&lt;Integer, ServiceInstance&gt; ring = new TreeMap&lt;&gt;();
+
+    public ConsistentHashLoadBalancer(List&lt;ServiceInstance&gt; instances) {
+        for (ServiceInstance instance : instances) {
+            // 每个实例创建多个虚拟节点
+            for (int i = 0; i &lt; VIRTUAL_NODES; i++) {
+                String virtualNode = instance.getHost() + ":"
+                    + instance.getPort() + "#" + i;
+                int hash = hash(virtualNode);
+                ring.put(hash, instance);
+            }
+        }
+    }
+
+    public ServiceInstance choose(String key) {
+        if (ring.isEmpty()) return null;
+
+        int hash = hash(key);
+        // 找到第一个大于等于该hash的节点
+        Map.Entry&lt;Integer, ServiceInstance&gt; entry = ring.ceilingEntry(hash);
+        if (entry == null) {
+            // 环形结构，回到第一个节点
+            entry = ring.firstEntry();
+        }
+        return entry.getValue();
+    }
+
+    private int hash(String key) {
+        // 可使用MurmurHash等更好的哈希算法
+        return key.hashCode() &amp; Integer.MAX_VALUE;
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <!-- 算法对比 -->
+      <table>
+        <tr>
+          <th>算法</th>
+          <th>优点</th>
+          <th>缺点</th>
+          <th>适用场景</th>
+        </tr>
+        <tr>
+          <td>轮询</td>
+          <td>简单公平</td>
+          <td>不考虑服务器差异</td>
+          <td>服务器性能相近</td>
+        </tr>
+        <tr>
+          <td>加权轮询</td>
+          <td>考虑权重</td>
+          <td>分布可能不均</td>
+          <td>性能差异明显</td>
+        </tr>
+        <tr>
+          <td>平滑加权轮询</td>
+          <td>分布均匀</td>
+          <td>实现稍复杂</td>
+          <td>推荐使用</td>
+        </tr>
+        <tr>
+          <td>随机</td>
+          <td>简单</td>
+          <td>短时间可能不均</td>
+          <td>大量请求场景</td>
+        </tr>
+        <tr>
+          <td>最少连接</td>
+          <td>动态感知负载</td>
+          <td>需维护连接数</td>
+          <td>长连接场景</td>
+        </tr>
+        <tr>
+          <td>IP哈希</td>
+          <td>会话保持</td>
+          <td>可能分布不均</td>
+          <td>需要会话保持</td>
+        </tr>
+        <tr>
+          <td>一致性哈希</td>
+          <td>节点变化影响小</td>
+          <td>实现复杂</td>
+          <td>缓存等有状态场景</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- Ribbon负载均衡 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎀</div><h2 class="section-title">Ribbon负载均衡（Spring Cloud Netflix）</h2></div>
+    <div class="section-body">
+      <div class="warning">
+        <span class="warning-icon">⚠️</span> <strong>维护模式提示</strong><br>
+        Ribbon 已进入维护模式，Spring Cloud 2020+ 版本建议使用 Spring Cloud LoadBalancer 替代。
+      </div>
+
+      <p>Ribbon 是 Netflix 开源的客户端负载均衡器，与 Eureka、Feign 集成，实现服务间调用的负载均衡。</p>
+
+      <div class="mermaid">
+flowchart LR
+    A[服务消费者] -->|1. 从Eureka获取服务列表| B[Eureka注册中心]
+    A -->|2. 本地选择实例| C[实例1]
+    A --> D[实例2]
+    A --> E[实例3]
+      </div>
+
+      <p><strong>Ribbon内置负载均衡策略：</strong></p>
+      <table>
+        <tr>
+          <th>策略类</th>
+          <th>说明</th>
+        </tr>
+        <tr>
+          <td>RoundRobinRule</td>
+          <td>轮询（默认）</td>
+        </tr>
+        <tr>
+          <td>RandomRule</td>
+          <td>随机</td>
+        </tr>
+        <tr>
+          <td>WeightedResponseTimeRule</td>
+          <td>根据响应时间加权</td>
+        </tr>
+        <tr>
+          <td>RetryRule</td>
+          <td>重试机制</td>
+        </tr>
+        <tr>
+          <td>BestAvailableRule</td>
+          <td>选择最空闲实例</td>
+        </tr>
+        <tr>
+          <td>AvailabilityFilteringRule</td>
+          <td>过滤故障实例</td>
+        </tr>
+        <tr>
+          <td>ZoneAvoidanceRule</td>
+          <td>根据区域和可用性选择</td>
+        </tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># Ribbon配置示例
+user-service:
+  ribbon:
+    # 负载均衡策略
+    NFLoadBalancerRuleClassName: com.netflix.loadbalancer.RandomRule
+    # 连接超时
+    ConnectTimeout: 1000
+    # 读取超时
+    ReadTimeout: 3000
+    # 同一实例重试次数
+    MaxAutoRetries: 1
+    # 切换实例重试次数
+    MaxAutoRetriesNextServer: 2</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Spring Cloud LoadBalancer -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🚀</div><h2 class="section-title">Spring Cloud LoadBalancer</h2></div>
+    <div class="section-body">
+      <p>Spring Cloud 官方推出的负载均衡方案，作为 Ribbon 的替代，支持响应式编程，更好的与 Spring Cloud 生态集成。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 禁用Ribbon，启用Spring Cloud LoadBalancer
+spring:
+  cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false
+      # 缓存服务列表
+      cache:
+        ttl: 5s
+        capacity: 256
+      # 健康检查
+      health-check:
+        initial-delay: 0
+        interval: 25s</code></pre></div>
+      </div>
+
+      <p><strong>内置负载均衡策略：</strong></p>
+      <ul>
+        <li><strong>RoundRobinLoadBalancer：</strong>轮询（默认）</li>
+        <li><strong>RandomLoadBalancer：</strong>随机</li>
+      </ul>
+
+      <div class="tip">
+        <span class="tip-icon">💡</span> <strong>特性对比</strong><br>
+        Spring Cloud LoadBalancer 支持响应式（WebFlux），与 Spring Cloud Gateway 集成更好，是 Spring Cloud 2020+ 的推荐方案。
+      </div>
+    </div>
+  </section>
+
+  <!-- 自定义负载均衡策略 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎨</div><h2 class="section-title">自定义负载均衡策略</h2></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="ribbon-custom">Ribbon自定义</button>
+      <button class="tab" data-tab="sc-loadbalancer-custom">Spring Cloud LoadBalancer</button>
+      <button class="tab" data-tab="gray-release">灰度发布示例</button>
+    </div>
+    <div class="section-body">
+      <div id="ribbon-custom" class="tab-content active">
+        <p>通过继承 AbstractLoadBalancerRule 实现自定义 Ribbon 负载均衡策略：</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * 自定义Ribbon负载均衡策略
+ * 基于版本号的灰度路由
+ */
+public class VersionAwareRule extends AbstractLoadBalancerRule {
+
+    @Override
+    public Server choose(Object key) {
+        ILoadBalancer lb = getLoadBalancer();
+        List&lt;Server&gt; servers = lb.getAllServers();
+
+        // 从请求头获取目标版本
+        String targetVersion = GrayContextHolder.getVersion();
+
+        // 筛选匹配版本的服务
+        List&lt;Server&gt; matched = servers.stream()
+            .filter(server -> {
+                Map&lt;String, String&gt; metadata =
+                    ((NacosServer) server).getMetadata();
+                return targetVersion.equals(metadata.get("version"));
+            })
+            .collect(Collectors.toList());
+
+        if (matched.isEmpty()) {
+            // 降级到默认版本
+            matched = servers;
+        }
+
+        // 随机选择
+        return matched.get(ThreadLocalRandom.current()
+            .nextInt(matched.size()));
+    }
+
+    @Override
+    public void initWithNiwsConfig(IClientConfig clientConfig) {}
+}</code></pre></div>
+        </div>
+
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * Ribbon配置类
+ * 注意：此类不能放在主启动类同包或子包下
+ * 避免被@ComponentScan扫描到全局生效
+ */
+@Configuration
+public class RibbonConfig {
+
+    @Bean
+    public IRule ribbonRule() {
+        // 使用自定义灰度路由规则
+        return new VersionAwareRule();
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="sc-loadbalancer-custom" class="tab-content">
+        <p>实现 ReactorServiceInstanceLoadBalancer 接口自定义 Spring Cloud LoadBalancer 策略：</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * 自定义Spring Cloud LoadBalancer
+ * 基于权重的随机选择
+ */
+public class WeightedRandomLoadBalancer
+        implements ReactorServiceInstanceLoadBalancer {
+
+    private final ObjectProvider&lt;ServiceInstanceListSupplier&gt;
+        serviceInstanceSupplier;
+    private final String serviceId;
+
+    public WeightedRandomLoadBalancer(
+            ObjectProvider&lt;ServiceInstanceListSupplier&gt; supplier,
+            String serviceId) {
+        this.serviceInstanceSupplier = supplier;
+        this.serviceId = serviceId;
+    }
+
+    @Override
+    public Mono&lt;Response&lt;ServiceInstance&gt;&gt; choose(Request request) {
+        return serviceInstanceSupplier.getIfAvailable()
+            .get(request)
+            .next()
+            .map(this::getInstanceResponse);
+    }
+
+    private Response&lt;ServiceInstance&gt; getInstanceResponse(
+            List&lt;ServiceInstance&gt; instances) {
+        if (instances.isEmpty()) {
+            return new EmptyResponse();
+        }
+
+        // 按权重随机选择
+        int totalWeight = instances.stream()
+            .mapToInt(this::getWeight)
+            .sum();
+        int random = ThreadLocalRandom.current().nextInt(totalWeight);
+
+        for (ServiceInstance instance : instances) {
+            random -= getWeight(instance);
+            if (random &lt; 0) {
+                return new DefaultResponse(instance);
+            }
+        }
+        return new DefaultResponse(instances.get(0));
+    }
+
+    private int getWeight(ServiceInstance instance) {
+        String weight = instance.getMetadata().get("weight");
+        return weight != null ? Integer.parseInt(weight) : 1;
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="gray-release" class="tab-content">
+        <p>完整的灰度发布负载均衡实现，支持基于用户ID、Header等多种路由策略：</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * 灰度发布负载均衡策略
+ * 支持：Header版本号、用户ID白名单、百分比流量
+ */
+@Component
+public class GrayReleaseLoadBalancer
+        implements ReactorServiceInstanceLoadBalancer {
+
+    @Autowired
+    private GrayRuleProperties grayProperties;
+
+    @Override
+    public Mono&lt;Response&lt;ServiceInstance&gt;&gt; choose(Request request) {
+        DefaultRequest&lt;RequestDataContext&gt; ctx =
+            (DefaultRequest&lt;RequestDataContext&gt;) request;
+        HttpHeaders headers = ctx.getContext()
+            .getClientRequest().getHeaders();
+
+        String grayVersion = headers.getFirst("X-Gray-Version");
+        String userId = headers.getFirst("X-User-Id");
+
+        return serviceInstanceSupplier.getIfAvailable()
+            .get(request)
+            .next()
+            .map(instances -> {
+                List&lt;ServiceInstance&gt; grayInstances = instances.stream()
+                    .filter(inst -> grayVersion.equals(
+                        inst.getMetadata().get("version")))
+                    .collect(Collectors.toList());
+
+                // 白名单用户强制走灰度
+                if (grayProperties.getWhiteList().contains(userId)) {
+                    return new DefaultResponse(grayInstances.get(0));
+                }
+
+                // 按比例分配流量
+                if (ThreadLocalRandom.current().nextInt(100)
+                        &lt; grayProperties.getPercent()) {
+                    return new DefaultResponse(grayInstances.get(0));
+                }
+
+                // 返回稳定版本
+                return new DefaultResponse(instances.get(0));
+            });
+    }
+}</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 最佳实践 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">✅</div><h2 class="section-title">最佳实践</h2></div>
+    <div class="section-body">
+      <div class="param-grid">
+        <div class="param-card">
+          <div class="param-name">1. 选择合适的算法</div>
+          <div class="param-desc">
+            服务器性能相近用<strong>轮询</strong>，性能差异大用<strong>加权轮询</strong>，有状态服务用<strong>一致性哈希</strong>，长连接用<strong>最少连接</strong>。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">2. 健康检查</div>
+          <div class="param-desc">
+            配合健康检查机制，自动剔除故障实例。Ribbon 默认集成 Ping 检查，Spring Cloud LoadBalancer 支持 reactive 健康检查。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">3. 服务列表缓存</div>
+          <div class="param-desc">
+            启用本地缓存避免频繁查询注册中心，但注意设置合理的过期时间，保证服务上下线能及时感知。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">4. 重试机制</div>
+          <div class="param-desc">
+            配置合理的重试策略，区分<strong>可重试异常</strong>（网络超时）和<strong>不可重试异常</strong>（业务异常），避免无效重试。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">5. 监控与调优</div>
+          <div class="param-desc">
+            监控各实例的 QPS、响应时间、错误率，根据实际数据调整权重和策略，持续优化负载分布。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">6. 平滑升级</div>
+          <div class="param-desc">
+            使用<strong>灰度发布</strong>逐步切换流量，配合自定义负载均衡策略实现金丝雀发布、A/B测试等场景。
+          </div>
+        </div>
+      </div>
+
+      <div class="tip">
+        <span class="tip-icon">💡</span> <strong>生产环境建议</strong><br>
+        外部网关使用 Nginx（轮询/权重），微服务间调用使用 Spring Cloud LoadBalancer（推荐）或 Ribbon，配合熔断器实现完整的服务治理方案。
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; mermaid.initialize({ theme: 'dark' }); } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; mermaid.initialize({ theme: 'default' }); } location.reload(); });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

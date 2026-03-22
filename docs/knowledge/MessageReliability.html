@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>消息队列核心问题与解决方案 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .tip { background: rgba(78, 205, 196, 0.1); border-left: 4px solid var(--cyan); padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+  .tip-icon { color: var(--cyan); font-weight: bold; }
+  .warning { background: rgba(255, 123, 114, 0.1); border-left: 4px solid var(--red); padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+  .warning-icon { color: var(--red); font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .param-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+  .param-card { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; }
+  .param-name { font-family: var(--font-code); font-size: 14px; color: var(--amber); font-weight: 600; margin-bottom: 8px; }
+  .param-desc { font-size: 13px; line-height: 1.6; }
+  .phase-box { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; margin: 16px 0; }
+  .phase-title { font-weight: 700; font-size: 16px; color: var(--amber); margin-bottom: 12px; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } .param-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">消息队列核心问题与解决方案</h1>
+    <p class="hero-desc">消息队列在使用过程中面临消息丢失、消息重复、消息顺序三大核心问题。本文详解各问题的产生原因及解决方案，帮助你构建可靠的消息系统。</p>
+  </header>
+
+  <!-- 三大核心问题概览 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">三大核心问题概览</h2></div>
+    <div class="section-body">
+      <p>使用消息队列时，需要重点解决以下三个核心问题：</p>
+
+      <div class="param-grid">
+        <div class="param-card">
+          <div class="param-name">🔴 消息丢失</div>
+          <div class="param-desc">消息在传输过程中丢失，导致业务数据不一致。可能发生在<strong>发送、存储、消费</strong>三个阶段。</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">🟡 消息重复</div>
+          <div class="param-desc">同一条消息被消费多次，可能导致业务逻辑重复执行。需要消费端实现<strong>幂等性</strong>。</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">🔵 消息顺序</div>
+          <div class="param-desc">消息消费顺序与发送顺序不一致，可能导致业务状态混乱。需要保证<strong>分区有序</strong>。</div>
+        </div>
+      </div>
+
+      <div class="mermaid">
+flowchart LR
+    subgraph 消息传输链路
+        A[Producer<br/>生产者] --> B[Broker<br/>消息队列]
+        B --> C[Consumer<br/>消费者]
+    end
+    A -.->|发送阶段| D[消息丢失风险]
+    B -.->|存储阶段| D
+    C -.->|消费阶段| D
+    D --> E[ACK确认机制]
+    D --> F[持久化存储]
+    D --> G[重试机制]
+      </div>
+    </div>
+  </section>
+
+  <!-- 消息可靠性三个层面 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🛡️</div><h2 class="section-title">消息可靠性三个层面</h2></div>
+    <div class="section-body">
+      <p>保障消息可靠性需要从<strong>生产者</strong>、<strong>Broker</strong>、<strong>消费者</strong>三个层面分别采取措施。</p>
+
+      <!-- 生产者可靠性 -->
+      <div class="phase-box">
+        <div class="phase-title">1. 生产者可靠性（Producer）</div>
+        <p>生产者确保消息成功发送到Broker，通过确认机制和重试策略防止发送阶段消息丢失。</p>
+
+        <div class="tabs" style="padding: 0; border-bottom: 1px solid var(--border-card);">
+          <button class="tab active" data-tab="producer-sync">同步发送</button>
+          <button class="tab" data-tab="producer-async">异步发送</button>
+          <button class="tab" data-tab="producer-transaction">事务消息</button>
+        </div>
+        <div style="margin-top: 16px;">
+          <div id="producer-sync" class="tab-content active">
+            <div class="code-container">
+              <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+              <div class="code-body"><pre><code>/**
+ * 同步发送 + 确认机制
+ * 等待Broker返回确认后再继续
+ */
+public void sendWithConfirm(Message message) {
+    try {
+        // 同步发送，等待Broker确认
+        SendResult result = producer.send(message);
+
+        if (result.getSendStatus() == SendStatus.SEND_OK) {
+            log.info("消息发送成功: {}", result.getMsgId());
+        } else {
+            log.error("消息发送失败: {}", result);
+            // 记录失败消息，后续补偿
+            saveFailedMessage(message);
+        }
+    } catch (Exception e) {
+        log.error("发送异常", e);
+        // 重试或记录到补偿表
+        retryOrCompensate(message);
+    }
+}</code></pre></div>
+            </div>
+          </div>
+          <div id="producer-async" class="tab-content">
+            <div class="code-container">
+              <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+              <div class="code-body"><pre><code>/**
+ * 异步发送 + 回调确认
+ * 性能更好，通过回调处理结果
+ */
+public void sendAsync(Message message) {
+    producer.send(message, new SendCallback() {
+        @Override
+        public void onSuccess(SendResult result) {
+            log.info("发送成功: {}", result.getMsgId());
+        }
+
+        @Override
+        public void onException(Throwable e) {
+            log.error("发送失败，需重试", e);
+            // 记录到本地表，定时任务补偿
+            saveForRetry(message);
+        }
+    });
+}</code></pre></div>
+            </div>
+          </div>
+          <div id="producer-transaction" class="tab-content">
+            <div class="code-container">
+              <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+              <div class="code-body"><pre><code>/**
+ * 事务消息 - 保证本地事务和消息发送原子性
+ * 适用于分布式事务场景
+ */
+@Transactional
+public void sendTransactionMessage(Order order) {
+    // 1. 发送半消息（Half Message）
+    Message message = new Message("order-topic",
+        JSON.toJSONBytes(order));
+    message.setKeys(order.getOrderId());
+
+    TransactionSendResult result = producer
+        .sendMessageInTransaction(message, order);
+
+    // 2. 执行本地事务（保存订单）
+    orderMapper.insert(order);
+
+    // 3. 根据本地事务结果提交或回滚
+    if (本地事务成功) {
+        return LocalTransactionState.COMMIT_MESSAGE;
+    } else {
+        return LocalTransactionState.ROLLBACK_MESSAGE;
+    }
+}
+// 4. Broker回查事务状态（如果长时间无响应）</code></pre></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Broker可靠性 -->
+      <div class="phase-box">
+        <div class="phase-title">2. Broker可靠性</div>
+        <p>Broker确保消息持久化存储，通过刷盘策略和主从复制防止存储阶段消息丢失。</p>
+
+        <table>
+          <tr>
+            <th>机制</th>
+            <th>策略</th>
+            <th>说明</th>
+            <th>适用场景</th>
+          </tr>
+          <tr>
+            <td rowspan="2"><strong>刷盘策略</strong></td>
+            <td>异步刷盘（ASYNC）</td>
+            <td>性能高，可能丢失（默认）</td>
+            <td>普通业务，可容忍少量丢失</td>
+          </tr>
+          <tr>
+            <td>同步刷盘（SYNC）</td>
+            <td>性能低，不丢失</td>
+            <td>核心业务，如订单、支付</td>
+          </tr>
+          <tr>
+            <td rowspan="2"><strong>主从复制</strong></td>
+            <td>异步复制（ASYNC）</td>
+            <td>性能高，主从切换可能丢失</td>
+            <td>读多写少，容忍部分延迟</td>
+          </tr>
+          <tr>
+            <td>同步复制（SYNC）</td>
+            <td>性能低，主从切换不丢失</td>
+            <td>强一致性要求</td>
+          </tr>
+        </table>
+
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Properties</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code># RocketMQ Broker配置
+# 刷盘策略：SYNC_FLUSH 同步刷盘，ASYNC_FLUSH 异步刷盘
+flushDiskType=SYNC_FLUSH
+
+# 主从复制策略：SYNC_MASTER 同步复制，ASYNC_MASTER 异步复制
+brokerRole=SYNC_MASTER
+
+# 推荐组合：
+# 核心交易业务：SYNC_FLUSH + SYNC_MASTER（最高可靠）
+# 日志采集业务：ASYNC_FLUSH + ASYNC_MASTER（最高性能）</code></pre></div>
+        </div>
+      </div>
+
+      <!-- 消费者可靠性 -->
+      <div class="phase-box">
+        <div class="phase-title">3. 消费者可靠性（Consumer）</div>
+        <p>消费者确保消息被正确处理，通过ACK机制和幂等消费防止消费阶段消息丢失或重复消费。</p>
+
+        <div class="warning">
+          <span class="warning-icon">⚠️</span> <strong>关键原则：先处理业务，再发送ACK</strong>
+        </div>
+
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>/**
+ * ❌ 错误做法：先ACK再处理业务
+ * 如果业务处理失败，消息就丢失了
+ */
+@RocketMQMessageListener(topic = "order-topic",
+    consumerGroup = "order-group")
+public class WrongConsumer implements RocketMQListener&lt;Order&gt; {
+    @Override
+    public void onMessage(Order order) {
+        // 先ACK（方法返回自动ACK）
+        // 如果这里处理失败，消息不会重试！
+        orderService.process(order);
+    }
+}
+
+/**
+ * ✅ 正确做法：处理成功后再ACK
+ * 异常时消息会重新投递
+ */
+@RocketMQMessageListener(topic = "order-topic",
+    consumerGroup = "order-group")
+public class RightConsumer implements RocketMQListener&lt;Order&gt; {
+    @Override
+    public void onMessage(Order order) {
+        try {
+            // 先处理业务逻辑
+            orderService.process(order);
+            // 方法正常返回 = 自动ACK
+        } catch (Exception e) {
+            log.error("处理失败", e);
+            // 抛出异常 = 不ACK，消息会重新投递
+            throw new RuntimeException("处理失败，等待重试", e);
+        }
+    }
+}</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 消息丢失场景与解决方案 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔍</div><h2 class="section-title">消息丢失场景与解决方案</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+sequenceDiagram
+    participant P as Producer
+    participant B as Broker
+    participant C as Consumer
+
+    rect rgb(255, 123, 114, 0.1)
+        Note over P,B: 场景1：发送阶段丢失
+        P->>B: 发送消息
+        B--xP: ACK丢失/网络超时
+        Note right of P: 生产者认为失败重试<br/>实际Broker已接收
+    end
+
+    rect rgb(255, 123, 114, 0.1)
+        Note over B: 场景2：存储阶段丢失
+        B->>B: 消息写入内存
+        Note right of B: Broker宕机<br/>消息未刷盘丢失
+    end
+
+    rect rgb(255, 123, 114, 0.1)
+        Note over B,C: 场景3：消费阶段丢失
+        B->>C: 推送消息
+        C->>C: 处理业务
+        Note left of C: 业务处理成功<br/>但ACK前消费者宕机
+        C--xB: ACK丢失
+    end
+      </div>
+
+      <table>
+        <tr>
+          <th>丢失阶段</th>
+          <th>典型场景</th>
+          <th>解决方案</th>
+        </tr>
+        <tr>
+          <td>发送阶段</td>
+          <td>网络超时、Broker接收后ACK丢失</td>
+          <td>同步发送+失败重试、事务消息</td>
+        </tr>
+        <tr>
+          <td>存储阶段</td>
+          <td>Broker宕机、消息未刷盘</td>
+          <td>同步刷盘、主从同步复制</td>
+        </tr>
+        <tr>
+          <td>消费阶段</td>
+          <td>处理成功但ACK失败、消费者宕机</td>
+          <td>先处理业务再ACK、业务幂等</td>
+        </tr>
+      </table>
+
+      <div class="tip">
+        <span class="tip-icon">💡</span> <strong>消息可靠性保障 checklist</strong><br>
+        [x] 生产者：同步发送或带回调的异步发送<br>
+        [x] 生产者：失败重试 + 降级到补偿表<br>
+        [x] Broker：核心数据使用同步刷盘<br>
+        [x] Broker：部署主从同步复制<br>
+        [x] 消费者：先处理业务逻辑，再ACK<br>
+        [x] 消费者：实现幂等性消费
+      </div>
+    </div>
+  </section>
+
+  <!-- 消息重复消费与幂等设计 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">消息重复消费与幂等设计</h2></div>
+    <div class="section-body">
+      <p><strong>消息重复的原因：</strong></p>
+      <ul>
+        <li><strong>生产者重试：</strong>网络超时后重试，Broker已接收但ACK丢失</li>
+        <li><strong>消费者重试：</strong>消费成功但ACK失败，消息被重新投递</li>
+        <li><strong>Rebalance：</strong>消费者组重平衡导致offset未提交</li>
+      </ul>
+
+      <div class="mermaid">
+sequenceDiagram
+    participant P as Producer
+    participant B as Broker
+    participant C as Consumer
+
+    P->>B: 发送消息
+    B->>B: 存储成功
+    Note right of B: ACK网络超时
+    B--xP: ACK丢失
+    P->>P: 触发重试
+    P->>B: 再次发送（同一条消息）
+    B->>B: 存储重复消息
+    B->>C: 推送两条相同消息
+      </div>
+
+      <p><strong>幂等性解决方案：</strong></p>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="idempotent-db">数据库唯一索引</button>
+        <button class="tab" data-tab="idempotent-redis">Redis SetNX</button>
+        <button class="tab" data-tab="idempotent-state">业务状态机</button>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <div id="idempotent-db" class="tab-content active">
+          <div class="code-container">
+            <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code>/**
+ * 方案1：唯一ID + 去重表
+ * 利用数据库唯一索引实现幂等
+ */
+@Service
+public class IdempotentConsumer {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Transactional
+    public void consume(Message message) {
+        String messageId = message.getKeys();
+
+        try {
+            // 先插入消息记录，利用唯一索引去重
+            jdbcTemplate.update(
+                "INSERT INTO msg_log (msg_id, status, create_time) " +
+                "VALUES (?, ?, NOW())",
+                messageId, "PROCESSING"
+            );
+        } catch (DuplicateKeyException e) {
+            // 消息已处理，直接返回（幂等）
+            log.info("消息已处理，跳过: {}", messageId);
+            return;
+        }
+
+        try {
+            // 执行业务逻辑
+            processBusiness(message);
+
+            // 更新消息状态
+            jdbcTemplate.update(
+                "UPDATE msg_log SET status = ? WHERE msg_id = ?",
+                "SUCCESS", messageId
+            );
+        } catch (Exception e) {
+            // 业务失败，可重试或记录失败状态
+            throw e;
+        }
+    }
+}
+
+-- 消息去重表
+CREATE TABLE msg_log (
+    msg_id VARCHAR(64) PRIMARY KEY,
+    status VARCHAR(20),
+    create_time TIMESTAMP,
+    INDEX idx_create_time (create_time)
+);</code></pre></div>
+          </div>
+        </div>
+        <div id="idempotent-redis" class="tab-content">
+          <div class="code-container">
+            <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code>/**
+ * 方案2：Redis SetNX
+ * 高性能场景，设置过期时间自动清理
+ */
+@Service
+public class RedisIdempotentConsumer {
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
+
+    public void consume(Message message) {
+        String messageId = message.getKeys();
+        String key = "msg:processed:" + messageId;
+
+        // SET key value NX EX 86400
+        Boolean success = redisTemplate.opsForValue()
+            .setIfAbsent(key, "1", 24, TimeUnit.HOURS);
+
+        if (!Boolean.TRUE.equals(success)) {
+            // 消息已处理（或正在处理）
+            log.info("消息重复消费，跳过: {}", messageId);
+            return;
+        }
+
+        try {
+            // 执行业务逻辑
+            processBusiness(message);
+        } catch (Exception e) {
+            // 业务失败，删除key允许重试
+            redisTemplate.delete(key);
+            throw e;
+        }
+    }
+}</code></pre></div>
+          </div>
+        </div>
+        <div id="idempotent-state" class="tab-content">
+          <div class="code-container">
+            <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code>/**
+ * 方案3：业务状态机幂等
+ * 利用状态流转的单向性实现幂等
+ * 示例：订单状态流转
+ */
+@Service
+public class OrderConsumer {
+
+    @Autowired
+    private OrderMapper orderMapper;
+
+    public void processPayment(OrderMessage message) {
+        Order order = orderMapper.selectById(message.getOrderId());
+
+        // 状态机校验：只有待支付才能变为已支付
+        if (order.getStatus() == OrderStatus.WAIT_PAY) {
+            orderMapper.updateStatus(
+                order.getId(),
+                OrderStatus.PAID,
+                message.getPayTime()
+            );
+            log.info("订单支付成功: {}", order.getId());
+        } else if (order.getStatus() == OrderStatus.PAID) {
+            // 已经是已支付状态，幂等返回
+            log.info("订单已支付，幂等跳过: {}", order.getId());
+        } else {
+            // 非法状态流转，记录异常
+            log.error("非法状态流转: {} -> PAID", order.getStatus());
+            throw new IllegalStateException("非法订单状态");
+        }
+    }
+}
+
+// 订单状态流转：待支付 -> 已支付 -> 已发货 -> 已完成
+// 利用状态单向性，重复消息不会导致状态回退</code></pre></div>
+          </div>
+        </div>
+      </div>
+
+      <table>
+        <tr>
+          <th>方案</th>
+          <th>优点</th>
+          <th>缺点</th>
+          <th>适用场景</th>
+        </tr>
+        <tr>
+          <td>数据库唯一索引</td>
+          <td>可靠性强，可追溯</td>
+          <td>性能较低，需清理历史数据</td>
+          <td>核心业务，数据一致性要求高</td>
+        </tr>
+        <tr>
+          <td>Redis SetNX</td>
+          <td>高性能，自动过期</td>
+          <td>极端情况下可能重复</td>
+          <td>高并发场景，可容忍少量重复</td>
+        </tr>
+        <tr>
+          <td>业务状态机</td>
+          <td>无需额外存储，业务内聚</td>
+          <td>需要设计合理的状态流转</td>
+          <td>有明确状态的业务场景</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 消息顺序保证 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📋</div><h2 class="section-title">消息顺序保证</h2></div>
+    <div class="section-body">
+      <p><strong>需要保证顺序的典型场景：</strong></p>
+      <ul>
+        <li><strong>订单状态变更：</strong>创建 → 支付 → 发货 → 签收</li>
+        <li><strong>数据同步：</strong>增 → 改 → 删</li>
+        <li><strong>库存扣减：</strong>下单扣减 → 取消释放</li>
+      </ul>
+
+      <div class="mermaid">
+graph LR
+    subgraph 全局顺序
+        A1[消息1] --> B1[消息2] --> C1[消息3]
+        D1[消息4] --> E1[消息5]
+    end
+    subgraph 分区顺序
+        A2[订单A:创建] --> B2[订单A:支付] --> C2[订单A:发货]
+        D2[订单B:创建] --> E2[订单B:支付]
+        F2[订单C:创建]
+    end
+      </div>
+
+      <table>
+        <tr>
+          <th>类型</th>
+          <th>说明</th>
+          <th>实现方式</th>
+          <th>性能</th>
+        </tr>
+        <tr>
+          <td><strong>全局顺序</strong></td>
+          <td>所有消息严格有序</td>
+          <td>单队列单消费者</td>
+          <td>性能最低</td>
+        </tr>
+        <tr>
+          <td><strong>分区顺序</strong></td>
+          <td>同一业务ID的消息有序</td>
+          <td>业务ID取模选队列</td>
+          <td>性能较好</td>
+        </tr>
+      </table>
+
+      <p><strong>分区顺序实现方案：</strong></p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>/**
+ * 发送端：根据业务ID选择队列
+ */
+public class OrderProducer {
+
+    public void sendOrderMessage(Order order) {
+        Message message = new Message("order-topic",
+            JSON.toJSONBytes(order));
+
+        // RocketMQ：使用MessageQueueSelector
+        producer.send(message, new MessageQueueSelector() {
+            @Override
+            public MessageQueue select(List&lt;MessageQueue&gt; mqs,
+                                       Message msg, Object arg) {
+                Long orderId = (Long) arg;
+                // 相同orderId进入同一队列
+                int index = (int) (orderId % mqs.size());
+                return mqs.get(index);
+            }
+        }, order.getId());
+    }
+
+    // Kafka：使用业务ID作为key
+    public void sendKafkaMessage(Order order) {
+        ProducerRecord&lt;String, String&gt; record =
+            new ProducerRecord&lt;&gt;(
+                "order-topic",
+                order.getId().toString(),  // key相同进入同一分区
+                JSON.toJSONString(order)
+            );
+        kafkaProducer.send(record);
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>/**
+ * 消费端：单线程消费同一队列
+ */
+@RocketMQMessageListener(
+    topic = "order-topic",
+    consumerGroup = "order-group",
+    consumeMode = ConsumeMode.ORDERLY  // 顺序消费模式
+)
+public class OrderConsumer implements RocketMQListener&lt;Order&gt; {
+
+    @Override
+    public void onMessage(Order order) {
+        // 同一队列的消息由单线程处理，保证顺序
+        // 注意：如果处理失败会阻塞后续消息
+        processOrder(order);
+    }
+}
+
+// Kafka顺序消费配置
+@Bean
+public ConcurrentKafkaListenerContainerFactory&lt;String, String&gt;
+        kafkaListenerContainerFactory() {
+    ConcurrentKafkaListenerContainerFactory&lt;String, String&gt; factory =
+        new ConcurrentKafkaListenerContainerFactory&lt;&gt;();
+    factory.setConsumerFactory(consumerFactory());
+    // 并发度为1，保证单线程消费
+    factory.setConcurrency(1);
+    return factory;
+}</code></pre></div>
+      </div>
+
+      <div class="warning">
+        <span class="warning-icon">⚠️</span> <strong>注意事项</strong><br>
+        顺序消费会降低吞吐量（单线程处理），且某条消息处理失败会阻塞后续消息。建议仅对真正需要顺序的场景使用，其他场景使用并发消费。
+      </div>
+    </div>
+  </section>
+
+  <!-- 死信队列（DLQ） -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💀</div><h2 class="section-title">死信队列（DLQ）</h2></div>
+    <div class="section-body">
+      <p>当消息消费失败超过重试次数后，消息会被投递到死信队列（Dead Letter Queue），避免无限重试阻塞正常消息处理。</p>
+
+      <div class="mermaid">
+flowchart TD
+    A[正常消息] --> B{消费成功?}
+    B -->|是| C[提交offset]
+    B -->|否| D[重试队列]
+    D --> E{重试次数&lt;阈值?}
+    E -->|是| F[延迟后重试]
+    F --> B
+    E -->|否| G[投递到死信队列]
+    G --> H[人工处理/告警]
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>/**
+ * RocketMQ死信队列配置
+ * 消费失败16次后进入死信队列
+ */
+@RocketMQMessageListener(
+    topic = "order-topic",
+    consumerGroup = "order-consumer",
+    // 最大重试次数（默认16次）
+    maxReconsumeTimes = 16,
+    // 消费超时时间（分钟）
+    consumeTimeout = 15
+)
+public class OrderConsumer implements RocketMQListener&lt;Order&gt; {
+
+    @Override
+    public void onMessage(Order order) {
+        try {
+            processOrder(order);
+        } catch (BusinessException e) {
+            // 业务异常，记录后直接返回（进入死信）
+            log.error("业务异常，进入死信: {}", order.getOrderId(), e);
+            // 注意：不要抛出异常，避免重试
+        } catch (Exception e) {
+            // 系统异常，抛出重试
+            throw new RuntimeException("系统异常，需要重试", e);
+        }
+    }
+}
+
+// 死信队列消费（人工处理）
+@RocketMQMessageListener(
+    topic = "%DLQ%order-consumer",  // DLQ主题格式
+    consumerGroup = "dlq-consumer"
+)
+public class DLQConsumer implements RocketMQListener&lt;Order&gt; {
+
+    @Override
+    public void onMessage(Order order) {
+        // 发送告警通知运维人员
+        alertService.sendAlert("消息消费失败", order);
+        // 记录到数据库人工处理
+        dlqLogService.save(order);
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="tip">
+        <span class="tip-icon">💡</span> <strong>死信队列处理建议</strong><br>
+        1. <strong>分类处理：</strong>区分业务异常（可跳过）和系统异常（需修复后重试）<br>
+        2. <strong>监控告警：</strong>死信消息产生时立即告警<br>
+        3. <strong>人工介入：</strong>提供管理后台查看和处理死信消息<br>
+        4. <strong>补偿机制：</strong>对于重要业务，死信消息需要人工补偿
+      </div>
+    </div>
+  </section>
+
+  <!-- 消息追踪 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔎</div><h2 class="section-title">消息追踪</h2></div>
+    <div class="section-body">
+      <p>在分布式系统中，消息追踪（Message Trace）帮助排查消息丢失、延迟等问题，实现全链路可观测。</p>
+
+      <div class="mermaid">
+flowchart LR
+    A[Producer] -->|1.发送| B[Broker]
+    B -->|2.存储| C[(CommitLog)]
+    B -->|3.推送| D[Consumer]
+    D -->|4.ACK| B
+
+    subgraph 消息追踪数据
+        E[MsgId] --> F[发送时间]
+        E --> G[存储时间]
+        E --> H[消费时间]
+        E --> I[消费结果]
+        E --> J[消费耗时]
+    end
+      </div>
+
+      <p><strong>消息追踪方案：</strong></p>
+
+      <table>
+        <tr>
+          <th>方案</th>
+          <th>实现方式</th>
+          <th>特点</th>
+        </tr>
+        <tr>
+          <td>RocketMQ Trace</td>
+          <td>开启traceEnable配置</td>
+          <td>内置支持，低开销，存储到特定Topic</td>
+        </tr>
+        <tr>
+          <td>SkyWalking</td>
+          <td>插件自动埋点</td>
+          <td>全链路追踪，可视化展示</td>
+        </tr>
+        <tr>
+          <td>自定义实现</td>
+          <td>AOP/拦截器记录日志</td>
+          <td>灵活可控，可集成业务数据</td>
+        </tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>/**
+ * 自定义消息追踪拦截器
+ */
+@Component
+public class MessageTraceInterceptor {
+
+    @Autowired
+    private TraceLogService traceLogService;
+
+    // 发送端埋点
+    public void beforeSend(Message message) {
+        TraceContext context = TraceContext.builder()
+            .msgId(message.getKeys())
+            .traceId(MDC.get("traceId"))
+            .topic(message.getTopic())
+            .sendTime(System.currentTimeMillis())
+            .status("SENDING")
+            .build();
+        traceLogService.save(context);
+    }
+
+    // 消费端埋点
+    public void onConsume(Message message, long consumeTime, boolean success) {
+        traceLogService.updateStatus(
+            message.getKeys(),
+            success ? "SUCCESS" : "FAILED",
+            consumeTime,
+            MDC.get("traceId")
+        );
+    }
+}
+
+// 消费监控指标
+@Component
+public class ConsumerMetrics {
+
+    // 消费延迟监控
+    public void recordConsumeLatency(String topic, long latencyMs) {
+        // 投递到Prometheus
+        consumeLatencyHistogram
+            .labels(topic)
+            .observe(latencyMs);
+    }
+
+    // 消费失败率监控
+    public void recordConsumeFailure(String topic) {
+        consumeFailureCounter.labels(topic).inc();
+    }
+
+    // 消费积压监控
+    public void recordConsumeLag(String topic, long lag) {
+        consumeLagGauge.labels(topic).set(lag);
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="tip">
+        <span class="tip-icon">💡</span> <strong>监控告警指标</strong><br>
+        - <strong>消费延迟：</strong>消息从发送到被消费的时间差<br>
+        - <strong>消费积压：</strong>未消费消息数量<br>
+        - <strong>消费失败率：</strong>失败消息 / 总消息<br>
+        - <strong>重试次数：</strong>消息平均重试次数<br>
+        - <strong>死信数量：</strong>进入死信队列的消息数
+      </div>
+    </div>
+  </section>
+
+  <!-- 最佳实践总结 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">✅</div><h2 class="section-title">最佳实践总结</h2></div>
+    <div class="section-body">
+      <div class="param-grid">
+        <div class="param-card">
+          <div class="param-name">1. 发送端</div>
+          <div class="param-desc">
+            使用<strong>同步发送</strong>或带回调的<strong>异步发送</strong>；实现<strong>重试机制</strong>；关键业务使用<strong>事务消息</strong>；失败消息落入补偿表。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">2. 存储端</div>
+          <div class="param-desc">
+            核心业务配置<strong>同步刷盘</strong>；部署<strong>主从同步复制</strong>；定期备份消息数据；监控磁盘空间和IO性能。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">3. 消费端</div>
+          <div class="param-desc">
+            <strong>先处理业务，再ACK</strong>；实现<strong>幂等性</strong>；设置合理的<strong>重试次数</strong>（3-16次）；配置<strong>死信队列</strong>。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">4. 监控告警</div>
+          <div class="param-desc">
+            监控<strong>消费延迟</strong>和<strong>积压情况</strong>；监控<strong>消费失败率</strong>；死信消息<strong>实时告警</strong>；全链路消息追踪。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">5. 顺序消息</div>
+          <div class="param-desc">
+            使用<strong>业务ID取模</strong>选择队列；消费端<strong>单线程</strong>处理；权衡顺序性和吞吐量；非必要不使用顺序消息。
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">6. 性能优化</div>
+          <div class="param-desc">
+            批量发送和批量消费；合理设置消费者线程数；使用<strong>并发消费</strong>代替顺序消费；预热连接和线程池。
+          </div>
+        </div>
+      </div>
+
+      <div class="mermaid">
+flowchart TD
+    subgraph 消息可靠性保障体系
+        A[Producer] -->|同步发送+事务| B[Broker]
+        B -->|同步刷盘+主从复制| C[持久化存储]
+        B -->|ACK确认| D[Consumer]
+        D -->|幂等消费| E[业务处理]
+        D -->|失败重试| F[重试队列]
+        F -->|超限| G[死信队列]
+        G --> H[人工处理]
+
+        I[监控告警] --> A
+        I --> B
+        I --> D
+        J[消息追踪] --> A
+        J --> D
+    end
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; mermaid.initialize({ theme: 'dark' }); } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; mermaid.initialize({ theme: 'default' }); } location.reload(); });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工厂模式 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .table-container { overflow-x: auto; margin: 20px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .highlight { color: var(--amber); font-weight: 600; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-family: var(--font-code); }
+  .tag-success { background: rgba(126, 231, 135, 0.15); color: var(--green); }
+  .tag-danger { background: rgba(255, 123, 114, 0.15); color: var(--red); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>设计模式</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🏭 FACTORY</div>
+    <h1 class="hero-title">工厂模式</h1>
+    <p class="hero-desc">将对象的创建与使用分离，由工厂类负责创建对象。工厂模式是创建型设计模式中最常用的模式之一，分为简单工厂、工厂方法和抽象工厂三种形式。</p>
+  </header>
+
+  <!-- 模式定义与意图 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📖</div><h2 class="section-title">模式定义与意图</h2></div>
+    <div class="section-body">
+      <p><strong class="highlight">定义：</strong>工厂模式（Factory Pattern）是一种创建型设计模式，它提供了一种创建对象的最佳方式，而无需向客户端暴露创建逻辑。</p>
+      <p><strong class="highlight">核心思想：</strong>将对象的创建（new操作）从客户端代码中抽离出来，交给专门的工厂类处理，实现解耦。</p>
+      <p><strong class="highlight">三种形式：</strong></p>
+      <ul>
+        <li><strong>简单工厂（Simple Factory）：</strong>一个工厂类根据参数创建不同产品（不属于GoF 23种模式）</li>
+        <li><strong>工厂方法（Factory Method）：</strong>定义创建对象的接口，让子类决定实例化哪个类</li>
+        <li><strong>抽象工厂（Abstract Factory）：</strong>创建一系列相关或依赖对象的接口（产品族）</li>
+      </ul>
+      <div class="mermaid">classDiagram
+    class Payment { <<interface>> +pay(amount) }
+    class AlipayPayment
+    class WechatPayment
+    class BankCardPayment
+    class SimplePaymentFactory { +create(type) }
+    Payment <|.. AlipayPayment
+    Payment <|.. WechatPayment
+    Payment <|.. BankCardPayment
+    SimplePaymentFactory ..> Payment</div>
+    </div>
+  </section>
+
+  <!-- 适用场景 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">适用场景</h2></div>
+    <div class="section-body">
+      <p>以下场景适合使用工厂模式：</p>
+      <ul>
+        <li><strong>日志框架：</strong>SLF4J、Log4j等日志框架通过工厂创建具体日志实现</li>
+        <li><strong>数据库连接：</strong>不同数据库（MySQL、Oracle、PostgreSQL）的Connection创建</li>
+        <li><strong>支付系统：</strong>支持多种支付方式（支付宝、微信、银行卡）</li>
+        <li><strong>Spring框架：</strong>BeanFactory负责创建和管理Bean对象</li>
+        <li><strong>跨平台UI组件：</strong>不同操作系统创建对应的UI组件</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 代码实现 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💻</div><h2 class="section-title">代码实现</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="simple">简单工厂</button>
+        <button class="tab" data-tab="factory-method">工厂方法</button>
+        <button class="tab" data-tab="abstract-factory">抽象工厂</button>
+      </div>
+
+      <div id="simple" class="tab-content active">
+        <p><strong class="highlight">简单工厂（Simple Factory）</strong> - 一个工厂类创建所有产品，通过参数决定创建哪种产品</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 产品接口
+interface Payment {
+    void pay(double amount);
+}
+
+// 具体产品
+class AlipayPayment implements Payment {
+    @Override
+    public void pay(double amount) {
+        System.out.println("支付宝支付：" + amount + "元");
+    }
+}
+
+class WechatPayment implements Payment {
+    @Override
+    public void pay(double amount) {
+        System.out.println("微信支付：" + amount + "元");
+    }
+}
+
+class BankCardPayment implements Payment {
+    @Override
+    public void pay(double amount) {
+        System.out.println("银行卡支付：" + amount + "元");
+    }
+}
+
+// 简单工厂
+class SimplePaymentFactory {
+    public static Payment create(String type) {
+        switch (type.toLowerCase()) {
+            case "alipay": return new AlipayPayment();
+            case "wechat": return new WechatPayment();
+            case "bank": return new BankCardPayment();
+            default: throw new IllegalArgumentException("不支持的支付方式");
+        }
+    }
+}
+
+// 使用
+Payment payment = SimplePaymentFactory.create("alipay");
+payment.pay(100.0);</code></pre></div>
+        </div>
+        <p><strong class="highlight">特点：</strong>简单直观，但违反开闭原则（新增产品需修改工厂类）</p>
+      </div>
+
+      <div id="factory-method" class="tab-content">
+        <p><strong class="highlight">工厂方法（Factory Method）</strong> - 每个产品有对应的工厂，新增产品只需新增工厂类</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 工厂接口
+interface PaymentFactory {
+    Payment create();
+}
+
+// 具体工厂：支付宝
+class AlipayFactory implements PaymentFactory {
+    @Override
+    public Payment create() {
+        return new AlipayPayment();
+    }
+}
+
+// 具体工厂：微信
+class WechatFactory implements PaymentFactory {
+    @Override
+    public Payment create() {
+        return new WechatPayment();
+    }
+}
+
+// 具体工厂：银行卡
+class BankCardFactory implements PaymentFactory {
+    @Override
+    public Payment create() {
+        return new BankCardPayment();
+    }
+}
+
+// 使用
+PaymentFactory factory = new WechatFactory();
+Payment payment = factory.create();
+payment.pay(200.0);</code></pre></div>
+        </div>
+        <div class="mermaid">classDiagram
+    class PaymentFactory { <<interface>> +create() }
+    class AlipayFactory
+    class WechatFactory
+    class BankCardFactory
+    PaymentFactory <|.. AlipayFactory
+    PaymentFactory <|.. WechatFactory
+    PaymentFactory <|.. BankCardFactory</div>
+        <p><strong class="highlight">特点：</strong>符合开闭原则，但客户端需要知道具体工厂类</p>
+      </div>
+
+      <div id="abstract-factory" class="tab-content">
+        <p><strong class="highlight">抽象工厂（Abstract Factory）</strong> - 创建一系列相关对象（产品族）</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 产品族：家具
+interface Chair {
+    void sit();
+}
+
+interface Table {
+    void put(String item);
+}
+
+// 现代风格产品
+class ModernChair implements Chair {
+    @Override
+    public void sit() {
+        System.out.println("坐在现代风格的椅子上");
+    }
+}
+
+class ModernTable implements Table {
+    @Override
+    public void put(String item) {
+        System.out.println("在现代风格的桌子上放：" + item);
+    }
+}
+
+// 古典风格产品
+class ClassicalChair implements Chair {
+    @Override
+    public void sit() {
+        System.out.println("坐在古典风格的椅子上");
+    }
+}
+
+class ClassicalTable implements Table {
+    @Override
+    public void put(String item) {
+        System.out.println("在古典风格的桌子上放：" + item);
+    }
+}
+
+// 抽象工厂接口
+interface FurnitureFactory {
+    Chair createChair();
+    Table createTable();
+}
+
+// 现代风格工厂
+class ModernFurnitureFactory implements FurnitureFactory {
+    @Override
+    public Chair createChair() {
+        return new ModernChair();
+    }
+
+    @Override
+    public Table createTable() {
+        return new ModernTable();
+    }
+}
+
+// 古典风格工厂
+class ClassicalFurnitureFactory implements FurnitureFactory {
+    @Override
+    public Chair createChair() {
+        return new ClassicalChair();
+    }
+
+    @Override
+    public Table createTable() {
+        return new ClassicalTable();
+    }
+}
+
+// 使用
+FurnitureFactory factory = new ModernFurnitureFactory();
+Chair chair = factory.createChair();
+Table table = factory.createTable();
+chair.sit();
+table.put("书籍");</code></pre></div>
+        </div>
+        <div class="mermaid">classDiagram
+    class FurnitureFactory { <<interface>> +createChair() +createTable() }
+    class ModernFurnitureFactory
+    class ClassicalFurnitureFactory
+    FurnitureFactory <|.. ModernFurnitureFactory
+    FurnitureFactory <|.. ClassicalFurnitureFactory</div>
+        <p><strong class="highlight">产品族概念：</strong>现代风格家具族 = 现代椅子 + 现代桌子；古典风格家具族 = 古典椅子 + 古典桌子</p>
+      </div>
+
+      <h3 style="margin-top: 32px;">三种工厂模式对比</h3>
+      <div class="table-container">
+        <table>
+          <tr>
+            <th>特性</th>
+            <th>简单工厂</th>
+            <th>工厂方法</th>
+            <th>抽象工厂</th>
+          </tr>
+          <tr>
+            <td>产品结构</td>
+            <td>单一产品</td>
+            <td>单一产品</td>
+            <td>产品族（多个相关产品）</td>
+          </tr>
+          <tr>
+            <td>扩展性</td>
+            <td><span class="tag tag-danger">需修改代码</span></td>
+            <td><span class="tag tag-success">新增工厂类</span></td>
+            <td><span class="tag tag-success">新增工厂类</span></td>
+          </tr>
+          <tr>
+            <td>复杂度</td>
+            <td>低</td>
+            <td>中</td>
+            <td>高</td>
+          </tr>
+          <tr>
+            <td>使用场景</td>
+            <td>产品种类少且固定</td>
+            <td>产品频繁扩展</td>
+            <td>需要创建产品族</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 优缺点分析 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">优缺点分析</h2></div>
+    <div class="section-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div>
+          <h4 style="color: var(--green); margin-bottom: 12px;">优点</h4>
+          <ul>
+            <li><strong>解耦：</strong>将对象的创建和使用分离，降低耦合度</li>
+            <li><strong>可扩展：</strong>新增产品只需新增工厂类（工厂方法/抽象工厂）</li>
+            <li><strong>可维护：</strong>集中管理对象的创建逻辑</li>
+            <li><strong>复用：</strong>工厂可以被多个客户端复用</li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="color: var(--red); margin-bottom: 12px;">缺点</h4>
+          <ul>
+            <li><strong>类数量增加：</strong>每个产品对应一个工厂类，增加系统复杂度</li>
+            <li><strong>理解难度：</strong>引入新的抽象层，增加理解成本</li>
+            <li><strong>简单工厂缺陷：</strong>新增产品需要修改工厂类，违反开闭原则</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 与其他模式的关系 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔗</div><h2 class="section-title">与其他模式的关系</h2></div>
+    <div class="section-body">
+      <table>
+        <tr>
+          <th>相关模式</th>
+          <th>关系说明</th>
+        </tr>
+        <tr>
+          <td><strong class="highlight">单例模式</strong></td>
+          <td>工厂类通常设计为单例，确保只有一个工厂实例存在</td>
+        </tr>
+        <tr>
+          <td><strong class="highlight">策略模式</strong></td>
+          <td>工厂模式负责创建策略对象，策略模式负责切换算法</td>
+        </tr>
+        <tr>
+          <td><strong class="highlight">依赖注入</strong></td>
+          <td>Spring的IoC容器是工厂模式的升华，通过配置创建Bean</td>
+        </tr>
+        <tr>
+          <td><strong class="highlight">模板方法</strong></td>
+          <td>工厂方法模式常使用模板方法定义创建流程</td>
+        </tr>
+      </table>
+      <p style="margin-top: 16px;"><strong class="highlight">Spring中的工厂：</strong>BeanFactory和ApplicationContext是工厂模式的典型应用，通过配置文件或注解定义Bean的创建方式，实现了完全的解耦。</p>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>排序算法详解 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .section-body table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 12px; }
+  .section-body th, .section-body td { padding: 10px 12px; text-align: left; border: 1px solid var(--border-card); }
+  .section-body th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  .section-body tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .section-body tr.stable { background: rgba(126, 231, 135, 0.08); }
+  .section-body tr.unstable { background: rgba(255, 123, 114, 0.08); }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .highlight-box { background: rgba(78, 205, 196, 0.1); border-left: 3px solid var(--cyan); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .tip-box { background: rgba(240, 180, 41, 0.1); border-left: 3px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .algo-visual { background: var(--bg-code); border-radius: 8px; padding: 16px; margin: 16px 0; font-family: var(--font-code); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>算法与数据结构</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">排序算法详解</h1>
+    <p class="hero-desc">10种经典排序算法的原理、复杂度分析、代码实现与优化技巧，以及Java中Arrays.sort()的TimSort实现</p>
+  </header>
+
+  <!-- 算法对比表 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">排序算法对比</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>算法</th><th>平均时间</th><th>最坏时间</th><th>空间</th><th>稳定性</th></tr>
+        <tr class="stable"><td>冒泡排序</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>✓ 稳定</td></tr>
+        <tr class="unstable"><td>选择排序</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>✗ 不稳定</td></tr>
+        <tr class="stable"><td>插入排序</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>✓ 稳定</td></tr>
+        <tr class="unstable"><td>希尔排序</td><td>O(n^1.3)</td><td>O(n²)</td><td>O(1)</td><td>✗ 不稳定</td></tr>
+        <tr class="unstable"><td>快速排序</td><td>O(nlogn)</td><td>O(n²)</td><td>O(logn)</td><td>✗ 不稳定</td></tr>
+        <tr class="stable"><td>归并排序</td><td>O(nlogn)</td><td>O(nlogn)</td><td>O(n)</td><td>✓ 稳定</td></tr>
+        <tr class="unstable"><td>堆排序</td><td>O(nlogn)</td><td>O(nlogn)</td><td>O(1)</td><td>✗ 不稳定</td></tr>
+        <tr class="stable"><td>计数排序</td><td>O(n+k)</td><td>O(n+k)</td><td>O(k)</td><td>✓ 稳定</td></tr>
+        <tr class="stable"><td>桶排序</td><td>O(n+k)</td><td>O(n²)</td><td>O(n+k)</td><td>✓ 稳定</td></tr>
+        <tr class="stable"><td>基数排序</td><td>O(d(n+k))</td><td>O(d(n+k))</td><td>O(n+k)</td><td>✓ 稳定</td></tr>
+      </table>
+
+      <div class="tip-box">
+        <strong>💡 稳定性：</strong>稳定排序保证相等元素的相对顺序不变。当需要按多个字段排序时，稳定性很重要（如先按年龄排序，再按姓名排序）。
+      </div>
+    </div>
+  </section>
+
+  <!-- 冒泡排序 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🫧</div><h2 class="section-title">冒泡排序</h2></div>
+    <div class="section-body">
+      <p><strong>原理：</strong>相邻元素两两比较，较大者后移，每轮将最大的元素"冒泡"到末尾。</p>
+
+      <div class="algo-visual">
+        初始: [64, 34, 25, 12, 22, 11, 90]<br>
+        第1轮: [34, 25, 12, 22, 11, 64, 90] (90就位)<br>
+        第2轮: [25, 12, 22, 11, 34, 64, 90] (64就位)<br>
+        第3轮: [12, 22, 11, 25, 34, 64, 90] (34就位)<br>
+        ...
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public static void bubbleSort(int[] arr) {
+    int n = arr.length;
+    for (int i = 0; i < n - 1; i++) {
+        boolean swapped = false;
+        for (int j = 0; j < n - 1 - i; j++) {
+            if (arr[j] > arr[j + 1]) {
+                // 交换
+                int temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+                swapped = true;
+            }
+        }
+        // 优化：如果没有交换，说明已有序
+        if (!swapped) break;
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="highlight-box">
+        <strong>✓ 优化点：</strong>添加swapped标志位，如果某轮没有交换，说明数组已有序，提前退出。
+      </div>
+    </div>
+  </section>
+
+  <!-- 选择排序 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">选择排序</h2></div>
+    <div class="section-body">
+      <p><strong>原理：</strong>每轮选择最小元素，放到已排序序列末尾。</p>
+
+      <div class="warning-box">
+        <strong>⚠️ 不稳定原因：</strong>交换可能改变相等元素的相对位置。例：[5, 5*, 3] → 第一轮交换后 → [3, 5*, 5]，5和5*顺序变了。
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public static void selectionSort(int[] arr) {
+    int n = arr.length;
+    for (int i = 0; i < n - 1; i++) {
+        int minIdx = i;
+        for (int j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIdx]) {
+                minIdx = j;
+            }
+        }
+        // 交换
+        int temp = arr[i];
+        arr[i] = arr[minIdx];
+        arr[minIdx] = temp;
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 插入排序 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⬇️</div><h2 class="section-title">插入排序</h2></div>
+    <div class="section-body">
+      <p><strong>原理：</strong>将元素插入已排序序列的正确位置，类似整理扑克牌。</p>
+
+      <div class="highlight-box">
+        <strong>特点：</strong>对近乎有序的数组效率高（O(n)），适合小规模数据。Java的Arrays.sort()对小数组使用插入排序。
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public static void insertionSort(int[] arr) {
+    int n = arr.length;
+    for (int i = 1; i < n; i++) {
+        int key = arr[i];
+        int j = i - 1;
+        // 向后移动大于key的元素
+        while (j >= 0 && arr[j] > key) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 快速排序 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">快速排序</h2></div>
+    <div class="section-body">
+      <p><strong>原理：</strong>分治思想。选择基准元素(pivot)，将数组分为小于和大于pivot的两部分，递归处理。</p>
+
+      <div class="mermaid">
+flowchart TD
+    A[选择pivot] --> B[分区: 小于pivot | 大于pivot]
+    B --> C[递归排序左半部分]
+    B --> D[递归排序右半部分]
+    C --> E[合并结果]
+    D --> E
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public static void quickSort(int[] arr, int low, int high) {
+    if (low < high) {
+        int pivotIdx = partition(arr, low, high);
+        quickSort(arr, low, pivotIdx - 1);
+        quickSort(arr, pivotIdx + 1, high);
+    }
+}
+
+// 分区（Lomuto分区方案，带三数取中优化）
+private static int partition(int[] arr, int low, int high) {
+    // 三数取中优化
+    int mid = low + (high - low) / 2;
+    if (arr[low] > arr[mid]) swap(arr, low, mid);
+    if (arr[low] > arr[high]) swap(arr, low, high);
+    if (arr[mid] > arr[high]) swap(arr, mid, high);
+    swap(arr, mid, high - 1);
+    int pivot = arr[high - 1];
+
+    int i = low;
+    for (int j = low; j < high - 1; j++) {
+        if (arr[j] < pivot) {
+            swap(arr, i, j);
+            i++;
+        }
+    }
+    swap(arr, i, high - 1);
+    return i;
+}</code></pre></div>
+      </div>
+
+      <div class="tip-box">
+        <strong>💡 优化点：</strong><br>
+        1. 三数取中选择pivot，避免最坏情况<br>
+        2. 小数组使用插入排序<br>
+        3. Java的Arrays.sort()对基本类型使用双轴快排
+      </div>
+
+      <div class="warning-box">
+        <strong>⚠️ 最坏情况：</strong>已排序数组且选择第一个作为pivot时，时间复杂度退化为O(n²)。
+      </div>
+    </div>
+  </section>
+
+  <!-- 归并排序 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔀</div><h2 class="section-title">归并排序</h2></div>
+    <div class="section-body">
+      <p><strong>原理：</strong>分治思想。将数组分成两半，分别排序后合并两个有序数组。</p>
+
+      <div class="mermaid">
+flowchart TD
+    A[数组 3,1,4,1,5,9,2,6] --> B[分割 3,1,4,1]
+    A --> C[分割 5,9,2,6]
+    B --> D[3,1]
+    B --> E[4,1]
+    C --> F[5,9]
+    C --> G[2,6]
+    D --> H[1,3]
+    E --> I[1,4]
+    F --> J[5,9]
+    G --> K[2,6]
+    H --> L[合并 1,1,3,4]
+    I --> L
+    J --> M[合并 2,5,6,9]
+    K --> M
+    L --> N[最终合并 1,1,2,3,4,5,6,9]
+    M --> N
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public static void mergeSort(int[] arr, int left, int right, int[] temp) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+        // 递归排序左半部分
+        mergeSort(arr, left, mid, temp);
+        // 递归排序右半部分
+        mergeSort(arr, mid + 1, right, temp);
+        // 合并
+        merge(arr, left, mid, right, temp);
+    }
+}
+
+private static void merge(int[] arr, int left, int mid, int right, int[] temp) {
+    int i = left, j = mid + 1, k = 0;
+
+    // 比较并合并
+    while (i <= mid && j <= right) {
+        if (arr[i] <= arr[j]) {
+            temp[k++] = arr[i++];
+        } else {
+            temp[k++] = arr[j++];
+        }
+    }
+
+    // 复制剩余元素
+    while (i <= mid) temp[k++] = arr[i++];
+    while (j <= right) temp[k++] = arr[j++];
+
+    // 复制回原数组
+    System.arraycopy(temp, 0, arr, left, k);
+}</code></pre></div>
+      </div>
+
+      <div class="highlight-box">
+        <strong>✓ 特点：</strong><br>
+        1. 稳定排序，时间复杂度稳定O(nlogn)<br>
+        2. 需要额外O(n)空间<br>
+        3. 适合外部排序（大文件排序）、链表排序
+      </div>
+    </div>
+  </section>
+
+  <!-- 堆排序 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏔️</div><h2 class="section-title">堆排序</h2></div>
+    <div class="section-body">
+      <p><strong>原理：</strong>利用堆的特性进行排序。建堆后，每次将堆顶（最大/最小值）放到数组末尾，重新调整堆。</p>
+
+      <div class="mermaid">
+flowchart TD
+    subgraph 大顶堆
+        A[9] --> B[6]
+        A --> C[5]
+        B --> D[3]
+        B --> E[1]
+        C --> F[2]
+        C --> G[4]
+    end
+      </div>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public static void heapSort(int[] arr) {
+    int n = arr.length;
+
+    // 1. 建堆（从最后一个非叶子节点开始调整）
+    for (int i = n / 2 - 1; i >= 0; i--) {
+        heapify(arr, n, i);
+    }
+
+    // 2. 排序
+    for (int i = n - 1; i > 0; i--) {
+        // 将堆顶（最大值）交换到末尾
+        swap(arr, 0, i);
+        // 重新调整堆
+        heapify(arr, i, 0);
+    }
+}
+
+// 堆化（调整以i为根的子树）
+private static void heapify(int[] arr, int n, int i) {
+    int largest = i;
+    int left = 2 * i + 1;
+    int right = 2 * i + 2;
+
+    if (left < n && arr[left] > arr[largest]) largest = left;
+    if (right < n && arr[right] > arr[largest]) largest = right;
+
+    if (largest != i) {
+        swap(arr, i, largest);
+        // 递归调整受影响的子树
+        heapify(arr, n, largest);
+    }
+}</code></pre></div>
+      </div>
+
+      <div class="tip-box">
+        <strong>💡 堆的性质：</strong><br>
+        大顶堆：arr[i] >= arr[2i+1] && arr[i] >= arr[2i+2]<br>
+        小顶堆：arr[i] <= arr[2i+1] && arr[i] <= arr[2i+2]<br>
+        建堆时间复杂度：O(n)，排序时间复杂度：O(nlogn)
+      </div>
+    </div>
+  </section>
+
+  <!-- 线性排序 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📈</div><h2 class="section-title">线性时间排序</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">计数排序</h3>
+      <p>适用于数据范围不大的整数排序。统计每个元素出现次数，再按顺序输出。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public static void countingSort(int[] arr) {
+    int max = Arrays.stream(arr).max().getAsInt();
+    int min = Arrays.stream(arr).min().getAsInt();
+    int range = max - min + 1;
+
+    int[] count = new int[range];
+    int[] output = new int[arr.length];
+
+    // 统计频次
+    for (int num : arr) {
+        count[num - min]++;
+    }
+
+    // 累计计数
+    for (int i = 1; i < range; i++) {
+        count[i] += count[i - 1];
+    }
+
+    // 构建输出数组（从后向前保证稳定性）
+    for (int i = arr.length - 1; i >= 0; i--) {
+        output[count[arr[i] - min] - 1] = arr[i];
+        count[arr[i] - min]--;
+    }
+
+    // 复制回原数组
+    System.arraycopy(output, 0, arr, 0, arr.length);
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">桶排序</h3>
+      <p>将数据分到有限数量的桶中，每个桶分别排序，再合并。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public static void bucketSort(float[] arr) {
+    int n = arr.length;
+    @SuppressWarnings("unchecked")
+    ArrayList<Float>[] buckets = new ArrayList[n];
+
+    // 创建桶
+    for (int i = 0; i < n; i++) {
+        buckets[i] = new ArrayList<>();
+    }
+
+    // 将元素放入对应桶
+    for (float num : arr) {
+        int bucketIdx = (int) (num * n);
+        buckets[bucketIdx].add(num);
+    }
+
+    // 对每个桶排序
+    for (ArrayList<Float> bucket : buckets) {
+        Collections.sort(bucket);
+    }
+
+    // 合并结果
+    int index = 0;
+    for (ArrayList<Float> bucket : buckets) {
+        for (float num : bucket) {
+            arr[index++] = num;
+        }
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">基数排序</h3>
+      <p>按位排序，从最低位到最高位依次排序（使用稳定的计数排序）。</p>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>public static void radixSort(int[] arr) {
+    int max = Arrays.stream(arr).max().getAsInt();
+
+    // 对每一位进行计数排序
+    for (int exp = 1; max / exp > 0; exp *= 10) {
+        countingSortByDigit(arr, exp);
+    }
+}
+
+private static void countingSortByDigit(int[] arr, int exp) {
+    int n = arr.length;
+    int[] output = new int[n];
+    int[] count = new int[10];
+
+    // 统计当前位的频次
+    for (int num : arr) {
+        count[(num / exp) % 10]++;
+    }
+
+    // 累计计数
+    for (int i = 1; i < 10; i++) {
+        count[i] += count[i - 1];
+    }
+
+    // 构建输出数组
+    for (int i = n - 1; i >= 0; i--) {
+        int digit = (arr[i] / exp) % 10;
+        output[count[digit] - 1] = arr[i];
+        count[digit]--;
+    }
+
+    System.arraycopy(output, 0, arr, 0, n);
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Java Arrays.sort() -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">☕</div><h2 class="section-title">Java中Arrays.sort()实现（TimSort）</h2></div>
+    <div class="section-body">
+      <p>Java 7+对对象数组使用TimSort，对基本类型数组使用双轴快速排序。</p>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">TimSort</h3>
+      <p>TimSort是归并排序的优化版本，结合了插入排序和归并排序的优点。</p>
+
+      <ul>
+        <li><strong>Run（自然有序段）：</strong>找出数组中已自然有序的最小段</li>
+        <li><strong>最小Run长度：</strong>通常设置为32，不足时使用插入排序</li>
+        <li><strong>栈结构：</strong>维护已排序的Run，满足特定规则后合并</li>
+        <li><strong>Galloping模式：</strong>当一个Run的元素都小于另一个时，使用二分查找加速</li>
+      </ul>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 对对象数组排序（使用TimSort，稳定）
+String[] arr = {"banana", "apple", "cherry"};
+Arrays.sort(arr);
+
+// 对基本类型数组排序（使用双轴快排，不稳定）
+int[] nums = {3, 1, 4, 1, 5, 9, 2, 6};
+Arrays.sort(nums);
+
+// 自定义比较器（仅对象数组）
+Arrays.sort(arr, (a, b) -> b.length() - a.length());
+
+// 并行排序（Java 8+）
+Arrays.parallelSort(nums);</code></pre></div>
+      </div>
+
+      <div class="tip-box">
+        <strong>💡 双轴快排：</strong>选择两个pivot，将数组分为三部分，减少递归深度，提高缓存命中率。
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">TopK问题</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 找出数组中第K大的元素（使用小顶堆）
+public static int findKthLargest(int[] arr, int k) {
+    PriorityQueue&lt;Integer&gt; heap = new PriorityQueue&lt;&gt;();
+    for (int num : arr) {
+        heap.offer(num);
+        if (heap.size() > k) {
+            heap.poll(); // 移除最小的
+        }
+    }
+    return heap.peek(); // 堆顶就是第K大的
+}
+// 时间复杂度：O(nlogk)，适合大数据量</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

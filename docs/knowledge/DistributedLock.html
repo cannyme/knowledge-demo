@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分布式锁 - Java Knowledge Review</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+
+  :root {
+    --bg-deep: #0a0e17;
+    --bg-card: rgba(16, 22, 36, 0.7);
+    --bg-card-hover: rgba(22, 30, 50, 0.85);
+    --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12);
+    --border-card-hover: rgba(240, 180, 41, 0.4);
+    --amber: #f0b429;
+    --amber-light: #ffd166;
+    --amber-dim: rgba(240, 180, 41, 0.08);
+    --cyan: #4ecdc4;
+    --cyan-dim: rgba(78, 205, 196, 0.15);
+    --cyan-light: #6ee7df;
+    --text-primary: #e8e6e3;
+    --text-secondary: #8a8f98;
+    --text-dim: #4a5068;
+    --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+    --glow-cyan: 0 0 25px rgba(78, 205, 196, 0.12);
+    --font-code: 'JetBrains Mono', monospace;
+    --font-heading: 'Outfit', sans-serif;
+  }
+
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18);
+    --border-card-hover: rgba(160, 120, 20, 0.4);
+    --amber: #b8860b;
+    --amber-light: #996600;
+    --amber-dim: rgba(184, 134, 11, 0.06);
+    --cyan: #0d7377;
+    --cyan-dim: rgba(13, 115, 119, 0.12);
+    --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e;
+    --text-dim: #7a7a8e;
+    --glow-amber: 0 0 20px rgba(184, 134, 11, 0.08);
+    --glow-cyan: 0 0 20px rgba(13, 115, 119, 0.08);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-heading);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.4s ease, color 0.4s ease;
+    line-height: 1.7;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  [data-theme="light"] body::before {
+    background-image:
+      linear-gradient(rgba(160, 120, 20, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(160, 120, 20, 0.06) 1px, transparent 1px);
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 30%, rgba(78, 205, 196, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 60%, rgba(240, 180, 41, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 999;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border-card);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    box-shadow: var(--glow-amber);
+  }
+  .theme-toggle:hover {
+    border-color: var(--amber);
+    transform: scale(1.1);
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 32px;
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .breadcrumb a {
+    color: var(--cyan);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--amber);
+  }
+
+  .breadcrumb .sep {
+    color: var(--text-dim);
+  }
+
+  .kp-header {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 32px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kp-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber));
+  }
+
+  .kp-tag {
+    display: inline-block;
+    font-family: var(--font-code);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cyan);
+    background: var(--cyan-dim);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    border-radius: 6px;
+    padding: 4px 14px;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .kp-title {
+    font-weight: 800;
+    font-size: clamp(28px, 5vw, 42px);
+    line-height: 1.2;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--amber-light) 0%, var(--amber) 50%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .kp-package {
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .kp-desc {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .kp-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+  }
+
+  .kp-section:hover {
+    border-color: var(--border-card-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--glow-amber);
+  }
+
+  .section-title {
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-card);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(180deg, var(--amber), var(--cyan));
+    border-radius: 2px;
+  }
+
+  .section-content {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .section-content h3 {
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--text-primary);
+    margin: 24px 0 12px;
+  }
+
+  .section-content p {
+    margin-bottom: 12px;
+  }
+
+  .section-content ul, .section-content ol {
+    margin: 12px 0;
+    padding-left: 24px;
+  }
+
+  .section-content li {
+    margin-bottom: 8px;
+  }
+
+  .section-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-family: var(--font-code);
+    font-size: 13px;
+  }
+
+  .section-content th,
+  .section-content td {
+    padding: 12px 16px;
+    text-align: left;
+    border: 1px solid var(--border-card);
+  }
+
+  .section-content th {
+    background: var(--amber-dim);
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .section-content tr:hover {
+    background: rgba(240, 180, 41, 0.03);
+  }
+
+  .tip-box {
+    background: var(--cyan-dim);
+    border-left: 4px solid var(--cyan);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+
+  .tip-box strong {
+    color: var(--cyan);
+  }
+
+  .warning-box {
+    background: rgba(240, 180, 41, 0.1);
+    border-left: 4px solid var(--amber);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+
+  .warning-box strong {
+    color: var(--amber);
+  }
+
+  .highlight-box {
+    background: rgba(78, 205, 196, 0.08);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+  }
+
+  .highlight-box strong {
+    color: var(--cyan);
+  }
+
+  .code-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+
+  .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(240, 180, 41, 0.05);
+    border-bottom: 1px solid var(--border-card);
+  }
+
+  .code-title {
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .copy-btn {
+    font-family: var(--font-code);
+    font-size: 11px;
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid var(--border-card);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  .code-block pre {
+    padding: 20px;
+    overflow-x: auto;
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .code-block code {
+    color: var(--text-primary);
+    background: transparent;
+  }
+
+  .code-block .keyword { color: #c792ea; }
+  .code-block .string { color: #c3e88d; }
+  .code-block .comment { color: #676e95; font-style: italic; }
+  .code-block .number { color: #f78c6c; }
+  .code-block .class-name { color: #ffcb6b; }
+  .code-block .method { color: #82aaff; }
+
+  [data-theme="light"] .code-block .keyword { color: #7c4dff; }
+  [data-theme="light"] .code-block .string { color: #448c27; }
+  [data-theme="light"] .code-block .comment { color: #8e908c; }
+  [data-theme="light"] .code-block .number { color: #f5871f; }
+  [data-theme="light"] .code-block .class-name { color: #c99e00; }
+  [data-theme="light"] .code-block .method { color: #4271ae; }
+
+  .ascii-art {
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--bg-code);
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    color: var(--cyan);
+    margin: 16px 0;
+  }
+
+  .mermaid-container {
+    background: var(--bg-code);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+  }
+
+  .mermaid-title {
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--amber);
+    margin-bottom: 16px;
+    text-align: left;
+  }
+
+  .back-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border-card);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    z-index: 100;
+  }
+
+  .back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .back-to-top:hover {
+    border-color: var(--amber);
+    transform: translateY(-4px);
+    box-shadow: var(--glow-amber);
+  }
+
+  .kp-footer {
+    text-align: center;
+    margin-top: 60px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border-card);
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 24px 16px 60px; }
+    .kp-header { padding: 24px; }
+    .kp-section { padding: 20px; }
+    .code-block pre { padding: 16px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+
+<div class="container">
+  <nav class="breadcrumb">
+    <a href="../knowledge-map.html">📚 知识地图</a>
+    <span class="sep">/</span>
+    <span>DistributedLock</span>
+  </nav>
+
+  <header class="kp-header">
+    <div class="kp-tag">database.distributed</div>
+    <h1 class="kp-title">分布式锁</h1>
+    <div class="kp-package">DistributedLock.java</div>
+    <p class="kp-desc">在分布式系统中，多个服务实例部署在不同机器上，需要跨进程的锁机制来保证资源访问的互斥性。</p>
+  </header>
+
+  <main class="kp-content">
+
+    <!-- Section 1: Why Need -->
+    <section class="kp-section">
+      <h2 class="section-title">为什么需要分布式锁</h2>
+      <div class="section-content">
+        <p>单机环境下可以使用 <code>synchronized</code>、<code>ReentrantLock</code> 等JVM级别的锁来保证线程安全。但在分布式系统中：</p>
+        <ul>
+          <li>多个服务实例部署在不同机器上</li>
+          <li>需要<strong>跨JVM</strong>的互斥机制</li>
+          <li>多个进程可能同时访问共享资源</li>
+        </ul>
+
+        <div class="mermaid-container">
+          <div class="mermaid-title">JVM锁 vs 分布式锁</div>
+          <pre class="mermaid">
+graph TB
+    subgraph JVM1["JVM 1"]
+        A1["Service A Instance 1"]
+        A2["Service A Instance 2"]
+        L1["JVM Lock<br/>synchronized"]
+    end
+
+    subgraph JVM2["JVM 2"]
+        B1["Service B Instance 1"]
+        B2["Service B Instance 2"]
+        L2["JVM Lock<br/>synchronized"]
+    end
+
+    subgraph Distributed["分布式环境"]
+        DL["分布式锁<br/>Redis/ZK/DB"]
+        R["共享资源"]
+    end
+
+    A1 -->|需要跨JVM互斥| DL
+    A2 -->|需要跨JVM互斥| DL
+    B1 -->|需要跨JVM互斥| DL
+    B2 -->|需要跨JVM互斥| DL
+    DL --> R
+          </pre>
+        </div>
+
+        <div class="highlight-box">
+          <strong>分布式锁的核心要求</strong>
+          <ul>
+            <li><strong>互斥性</strong>：任意时刻只有一个客户端持有锁</li>
+            <li><strong>防死锁</strong>：锁必须能释放（超时释放）</li>
+            <li><strong>高可用</strong>：锁服务稳定可靠</li>
+            <li><strong>可重入</strong>：同一线程可多次获取同一把锁</li>
+            <li><strong>防误删</strong>：只能删除自己加的锁</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Implementation Comparison -->
+    <section class="kp-section">
+      <h2 class="section-title">分布式锁的实现方式对比</h2>
+      <div class="section-content">
+        <table>
+          <tr>
+            <th>实现方式</th>
+            <th>优点</th>
+            <th>缺点</th>
+            <th>适用场景</th>
+          </tr>
+          <tr>
+            <td><strong>数据库</strong></td>
+            <td>实现简单，无需额外组件</td>
+            <td>性能差，可能死锁</td>
+            <td>简单场景，已有数据库</td>
+          </tr>
+          <tr>
+            <td><strong>Redis</strong></td>
+            <td>性能好，使用广泛</td>
+            <td>主从切换可能丢锁</td>
+            <td>高并发，大多数场景</td>
+          </tr>
+          <tr>
+            <td><strong>ZooKeeper</strong></td>
+            <td>一致性好，天然支持重入</td>
+            <td>性能一般，需要维护集群</td>
+            <td>强一致性要求</td>
+          </tr>
+        </table>
+
+        <h3>基于数据库的实现</h3>
+        <p><strong>悲观锁（SELECT FOR UPDATE）</strong></p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">数据库悲观锁</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="comment">-- 创建锁表</span>
+<span class="keyword">CREATE TABLE</span> <span class="class-name">distributed_lock</span> (
+    lock_name <span class="class-name">VARCHAR</span>(64) <span class="keyword">PRIMARY KEY</span>,
+    owner <span class="class-name">VARCHAR</span>(64),
+    expire_time <span class="class-name">DATETIME</span>
+);
+
+<span class="comment">-- 获取锁</span>
+<span class="keyword">BEGIN</span>;
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> distributed_lock
+<span class="keyword">WHERE</span> lock_name = <span class="string">'order_lock'</span>
+<span class="keyword">FOR UPDATE</span>;
+
+<span class="comment">-- 执行业务...</span>
+
+<span class="comment">-- 释放锁</span>
+<span class="keyword">COMMIT</span>;</code></pre>
+        </div>
+
+        <p><strong>乐观锁（版本号）</strong></p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">数据库乐观锁</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="comment">-- 业务表增加版本号字段</span>
+<span class="keyword">ALTER TABLE</span> order_table <span class="keyword">ADD COLUMN</span> version <span class="class-name">INT</span> <span class="keyword">DEFAULT</span> 0;
+
+<span class="comment">-- CAS更新</span>
+<span class="keyword">UPDATE</span> order_table
+<span class="keyword">SET</span> status = <span class="string">'PAID'</span>, version = version + 1
+<span class="keyword">WHERE</span> order_id = <span class="number">1001</span> <span class="keyword">AND</span> version = <span class="number">0</span>;
+
+<span class="comment">-- 如果返回影响行数为0，说明版本冲突，获取锁失败</span></code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Redis Distributed Lock -->
+    <section class="kp-section">
+      <h2 class="section-title">Redis分布式锁</h2>
+      <div class="section-content">
+
+        <h3>基本实现（SET key value NX EX）</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">Redis SETNX 实现</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="keyword">public class</span> <span class="class-name">RedisDistributedLock</span> {
+
+    <span class="keyword">private static final</span> String LOCK_PREFIX = <span class="string">"lock:"</span>;
+    <span class="keyword">private final</span> StringRedisTemplate redisTemplate;
+
+    <span class="comment">/**
+     * 加锁：使用 SET key value NX EX 原子操作
+     * NX - 只有key不存在时才设置
+     * EX - 设置过期时间（秒）
+     */</span>
+    <span class="keyword">public boolean</span> <span class="method">tryLock</span>(String lockKey, String requestId, <span class="keyword">long</span> expireSeconds) {
+        String key = LOCK_PREFIX + lockKey;
+        <span class="keyword">return</span> Boolean.TRUE.equals(
+            redisTemplate.<span class="method">opsForValue</span>()
+                .<span class="method">setIfAbsent</span>(key, requestId, expireSeconds, TimeUnit.SECONDS)
+        );
+    }
+
+    <span class="comment">/**
+     * 解锁：使用Lua脚本保证原子性
+     * 先判断value是否匹配，再删除key
+     */</span>
+    <span class="keyword">public boolean</span> <span class="method">releaseLock</span>(String lockKey, String requestId) {
+        String key = LOCK_PREFIX + lockKey;
+        String luaScript =
+            <span class="string">"if redis.call('get', KEYS[1]) == ARGV[1] then "</span> +
+            <span class="string">"    return redis.call('del', KEYS[1]) "</span> +
+            <span class="string">"else "</span> +
+            <span class="string">"    return 0 "</span> +
+            <span class="string">"end"</span>;
+
+        Long result = redisTemplate.<span class="method">execute</span>(
+            <span class="keyword">new</span> DefaultRedisScript<>(luaScript, Long.<span class="keyword">class</span>),
+            Collections.<span class="method">singletonList</span>(key),
+            requestId
+        );
+        <span class="keyword">return</span> Long.valueOf(1).equals(result);
+    }
+}</code></pre>
+        </div>
+
+        <div class="warning-box">
+          <strong>为什么必须用Lua脚本？</strong><br>
+          因为"判断value + 删除key"必须是原子操作。否则可能出现：
+          <ol>
+            <li>线程A判断value相等</li>
+            <li>锁过期，线程B获取锁</li>
+            <li>线程A删除了B的锁（误删）</li>
+          </ol>
+        </div>
+
+        <h3>锁续期问题（看门狗机制）</h3>
+        <p>问题：业务执行时间 > 锁过期时间，导致锁提前释放</p>
+        <p>解决：后台线程定期延长锁过期时间</p>
+
+        <div class="mermaid-container">
+          <div class="mermaid-title">看门狗机制</div>
+          <pre class="mermaid">
+sequenceDiagram
+    participant App as 应用线程
+    participant Lock as Redis锁
+    participant Dog as 看门狗线程
+
+    App->>Lock: SET lock:order EX 30 NX
+    Lock-->>App: OK (获取锁成功)
+    Dog->>Dog: 启动，每10秒执行一次
+    Note over Dog: 检查锁是否仍被持有
+    Dog->>Lock: 如果key存在，EXPIRE 30
+    Note over App,Dog: 业务执行中（可能超过30秒）
+    Dog->>Lock: 继续续期...
+    App->>Lock: DEL lock:order (业务完成)
+    Dog->>Dog: 发现锁已释放，停止线程
+          </pre>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">看门狗实现</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="keyword">public void</span> <span class="method">tryLockWithWatchdog</span>(String lockKey, String requestId) {
+    <span class="keyword">if</span> (<span class="method">tryLock</span>(lockKey, requestId, 30)) {
+        ScheduledExecutorService scheduler =
+            Executors.<span class="method">newSingleThreadScheduledExecutor</span>();
+
+        scheduler.<span class="method">scheduleAtFixedRate</span>(() -> {
+            <span class="keyword">if</span> (redisTemplate.<span class="method">hasKey</span>(LOCK_PREFIX + lockKey)) {
+                <span class="comment">// 续期到30秒</span>
+                redisTemplate.<span class="method">expire</span>(
+                    LOCK_PREFIX + lockKey,
+                    30,
+                    TimeUnit.SECONDS
+                );
+            } <span class="keyword">else</span> {
+                scheduler.<span class="method">shutdown</span>(); <span class="comment">// 锁已释放，停止看门狗</span>
+            }
+        }, 10, 10, TimeUnit.SECONDS); <span class="comment">// 每10秒检查一次</span>
+    }
+}</code></pre>
+        </div>
+
+        <h3>Redisson使用</h3>
+        <p>Redisson是Redis分布式锁的最佳实践，封装了看门狗等机制</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">Redisson配置与使用</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="comment">// Maven依赖</span>
+<span class="comment">// &lt;dependency&gt;</span>
+<span class="comment">//     &lt;groupId&gt;org.redisson&lt;/groupId&gt;</span>
+<span class="comment">//     &lt;artifactId&gt;redisson-spring-boot-starter&lt;/artifactId&gt;</span>
+<span class="comment">//     &lt;version&gt;3.20.0&lt;/version&gt;</span>
+<span class="comment">// &lt;/dependency&gt;</span>
+
+<span class="keyword">@Autowired</span>
+<span class="keyword">private</span> RedissonClient redisson;
+
+<span class="keyword">public void</span> <span class="method">businessMethod</span>(String orderId) {
+    RLock lock = redisson.<span class="method">getLock</span>(<span class="string">"lock:order:"</span> + orderId);
+
+    <span class="keyword">try</span> {
+        <span class="comment">// 尝试获取锁，最多等待100秒</span>
+        <span class="comment">// 如果leaseTime=-1，启用看门狗自动续期（默认30秒）</span>
+        <span class="keyword">boolean</span> acquired = lock.<span class="method">tryLock</span>(100, -1, TimeUnit.SECONDS);
+
+        <span class="keyword">if</span> (acquired) {
+            <span class="comment">// 执行业务逻辑...</span>
+            <span class="method">processOrder</span>(orderId);
+        }
+    } <span class="keyword">catch</span> (InterruptedException e) {
+        Thread.<span class="method">currentThread</span>().<span class="method">interrupt</span>();
+    } <span class="keyword">finally</span> {
+        <span class="comment">// 只释放自己持有的锁</span>
+        <span class="keyword">if</span> (lock.<span class="method">isHeldByCurrentThread</span>()) {
+            lock.<span class="method">unlock</span>();
+        }
+    }
+}</code></pre>
+        </div>
+
+        <div class="tip-box">
+          <strong>Redisson看门狗配置</strong>
+          <ul>
+            <li>默认锁过期时间：30秒（lockWatchdogTimeout）</li>
+            <li>看门狗检查间隔：10秒（过期时间的1/3）</li>
+            <li>如果指定了leaseTime，则禁用看门狗</li>
+          </ul>
+        </div>
+
+        <h3>主从延迟问题（RedLock）</h3>
+        <p><strong>问题场景</strong>：Redis主从架构下，Master宕机导致锁丢失</p>
+        <ol>
+          <li>客户端A在Master获取锁</li>
+          <li>Master宕机，锁数据未同步到Slave</li>
+          <li>Slave升级为Master</li>
+          <li>客户端B也能获取同一把锁</li>
+        </ol>
+
+        <div class="mermaid-container">
+          <div class="mermaid-title">RedLock算法</div>
+          <pre class="mermaid">
+sequenceDiagram
+    participant C as 客户端
+    participant R1 as Redis-1 (Master)
+    participant R2 as Redis-2 (Master)
+    participant R3 as Redis-3 (Master)
+
+    Note over C: 1. 获取当前时间戳 T1
+    C->>R1: SET lock:order NX EX 30
+    C->>R2: SET lock:order NX EX 30
+    C->>R3: SET lock:order NX EX 30
+    Note over C: 2. 获取当前时间戳 T2
+    Note over C: 3. 计算耗时 = T2 - T1
+
+    alt 成功在大多数节点获取锁 且 耗时 < 锁过期时间
+        Note over C: 加锁成功
+        Note over C: 4. 实际过期时间 = 30s - 耗时
+    else 否则
+        Note over C: 加锁失败
+        C->>R1: DEL lock:order
+        C->>R2: DEL lock:order
+        C->>R3: DEL lock:order
+    end
+          </pre>
+        </div>
+
+        <div class="warning-box">
+          <strong>RedLock争议</strong><br>
+          Redis作者antirez提出RedLock，但分布式系统专家Martin Kleppmann认为：
+          <ul>
+            <li>RedLock依赖系统时钟，时钟漂移可能导致问题</li>
+            <li>如果需要强一致性，建议使用ZooKeeper或etcd</li>
+          </ul>
+          建议：大多数场景Redisson足够，强一致性需求考虑ZooKeeper
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: ZooKeeper -->
+    <section class="kp-section">
+      <h2 class="section-title">ZooKeeper分布式锁</h2>
+      <div class="section-content">
+
+        <h3>临时顺序节点实现</h3>
+        <p>ZooKeeper分布式锁利用以下特性：</p>
+        <ul>
+          <li><strong>临时节点</strong>：会话结束时自动删除，防止死锁</li>
+          <li><strong>顺序节点</strong>：自动编号，实现公平锁</li>
+          <li><strong>Watcher</strong>：监听节点变化，实现阻塞等待</li>
+        </ul>
+
+        <div class="mermaid-container">
+          <div class="mermaid-title">ZK分布式锁流程</div>
+          <pre class="mermaid">
+graph TB
+    subgraph ZK["ZooKeeper"]
+        ROOT[/locks/myLock\]
+        N1[order-0000000001<br/>临时顺序节点]
+        N2[order-0000000002<br/>临时顺序节点]
+        N3[order-0000000003<br/>临时顺序节点]
+    end
+
+    subgraph ClientA["客户端A"]
+        A["获取锁成功<br/>持有最小序号节点"]
+    end
+
+    subgraph ClientB["客户端B"]
+        B["等待中...<br/>监听前一个节点"]
+        BW["Watcher<br/>监听order-0000000001"]
+    end
+
+    subgraph ClientC["客户端C"]
+        C["等待中...<br/>监听前一个节点"]
+        CW["Watcher<br/>监听order-0000000002"]
+    end
+
+    ROOT --> N1
+    ROOT --> N2
+    ROOT --> N3
+
+    N1 -.-> A
+    N2 -.-> B
+    N3 -.-> C
+    BW -.-> N1
+    CW -.-> N2
+          </pre>
+        </div>
+
+        <h3>监听机制与羊群效应</h3>
+        <div class="ascii-art">
+┌────────────────────────────────────────────────────────────────┐
+│                     避免羊群效应                                 │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  羊群效应问题：                                                 │
+│  如果所有等待客户端都监听根节点，当锁释放时                       │
+│  所有客户端同时被唤醒，但只有1个能获取锁                         │
+│                                                                │
+│  优化方案：只监听前一个节点                                       │
+│                                                                │
+│  客户端B（order-0002）只监听 order-0001                          │
+│  客户端C（order-0003）只监听 order-0002                          │
+│                                                                │
+│  当order-0001删除时：                                           │
+│    -> 只有客户端B被唤醒                                         │
+│    -> 客户端B成为最小节点，获取锁                                │
+│    -> 客户端C继续等待                                           │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">Curator实现ZK锁</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code><span class="comment">// Maven依赖</span>
+<span class="comment">// &lt;dependency&gt;</span>
+<span class="comment">//     &lt;groupId&gt;org.apache.curator&lt;/groupId&gt;</span>
+<span class="comment">//     &lt;artifactId&gt;curator-recipes&lt;/artifactId&gt;</span>
+<span class="comment">//     &lt;version&gt;5.5.0&lt;/version&gt;</span>
+<span class="comment">// &lt;/dependency&gt;</span>
+
+<span class="keyword">public class</span> <span class="class-name">ZookeeperLockDemo</span> {
+
+    <span class="keyword">private</span> CuratorFramework client;
+
+    <span class="keyword">public void</span> <span class="method">init</span>() {
+        client = CuratorFrameworkFactory.<span class="method">newClient</span>(
+            <span class="string">"localhost:2181"</span>,
+            <span class="keyword">new</span> ExponentialBackoffRetry(1000, 3)
+        );
+        client.<span class="method">start</span>();
+    }
+
+    <span class="keyword">public void</span> <span class="method">doWithLock</span>(String lockPath) {
+        <span class="comment">// 可重入锁（临时顺序节点实现）</span>
+        InterProcessMutex lock = <span class="keyword">new</span> InterProcessMutex(client, lockPath);
+
+        <span class="keyword">try</span> {
+            <span class="comment">// 获取锁，最多等待10秒</span>
+            <span class="keyword">if</span> (lock.<span class="method">acquire</span>(10, TimeUnit.SECONDS)) {
+                <span class="keyword">try</span> {
+                    <span class="comment">// 执行业务逻辑...</span>
+                    System.out.<span class="method">println</span>(<span class="string">"获取锁成功，执行业务"</span>);
+                } <span class="keyword">finally</span> {
+                    lock.<span class="method">release</span>();
+                }
+            }
+        } <span class="keyword">catch</span> (Exception e) {
+            e.<span class="method">printStackTrace</span>();
+        }
+    }
+}</code></pre>
+        </div>
+
+        <div class="tip-box">
+          <strong>ZooKeeper锁的优点</strong>
+          <ul>
+            <li><strong>公平锁</strong>：按创建顺序获取锁</li>
+            <li><strong>避免惊群效应</strong>：只监听前一个节点</li>
+            <li><strong>天然防止死锁</strong>：临时节点随会话删除</li>
+            <li><strong>可重入</strong>：InterProcessMutex支持重入</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 5: Comparison Table -->
+    <section class="kp-section">
+      <h2 class="section-title">三种实现对比表</h2>
+      <div class="section-content">
+        <table>
+          <tr>
+            <th>特性</th>
+            <th>Redis SETNX</th>
+            <th>Redisson/RedLock</th>
+            <th>ZooKeeper</th>
+            <th>数据库</th>
+          </tr>
+          <tr>
+            <td>性能</td>
+            <td>高</td>
+            <td>高/中</td>
+            <td>中</td>
+            <td>低</td>
+          </tr>
+          <tr>
+            <td>可靠性</td>
+            <td>中（可能丢锁）</td>
+            <td>高</td>
+            <td>高</td>
+            <td>中</td>
+          </tr>
+          <tr>
+            <td>一致性</td>
+            <td>最终一致</td>
+            <td>最终一致</td>
+            <td>强一致</td>
+            <td>强一致</td>
+          </tr>
+          <tr>
+            <td>实现复杂度</td>
+            <td>中</td>
+            <td>低（框架封装）</td>
+            <td>低（框架封装）</td>
+            <td>低</td>
+          </tr>
+          <tr>
+            <td>可重入</td>
+            <td>需自己实现</td>
+            <td>支持</td>
+            <td>支持</td>
+            <td>需自己实现</td>
+          </tr>
+          <tr>
+            <td>公平锁</td>
+            <td>不支持</td>
+            <td>不支持</td>
+            <td>支持</td>
+            <td>不支持</td>
+          </tr>
+          <tr>
+            <td>自动释放</td>
+            <td>超时释放</td>
+            <td>超时/手动</td>
+            <td>会话结束释放</td>
+            <td>需手动释放</td>
+          </tr>
+          <tr>
+            <td>阻塞等待</td>
+            <td>需自己实现</td>
+            <td>支持</td>
+            <td>支持（Watcher）</td>
+            <td>需自己实现</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 6: Best Practices -->
+    <section class="kp-section">
+      <h2 class="section-title">分布式锁注意事项</h2>
+      <div class="section-content">
+
+        <h3>1. 可重入性</h3>
+        <p>同一线程多次获取同一把锁时应该成功，需要记录线程标识和重入次数</p>
+
+        <h3>2. 阻塞/非阻塞</h3>
+        <ul>
+          <li><strong>阻塞式</strong>：获取不到锁时等待，直到获取成功或超时</li>
+          <li><strong>非阻塞式</strong>：获取不到立即返回失败，由业务决定重试策略</li>
+        </ul>
+
+        <h3>3. 锁超时设置</h3>
+        <div class="warning-box">
+          <strong>超时时间设置原则</strong>
+          <ul>
+            <li>不宜过短：业务未完成锁就释放，失去互斥意义</li>
+            <li>不宜过长：服务宕机后锁长时间不释放，影响可用性</li>
+            <li>建议：根据业务最大执行时间 + 缓冲时间，配合看门狗机制</li>
+          </ul>
+        </div>
+
+        <h3>4. 锁粒度控制</h3>
+        <div class="highlight-box">
+          <strong>细粒度锁示例</strong><br>
+          不要对所有订单使用同一个锁：<code>lock:order</code><br>
+          应该对单个订单加锁：<code>lock:order:{orderId}</code>
+        </div>
+
+        <h3>选型建议</h3>
+        <table>
+          <tr>
+            <th>场景</th>
+            <th>推荐方案</th>
+            <th>理由</th>
+          </tr>
+          <tr>
+            <td>一般业务场景</td>
+            <td><strong>Redisson</strong></td>
+            <td>简单易用，性能好，社区活跃</td>
+          </tr>
+          <tr>
+            <td>高可靠性要求</td>
+            <td><strong>RedLock 或 ZooKeeper</strong></td>
+            <td>避免Redis主从切换丢锁</td>
+          </tr>
+          <tr>
+            <td>需要公平锁</td>
+            <td><strong>ZooKeeper</strong></td>
+            <td>天然支持公平锁</td>
+          </tr>
+          <tr>
+            <td>简单场景</td>
+            <td><strong>数据库唯一索引</strong></td>
+            <td>无需引入新组件</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="kp-footer">
+    Java Knowledge Review Demo - 50 Knowledge Points<br>
+    <a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a>
+  </footer>
+</div>
+
+<button class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</button>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+(function() {
+  mermaid.initialize({
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#f0b429',
+      primaryTextColor: '#e8e6e3',
+      primaryBorderColor: '#4ecdc4',
+      lineColor: '#4ecdc4',
+      secondaryColor: '#1a1a2e',
+      tertiaryColor: '#0a0e17',
+      fontFamily: 'JetBrains Mono'
+    },
+    flowchart: { curve: 'basis' }
+  });
+
+  var themeToggle = document.getElementById('themeToggle');
+  function toggleTheme() {
+    var html = document.documentElement;
+    if (html.getAttribute('data-theme') === 'light') {
+      html.removeAttribute('data-theme');
+      themeToggle.textContent = '🌙';
+      localStorage.setItem('theme', 'dark');
+      mermaid.initialize({ theme: 'dark' });
+    } else {
+      html.setAttribute('data-theme', 'light');
+      themeToggle.textContent = '☀️';
+      localStorage.setItem('theme', 'light');
+      mermaid.initialize({ theme: 'default' });
+    }
+  }
+  themeToggle.addEventListener('click', toggleTheme);
+  if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = '☀️';
+    mermaid.initialize({ theme: 'default' });
+  }
+
+  var backToTop = document.getElementById('backToTop');
+  window.addEventListener('scroll', function() {
+    if (window.pageYOffset > 300) {
+      backToTop.classList.add('visible');
+    } else {
+      backToTop.classList.remove('visible');
+    }
+  });
+
+  window.scrollToTop = function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  window.copyCode = function(btn) {
+    var code = btn.closest('.code-block').querySelector('code').textContent;
+    navigator.clipboard.writeText(code).then(function() {
+      var original = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.style.color = '#4ecdc4';
+      setTimeout(function() {
+        btn.textContent = original;
+        btn.style.color = '';
+      }, 2000);
+    });
+  };
+})();
+</script>
+</body>
+</html>

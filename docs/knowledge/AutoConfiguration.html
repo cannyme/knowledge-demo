@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring Boot 自动装配原理 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body code { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-secondary); }
+
+  /* Additional styles for tables */
+  .styled-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 14px; }
+  .styled-table th, .styled-table td { padding: 14px 16px; text-align: left; border: 1px solid var(--border-card); }
+  .styled-table th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  .styled-table td { color: var(--text-secondary); }
+  .styled-table tr:hover td { background: rgba(78, 205, 196, 0.05); }
+
+  /* Tip, Warning, Highlight boxes */
+  .tip-box, .warning-box, .highlight-box { padding: 16px 20px; border-radius: 12px; margin: 20px 0; font-size: 14px; line-height: 1.7; }
+  .tip-box { background: rgba(78, 205, 196, 0.1); border-left: 4px solid var(--cyan); }
+  .warning-box { background: rgba(255, 123, 114, 0.1); border-left: 4px solid var(--red); }
+  .highlight-box { background: rgba(240, 180, 41, 0.1); border-left: 4px solid var(--amber); }
+  .tip-box strong, .warning-box strong, .highlight-box strong { color: var(--text-primary); display: block; margin-bottom: 8px; }
+
+  /* FAQ styles */
+  .faq-item { margin-bottom: 24px; padding: 20px; background: var(--bg-code); border-radius: 12px; border: 1px solid var(--border-card); }
+  .faq-question { color: var(--amber); font-weight: 600; font-size: 16px; margin-bottom: 12px; }
+  .faq-answer { color: var(--text-secondary); font-size: 14px; line-height: 1.8; }
+
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } .styled-table { font-size: 12px; } .styled-table th, .styled-table td { padding: 10px 12px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">Spring Boot 自动装配原理</h1>
+    <p class="hero-desc">Spring Boot 自动装配原理的详细解析和最佳实践。通过约定优于配置的方式，自动将所需的Bean装配到容器中，开发者只需引入starter依赖，无需手动配置。</p>
+  </header>
+
+  <!-- 什么是自动装配 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📦</div><h2 class="section-title">什么是自动装配</h2></div>
+    <div class="section-body">
+      <p>Spring Boot 通过<strong style="color: var(--amber);">约定优于配置（Convention Over Configuration）</strong>的设计哲学，实现了自动装配机制。</p>
+      <ul>
+        <li>自动检测 classpath 下的依赖，自动配置相应的 Bean</li>
+        <li>开发者只需引入 starter 依赖，无需手动编写繁琐的配置</li>
+        <li>提供合理的默认配置，同时支持灵活的自定义覆盖</li>
+        <li>大幅减少 Spring 应用的配置工作量</li>
+      </ul>
+      <div class="highlight-box">
+        <strong>核心思想</strong>
+        Spring Boot 自动装配本质上是基于条件注解（Conditional）的智能配置系统，它会根据环境、依赖、配置等因素，决定是否加载某个配置类并创建其中的 Bean。
+      </div>
+    </div>
+  </section>
+
+  <!-- 核心注解 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏷️</div><h2 class="section-title">核心注解</h2></div>
+    <div class="section-body">
+      <p><code style="color: var(--cyan);">@SpringBootApplication</code> 是一个组合注解，包含三个核心注解：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@SpringBootApplication = @SpringBootConfiguration
+                      + @EnableAutoConfiguration
+                      + @ComponentScan</code></pre></div>
+      </div>
+      <table class="styled-table">
+        <tr><th>注解</th><th>功能说明</th></tr>
+        <tr><td>@SpringBootConfiguration</td><td>标记这是一个 Spring Boot 配置类，继承自 @Configuration</td></tr>
+        <tr><td>@EnableAutoConfiguration</td><td>开启自动装配，是自动装配的核心入口</td></tr>
+        <tr><td>@ComponentScan</td><td>开启组件扫描，默认扫描当前包及其子包</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 自动装配流程 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚙️</div><h2 class="section-title">自动装配流程</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+flowchart TD
+    A[Spring Boot 启动] --> B[@EnableAutoConfiguration]
+    B --> C[@Import AutoConfigurationImportSelector]
+    C --> D[读取 META-INF/spring.factories]
+    C --> E[读取 META-INF/spring/...AutoConfiguration.imports]
+    D --> F[获取候选配置类列表]
+    E --> F
+    F --> G[条件注解筛选]
+    G --> H[@ConditionalOnClass 类路径检查]
+    G --> I[@ConditionalOnBean Bean检查]
+    G --> J[@ConditionalOnProperty 配置检查]
+    H --> K[注册有效Bean到容器]
+    I --> K
+    J --> K
+    K --> L[自动装配完成]
+      </div>
+      <p>流程详解：</p>
+      <ol style="margin: 12px 0; padding-left: 24px; color: var(--text-secondary);">
+        <li style="margin-bottom: 8px;"><strong>@EnableAutoConfiguration</strong> - 通过 @Import 导入 AutoConfigurationImportSelector</li>
+        <li style="margin-bottom: 8px;"><strong>读取配置文件</strong> - 从 spring.factories 或 .imports 文件加载自动配置类</li>
+        <li style="margin-bottom: 8px;"><strong>条件筛选</strong> - 根据条件注解判断哪些配置类符合条件</li>
+        <li style="margin-bottom: 8px;"><strong>注册 Bean</strong> - 将符合条件的配置类中的 Bean 注册到 Spring 容器</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 条件注解 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔀</div><h2 class="section-title">条件注解</h2></div>
+    <div class="section-body">
+      <p>Spring Boot 提供丰富的条件注解，用于控制自动配置类是否生效：</p>
+      <table class="styled-table">
+        <tr><th>条件注解</th><th>触发条件</th></tr>
+        <tr><td>@ConditionalOnClass</td><td>类路径存在指定类</td></tr>
+        <tr><td>@ConditionalOnMissingClass</td><td>类路径不存在指定类</td></tr>
+        <tr><td>@ConditionalOnBean</td><td>容器中存在指定 Bean</td></tr>
+        <tr><td>@ConditionalOnMissingBean</td><td>容器中不存在指定 Bean</td></tr>
+        <tr><td>@ConditionalOnProperty</td><td>配置属性满足条件</td></tr>
+        <tr><td>@ConditionalOnWebApplication</td><td>是 Web 应用</td></tr>
+        <tr><td>@ConditionalOnNotWebApplication</td><td>不是 Web 应用</td></tr>
+        <tr><td>@ConditionalOnExpression</td><td>SpEL 表达式为 true</td></tr>
+        <tr><td>@ConditionalOnResource</td><td>资源存在</td></tr>
+        <tr><td>@ConditionalOnJava</td><td>Java 版本匹配</td></tr>
+        <tr><td>@ConditionalOnSingleCandidate</td><td>容器中只有一个指定 Bean 或一个 @Primary</td></tr>
+      </table>
+      <div class="tip-box">
+        <strong>使用技巧</strong>
+        @ConditionalOnMissingBean 是实现"用户优先"原则的关键。自动配置类中的 Bean 通常添加此注解，如果用户已自定义了该 Bean，自动配置就不会创建。
+      </div>
+    </div>
+  </section>
+
+  <!-- 自动配置类示例 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📋</div><h2 class="section-title">自动配置类示例</h2></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="redis-config">RedisAutoConfiguration</button>
+      <button class="tab" data-tab="datasource-config">DataSourceAutoConfiguration</button>
+    </div>
+    <div class="section-body">
+      <div id="redis-config" class="tab-content active">
+        <p>以 RedisAutoConfiguration 为例（简化版）：</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>@Configuration(proxyBeanMethods = false)
+@ConditionalOnClass(RedisOperations.class)  // 类路径有Redis依赖
+@EnableConfigurationProperties(RedisProperties.class)  // 启用配置属性
+@Import({ LettuceConnectionConfiguration.class,
+          JedisConnectionConfiguration.class })
+public class RedisAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(name = "redisTemplate")
+    @ConditionalOnSingleCandidate(RedisConnectionFactory.class)
+    public RedisTemplate&lt;Object, Object&gt; redisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate&lt;Object, Object&gt; template = new RedisTemplate&lt;&gt;();
+        template.setConnectionFactory(redisConnectionFactory);
+        return template;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public StringRedisTemplate stringRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory) {
+        return new StringRedisTemplate(redisConnectionFactory);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+      <div id="datasource-config" class="tab-content">
+        <p>数据源自动配置示例：</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>@Configuration(proxyBeanMethods = false)
+@ConditionalOnClass({ DataSource.class,
+                      EmbeddedDatabaseType.class })
+@ConditionalOnMissingBean(type =
+    "io.r2dbc.spi.ConnectionFactory")
+@EnableConfigurationProperties(DataSourceProperties.class)
+@Import({ DataSourcePoolMetadataProvidersConfiguration.class,
+          DataSourceInitializationConfiguration.class })
+public class DataSourceAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean
+    public DataSource dataSource(DataSourceProperties properties) {
+        // 根据配置创建数据源
+        return DataSourceBuilder
+            .create(properties.getClassLoader())
+            .type(properties.getType())
+            .driverClassName(properties.determineDriverClassName())
+            .url(properties.determineUrl())
+            .username(properties.determineUsername())
+            .password(properties.determinePassword())
+            .build();
+    }
+}</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 配置属性绑定 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔧</div><h2 class="section-title">配置属性绑定</h2></div>
+    <div class="section-body">
+      <p><code style="color: var(--cyan);">@ConfigurationProperties</code> 将配置文件绑定到 Bean 属性：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># application.yml
+my:
+  service:
+    enabled: true
+    timeout: 5000
+    hosts:
+      - host1.example.com
+      - host2.example.com</code></pre></div>
+      </div>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Component
+@ConfigurationProperties(prefix = "my.service")
+public class MyServiceProperties {
+    private boolean enabled = true;
+    private long timeout = 3000;
+    private List&lt;String&gt; hosts = new ArrayList&lt;&gt;();
+
+    // getter / setter
+}
+
+// 在自动配置类中使用
+@Configuration
+@EnableConfigurationProperties(MyServiceProperties.class)
+@ConditionalOnProperty(prefix = "my.service",
+                       name = "enabled",
+                       havingValue = "true")
+public class MyServiceAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean
+    public MyService myService(MyServiceProperties properties) {
+        return new MyService(properties);
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 自定义 Starter -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔌</div><h2 class="section-title">自定义 Starter</h2></div>
+    <div class="section-body">
+      <p>创建自定义 Starter 的步骤：</p>
+      <ol style="margin: 12px 0; padding-left: 24px; color: var(--text-secondary);">
+        <li style="margin-bottom: 8px;">创建 starter 模块（命名规则：<code style="color: var(--amber);">xxx-spring-boot-starter</code>）</li>
+        <li style="margin-bottom: 8px;">创建自动配置类</li>
+        <li style="margin-bottom: 8px;">创建配置属性类</li>
+        <li style="margin-bottom: 8px;">创建 spring.factories 或 imports 文件</li>
+        <li style="margin-bottom: 8px;">添加 spring-boot-autoconfigure 依赖</li>
+      </ol>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">项目结构</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>my-spring-boot-starter/
+├── pom.xml
+└── src/main/
+    ├── java/com/example/
+    │   ├── MyService.java              # 核心服务
+    │   ├── MyServiceProperties.java    # 配置属性
+    │   └── MyServiceAutoConfiguration.java  # 自动配置
+    └── resources/
+        └── META-INF/
+            └── spring/
+                └── org.springframework.boot
+                    .autoconfigure.AutoConfiguration.imports</code></pre></div>
+      </div>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">imports文件内容</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+com.example.MyServiceAutoConfiguration</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 排除自动配置 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🚫</div><h2 class="section-title">排除自动配置（3种方式）</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="exclude-1">方式1：注解排除</button>
+        <button class="tab" data-tab="exclude-2">方式2：配置文件排除</button>
+        <button class="tab" data-tab="exclude-3">方式3：EnableAutoConfiguration排除</button>
+      </div>
+      <div id="exclude-1" class="tab-content active">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>@SpringBootApplication(exclude = {
+    DataSourceAutoConfiguration.class,
+    RedisAutoConfiguration.class
+})
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+      <div id="exclude-2" class="tab-content">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Properties</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code># application.properties
+spring.autoconfigure.exclude=\
+  org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,\
+  org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration</code></pre></div>
+        </div>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code># application.yml
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration</code></pre></div>
+        </div>
+      </div>
+      <div id="exclude-3" class="tab-content">
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>@Configuration
+@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
+@ComponentScan
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 调试自动配置 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔍</div><h2 class="section-title">调试自动配置</h2></div>
+    <div class="section-body">
+      <p>启动时打印自动配置报告，查看哪些配置生效、哪些未生效：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">命令行</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>java -jar app.jar --debug</code></pre></div>
+      </div>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML配置</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># application.yml
+debug: true</code></pre></div>
+      </div>
+      <div class="tip-box">
+        <strong>调试报告内容</strong>
+        CONDITIONS EVALUATION REPORT 包含：Positive matches（匹配成功的配置）、Negative matches（未匹配的配置）、Exclusions（被排除的配置）
+      </div>
+      <p>使用 Actuator 端点查看自动配置详情：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Properties</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 添加 actuator 依赖后访问以下端点
+/actuator/conditions    # 条件评估报告
+/actuator/beans         # 所有Bean信息
+/actuator/configprops   # 配置属性绑定详情</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 常见自动配置类 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📚</div><h2 class="section-title">常见自动配置类</h2></div>
+    <div class="section-body">
+      <table class="styled-table">
+        <tr><th>自动配置类</th><th>功能</th></tr>
+        <tr><td>WebMvcAutoConfiguration</td><td>Spring MVC 自动配置</td></tr>
+        <tr><td>DataSourceAutoConfiguration</td><td>数据源自动配置</td></tr>
+        <tr><td>RedisAutoConfiguration</td><td>Redis 客户端自动配置</td></tr>
+        <tr><td>MybatisAutoConfiguration</td><td>MyBatis 自动配置</td></tr>
+        <tr><td>TransactionAutoConfiguration</td><td>事务管理自动配置</td></tr>
+        <tr><td>SecurityAutoConfiguration</td><td>Spring Security 自动配置</td></tr>
+        <tr><td>JacksonAutoConfiguration</td><td>JSON 序列化自动配置</td></tr>
+        <tr><td>TaskExecutionAutoConfiguration</td><td>异步任务线程池自动配置</td></tr>
+        <tr><td>CacheAutoConfiguration</td><td>缓存自动配置</td></tr>
+        <tr><td>ValidationAutoConfiguration</td><td>参数校验自动配置</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 面试高频问题 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💡</div><h2 class="section-title">面试高频问题</h2></div>
+    <div class="section-body">
+      <div class="faq-item">
+        <div class="faq-question">Q1: Spring Boot 自动装配原理是什么？</div>
+        <div class="faq-answer">启动时通过 @EnableAutoConfiguration 导入 AutoConfigurationImportSelector，该类读取 spring.factories 或 imports 文件，获取所有候选配置类，再根据条件注解（@ConditionalOnClass、@ConditionalOnBean等）筛选，最后将符合条件的 Bean 注册到 Spring 容器。</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">Q2: @ConditionalOnMissingBean 为什么能防止重复？</div>
+        <div class="faq-answer">自动配置类中的 Bean 通常添加 @ConditionalOnMissingBean 注解，如果用户已自定义了该 Bean，自动配置就不会创建，实现了"用户优先"原则。这使得开发者可以方便地覆盖默认配置。</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">Q3: 如何自定义 Starter？</div>
+        <div class="faq-answer">1) 创建自动配置类并使用条件注解<br>2) 创建配置属性类绑定 application.yml<br>3) 在 META-INF/spring/...imports 文件中注册自动配置类<br>4) 打包发布</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">Q4: 为什么 Starter 能自动生效？</div>
+        <div class="faq-answer">因为 Starter 的 jar 包中包含了 spring.factories 或 imports 文件，Spring Boot 启动时会扫描 classpath 下所有 jar 包中的这些文件，加载其中定义的自动配置类。</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">Q5: Spring Boot 2.7+ 自动配置加载文件有什么变化？</div>
+        <div class="faq-answer">Spring Boot 2.7+ 推荐使用新的配置文件格式：META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports，每行一个配置类全限定名，替代了原有的 spring.factories 格式。</div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const html = document.documentElement;
+  if (html.getAttribute('data-theme') === 'light') {
+    html.removeAttribute('data-theme');
+    document.getElementById('themeToggle').textContent = '🌙';
+  } else {
+    html.setAttribute('data-theme', 'light');
+    document.getElementById('themeToggle').textContent = '☀️';
+  }
+});
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const parent = tab.closest('.section');
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
+  });
+});
+function copyCode(btn) {
+  const codeBlock = btn.closest('.code-container').querySelector('code');
+  if (!codeBlock) return;
+  const code = codeBlock.textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const originalText = btn.textContent;
+    btn.textContent = '✓ 已复制';
+    btn.style.color = '#4ecdc4';
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.color = '';
+    }, 2000);
+  }).catch(() => {
+    btn.textContent = '✗ 复制失败';
+    btn.style.color = '#ff7b72';
+    setTimeout(() => {
+      btn.textContent = '📋 复制';
+      btn.style.color = '';
+    }, 2000);
+  });
+}
+</script>
+</body>
+</html>

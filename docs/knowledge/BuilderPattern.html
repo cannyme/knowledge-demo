@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>建造者模式 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+    --text-dim: #4a5068; --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e; --text-dim: #7a7a8e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .highlight { background: linear-gradient(135deg, rgba(240, 180, 41, 0.2), rgba(78, 205, 196, 0.15)); padding: 16px; border-radius: 8px; border-left: 3px solid var(--amber); margin: 16px 0; }
+  .tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .tip-title { color: var(--green); font-weight: 600; margin-bottom: 8px; }
+  .warning { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .warning-title { color: var(--red); font-weight: 600; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>设计模式</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 DESIGN PATTERN</div>
+    <h1 class="hero-title">建造者模式</h1>
+    <p class="hero-desc">将一个复杂对象的构建与它的表示分离，使得同样的构建过程可以创建不同的表示。将复杂对象的创建过程抽象出来，使这个抽象过程的不同实现方法可以构造出不同表现（属性）的对象。</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">模式定义与意图</h2></div>
+    <div class="section-body">
+      <p><strong>建造者模式（Builder Pattern）</strong>是一种创建型设计模式，用于创建复杂对象。它将对象的构建过程与其表示分离，使得相同的构建过程可以创建不同的表示。</p>
+      <div class="highlight">
+        <strong>核心思想：</strong>将复杂对象的构造逻辑从业务逻辑中分离，通过一步步（step-by-step）的方式构建复杂对象，而不是一次性传入所有参数。
+      </div>
+      <p>生活中的类比：</p>
+      <ul>
+        <li>汽车组装工厂：按照相同流程组装不同配置的汽车</li>
+        <li>麦当劳套餐：选择主食、饮料、配餐，组合成完整套餐</li>
+        <li>乐高积木：使用相同模块搭建不同造型的建筑</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">架构原理</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+classDiagram
+    class Product {
+        -field1
+        -field2
+        -field3
+    }
+    class Builder {
+        <<interface>>
+        +buildPart1()
+        +buildPart2()
+        +buildPart3()
+        +getResult()
+    }
+    class ConcreteBuilder {
+        -product: Product
+        +buildPart1()
+        +buildPart2()
+        +buildPart3()
+        +getResult()
+    }
+    class Director {
+        -builder: Builder
+        +construct()
+    }
+    class Client
+    Builder <|.. ConcreteBuilder
+    ConcreteBuilder --> Product
+    Director --> Builder
+    Client --> Director
+    Client --> ConcreteBuilder
+      </div>
+      <p><strong>角色说明：</strong></p>
+      <table>
+        <tr><th>角色</th><th>说明</th></tr>
+        <tr><td>Product</td><td>产品角色，需要构建的复杂对象</td></tr>
+        <tr><td>Builder</td><td>抽象建造者，定义创建产品各个部分的抽象接口</td></tr>
+        <tr><td>ConcreteBuilder</td><td>具体建造者，实现Builder接口，构建和装配各个部件</td></tr>
+        <tr><td>Director</td><td>指挥者，隔离客户与创建过程，控制构建步骤</td></tr>
+        <tr><td>Client</td><td>客户端，使用Director或直接使用Builder创建产品</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📝</div><h2 class="section-title">四种实现方式</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="classic">经典Builder</button>
+        <button class="tab" data-tab="fluent">链式调用</button>
+        <button class="tab" data-tab="lombok">Lombok</button>
+        <button class="tab" data-tab="inner">静态内部类</button>
+      </div>
+
+      <div id="classic" class="tab-content active">
+        <p><strong>经典Builder模式（带Director）</strong></p>
+        <p>完整实现包含Director角色，由Director控制构建流程。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 产品
+class House {
+    private String foundation;
+    private String structure;
+    private String roof;
+    private String interior;
+
+    public void setFoundation(String f) { this.foundation = f; }
+    public void setStructure(String s) { this.structure = s; }
+    public void setRoof(String r) { this.roof = r; }
+    public void setInterior(String i) { this.interior = i; }
+
+    @Override
+    public String toString() {
+        return String.format("House{%s, %s, %s, %s}",
+            foundation, structure, roof, interior);
+    }
+}
+
+// 建造者接口
+interface HouseBuilder {
+    void buildFoundation();
+    void buildStructure();
+    void buildRoof();
+    void buildInterior();
+    House getHouse();
+}
+
+// 具体建造者
+class WoodenHouseBuilder implements HouseBuilder {
+    private House house = new House();
+
+    @Override public void buildFoundation() {
+        house.setFoundation("木质地基");
+    }
+    @Override public void buildStructure() {
+        house.setStructure("木质结构");
+    }
+    @Override public void buildRoof() {
+        house.setRoof("木质屋顶");
+    }
+    @Override public void buildInterior() {
+        house.setInterior("木质内饰");
+    }
+    @Override public House getHouse() { return house; }
+}
+
+// 指挥者
+class HouseDirector {
+    public House construct(HouseBuilder builder) {
+        builder.buildFoundation();
+        builder.buildStructure();
+        builder.buildRoof();
+        builder.buildInterior();
+        return builder.getHouse();
+    }
+}
+
+// 使用
+HouseDirector director = new HouseDirector();
+House woodenHouse = director.construct(new WoodenHouseBuilder());</code></pre></div>
+        </div>
+      </div>
+
+      <div id="fluent" class="tab-content">
+        <p><strong>链式调用（流畅接口 Fluent Interface）</strong></p>
+        <p>最常用的实现方式，支持方法链式调用，可读性极强。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>class Computer {
+    // 必需属性
+    private final String cpu;
+    private final String ram;
+
+    // 可选属性
+    private final String storage;
+    private final String gpu;
+    private final boolean wifi;
+
+    // 私有构造器
+    private Computer(Builder builder) {
+        this.cpu = builder.cpu;
+        this.ram = builder.ram;
+        this.storage = builder.storage;
+        this.gpu = builder.gpu;
+        this.wifi = builder.wifi;
+    }
+
+    // Builder类
+    public static class Builder {
+        // 必需属性
+        private final String cpu;
+        private final String ram;
+
+        // 可选属性（带默认值）
+        private String storage = "256GB SSD";
+        private String gpu = null;
+        private boolean wifi = true;
+
+        // 构造器包含必需参数
+        public Builder(String cpu, String ram) {
+            this.cpu = cpu;
+            this.ram = ram;
+        }
+
+        // 链式方法返回this
+        public Builder storage(String storage) {
+            this.storage = storage;
+            return this;
+        }
+        public Builder gpu(String gpu) {
+            this.gpu = gpu;
+            return this;
+        }
+        public Builder wifi(boolean wifi) {
+            this.wifi = wifi;
+            return this;
+        }
+
+        // 构建方法
+        public Computer build() {
+            return new Computer(this);
+        }
+    }
+}
+
+// 使用：优雅的链式调用
+Computer computer = new Computer.Builder("Intel i7", "16GB")
+    .storage("512GB SSD")
+    .gpu("RTX 3080")
+    .wifi(true)
+    .build();</code></pre></div>
+        </div>
+      </div>
+
+      <div id="lombok" class="tab-content">
+        <p><strong>Lombok @Builder 注解</strong></p>
+        <p>使用Lombok自动生成Builder代码，最简洁的实现方式。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>import lombok.Builder;
+import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
+
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+public class User {
+    private String name;
+    private Integer age;
+    private String email;
+    private String phone;
+    private String address;
+}
+
+// 使用方式
+User user = User.builder()
+    .name("张三")
+    .age(25)
+    .email("zhangsan@example.com")
+    .phone("13800138000")
+    .address("北京市")
+    .build();
+
+// Lombok还生成toBuilder()用于修改
+User modifiedUser = user.toBuilder()
+    .age(26)
+    .build();</code></pre></div>
+        </div>
+        <div class="tip">
+          <div class="tip-title">💡 Lombok优势</div>
+          自动生成Builder类、build()方法、字段赋值方法，大幅减少样板代码。可通过@Builder.Default设置默认值。
+        </div>
+      </div>
+
+      <div id="inner" class="tab-content">
+        <p><strong>静态内部类方式</strong></p>
+        <p>将Builder作为产品类的静态内部类，紧密关联，组织清晰。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>public class Order {
+    private final String orderId;
+    private final String customer;
+    private final Address address;
+
+    private Order(Builder builder) {
+        this.orderId = builder.orderId;
+        this.customer = builder.customer;
+        this.address = builder.address;
+    }
+
+    // 静态内部类Builder
+    public static class Builder {
+        private String orderId;
+        private String customer;
+        private Address address;
+
+        public Builder orderId(String orderId) {
+            this.orderId = orderId;
+            return this;
+        }
+        public Builder customer(String customer) {
+            this.customer = customer;
+            return this;
+        }
+        public Builder address(Address address) {
+            this.address = address;
+            return this;
+        }
+        // 嵌套Builder
+        public Address.Builder address() {
+            return new Address.Builder(this);
+        }
+        public Order build() {
+            return new Order(this);
+        }
+    }
+
+    // 嵌套对象的Builder
+    public static class Address {
+        private final String province, city, detail;
+
+        private Address(Builder builder) {
+            this.province = builder.province;
+            this.city = builder.city;
+            this.detail = builder.detail;
+        }
+
+        public static class Builder {
+            private final Order.Builder orderBuilder;
+            private String province, city, detail;
+
+            public Builder(Order.Builder orderBuilder) {
+                this.orderBuilder = orderBuilder;
+            }
+            public Builder province(String p) { this.province = p; return this; }
+            public Builder city(String c) { this.city = c; return this; }
+            public Builder detail(String d) { this.detail = d; return this; }
+            public Order.Builder end() {
+                orderBuilder.address(new Address(this));
+                return orderBuilder;
+            }
+        }
+    }
+}
+
+// 嵌套使用
+Order order = new Order.Builder()
+    .orderId("ORD-001")
+    .customer("张三")
+    .address()
+        .province("北京市")
+        .city("海淀区")
+        .detail("中关村大街1号")
+        .end()
+    .build();</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💡</div><h2 class="section-title">适用场景</h2></div>
+    <div class="section-body">
+      <ul>
+        <li><strong>参数过多：</strong>构造方法参数超过4个，难以记忆和使用</li>
+        <li><strong>可选参数多：</strong>对象有很多可选属性，需要使用大量重载构造方法</li>
+        <li><strong>不可变对象：</strong>需要创建不可变（final字段）对象</li>
+        <li><strong>复杂构建过程：</strong>对象创建需要分步骤进行，有固定顺序</li>
+        <li><strong>同构不同构：</strong>使用相同的构建过程创建不同的产品</li>
+      </ul>
+      <div class="warning">
+        <div class="warning-title">⚠️ 与工厂模式的区别</div>
+        <table>
+          <tr><th>维度</th><th>建造者模式</th><th>工厂模式</th></tr>
+          <tr><td>关注点</td><td>构建过程，分步骤组装</td><td>创建结果，直接返回对象</td></tr>
+          <tr><td>参数</td><td>多参数、可选参数</td><td>通常参数较少</td></tr>
+          <tr><td>控制</td><td>细粒度控制每一步</td><td>不关心内部构建细节</td></tr>
+          <tr><td>产品</td><td>通常是复杂对象</td><td>可以是简单或复杂对象</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔍</div><h2 class="section-title">StringBuilder源码分析</h2></div>
+    <div class="section-body">
+      <p>StringBuilder是建造者模式的经典应用：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// StringBuilder使用建造者模式
+StringBuilder sb = new StringBuilder();
+String result = sb.append("Hello")
+                  .append(" ")
+                  .append("World")
+                  .append("!")
+                  .insert(0, "Say: ")
+                  .toString();  // "Say: Hello World!"
+
+// 核心实现简析
+public final class StringBuilder {
+    char[] value;  // 存储字符
+    int count;     // 实际长度
+
+    // 链式append，返回this
+    public StringBuilder append(String str) {
+        // 扩容、复制逻辑
+        // ...
+        return this;  // 关键：返回自身支持链式调用
+    }
+
+    public String toString() {
+        return new String(value, 0, count);
+    }
+}</code></pre></div>
+      </div>
+      <div class="tip">
+        <div class="tip-title">💡 StringBuilder vs StringBuffer</div>
+        <ul>
+          <li>StringBuilder：非线程安全，单线程环境下性能更好</li>
+          <li>StringBuffer：线程安全（方法加synchronized），多线程环境下使用</li>
+          <li>两者都是可变字符串，避免了String的不可变带来的内存开销</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">优缺点分析</h2></div>
+    <div class="section-body">
+      <div class="tip">
+        <div class="tip-title">✅ 优点</div>
+        <ul>
+          <li><strong>良好的封装性：</strong>构建过程与表示分离，客户端无需知道内部细节</li>
+          <li><strong>更好的可读性：</strong>链式调用使代码意图清晰，自描述性强</li>
+          <li><strong>不可变性支持：</strong>轻松创建不可变对象</li>
+          <li><strong>参数校验：</strong>可在build()方法中进行统一校验</li>
+          <li><strong>避免重叠构造器：</strong>不需要编写大量构造方法</li>
+        </ul>
+      </div>
+      <div class="warning">
+        <div class="warning-title">❌ 缺点</div>
+        <ul>
+          <li>代码量增加：需要编写Builder类</li>
+          <li>额外内存开销：创建Builder对象需要额外内存</li>
+          <li>不适用于简单对象：简单对象直接使用构造方法更清晰</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📋</div><h2 class="section-title">最佳实践</h2></div>
+    <div class="section-body">
+      <div class="highlight">
+        <strong>何时使用Builder：</strong>当类有多个可选参数，或者构造方法参数超过4个时，考虑使用建造者模式。
+      </div>
+      <p><strong>使用建议：</strong></p>
+      <ul>
+        <li>必需参数放在Builder构造器中</li>
+        <li>可选参数使用方法设置，并合理设置默认值</li>
+        <li>在build()方法中进行参数校验</li>
+        <li>Builder和产品类使用静态内部类关系</li>
+        <li>考虑使用Lombok减少样板代码</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

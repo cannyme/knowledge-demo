@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinel流量控制与熔断降级 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --text-dim: #4a5068; --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+    --amber-dim: rgba(240, 180, 41, 0.08); --cyan-dim: rgba(78, 205, 196, 0.15);
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --cyan: #0d7377; --text-primary: #1a1a2e;
+    --amber-dim: rgba(184, 134, 11, 0.06); --cyan-dim: rgba(13, 115, 119, 0.12);
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; line-height: 1.7; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--amber-dim), var(--cyan-dim)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul, .section-body ol { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .section-body h3 { font-weight: 600; font-size: 17px; color: var(--text-primary); margin: 24px 0 12px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body code { color: var(--text-primary); }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: var(--amber-dim); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .tip { background: var(--cyan-dim); border-left: 4px solid var(--cyan); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+  .warning { background: rgba(255, 123, 114, 0.1); border-left: 4px solid var(--red); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+  .highlight { color: var(--amber); font-weight: 600; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring Cloud / Sentinel</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🛡️ CIRCUIT BREAKER</div>
+    <h1 class="hero-title">Sentinel流量控制与熔断降级</h1>
+    <p class="hero-desc">Sentinel是阿里巴巴开源的流量控制组件，提供流量控制、熔断降级、系统负载保护、热点参数限流等功能，保障微服务的稳定性。</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">Sentinel vs Hystrix</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>对比项</th><th>Sentinel</th><th>Hystrix</th></tr>
+        <tr><td>限流</td><td>✅ 支持</td><td>❌ 不支持</td></tr>
+        <tr><td>熔断</td><td>✅ 支持</td><td>✅ 支持</td></tr>
+        <tr><td>实时监控</td><td>✅ 控制台</td><td>❌ 需集成</td></tr>
+        <tr><td>动态规则</td><td>✅ 支持</td><td>较弱</td></tr>
+        <tr><td>热点限流</td><td>✅ 支持</td><td>❌ 不支持</td></tr>
+        <tr><td>系统保护</td><td>✅ 支持</td><td>❌ 不支持</td></tr>
+        <tr><td>维护状态</td><td>活跃</td><td>停止维护</td></tr>
+      </table>
+      <div class="tip">
+        <strong>💡 建议：</strong>Hystrix已停止维护，新项目强烈推荐使用Sentinel。
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">流量控制规则</h2></div>
+    <div class="section-body">
+      <h3>限流算法</h3>
+      <div class="mermaid">
+graph LR
+    A[滑动窗口算法] -->|默认| B[统计QPS]
+    C[漏桶算法] -->|平滑| D[匀速处理]
+    E[令牌桶算法] -->|突发| F[允许突发流量]
+      </div>
+
+      <h3>限流维度</h3>
+      <table>
+        <tr><th>维度</th><th>说明</th></tr>
+        <tr><td>QPS</td><td>每秒请求数限制</td></tr>
+        <tr><td>线程数</td><td>并发线程数限制</td></tr>
+      </table>
+
+      <h3>流控策略</h3>
+      <ul>
+        <li><span class="highlight">直接拒绝（默认）：</span>QPS超过阈值直接拒绝</li>
+        <li><span class="highlight">关联限流：</span>当关联资源B的QPS超过阈值时，限流资源A（如支付接口繁忙时限制下单接口）</li>
+        <li><span class="highlight">链路限流：</span>只记录从指定入口资源进来的流量</li>
+      </ul>
+
+      <h3>流控效果</h3>
+      <ul>
+        <li><span class="highlight">快速失败：</span>直接抛出FlowException</li>
+        <li><span class="highlight">Warm Up（预热）：</span>冷启动，阈值从threshold/3逐渐增加到threshold</li>
+        <li><span class="highlight">排队等待：</span>请求在队列中排队，按照间隔时间依次通过</li>
+      </ul>
+
+      <h3>限流代码示例</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@RestController
+public class UserController {
+
+    // 方式1：使用@SentinelResource注解
+    @SentinelResource(
+        value = "getUser",
+        blockHandler = "getUserBlockHandler",
+        fallback = "getUserFallback"
+    )
+    @GetMapping("/user/{id}")
+    public User getUser(@PathVariable Long id) {
+        return userService.getById(id);
+    }
+
+    // 限流处理方法（必须与原方法签名一致，最后加BlockException参数）
+    public User getUserBlockHandler(Long id, BlockException ex) {
+        return User.builder()
+            .id(id)
+            .name("限流用户")
+            .build();
+    }
+
+    // 降级处理方法（处理业务异常）
+    public User getUserFallback(Long id, Throwable ex) {
+        log.error("查询用户异常", ex);
+        return User.builder()
+            .id(id)
+            .name("降级用户")
+            .build();
+    }
+
+    // 方式2：代码定义规则
+    @PostConstruct
+    public void initFlowRules() {
+        List&lt;FlowRule&gt; rules = new ArrayList&lt;&gt;();
+
+        FlowRule rule = new FlowRule();
+        rule.setResource("getUser");              // 资源名
+        rule.setGrade(RuleConstant.FLOW_GRADE_QPS);  // QPS模式
+        rule.setCount(100);                       // 每秒100次
+        rule.setStrategy(RuleConstant.STRATEGY_DIRECT);
+        rule.setControlBehavior(RuleConstant.CONTROL_BEHAVIOR_DEFAULT);
+
+        rules.add(rule);
+        FlowRuleManager.loadRules(rules);
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔥</div><h2 class="section-title">熔断降级规则</h2></div>
+    <div class="section-body">
+      <h3>熔断状态机</h3>
+      <div class="mermaid">
+stateDiagram-v2
+    [*] --> CLOSED: 正常
+    CLOSED --> OPEN: 失败率/慢调用比例 >= 阈值
+    OPEN --> HALF_OPEN: 熔断时长结束
+    HALF_OPEN --> CLOSED: 探测成功
+    HALF_OPEN --> OPEN: 探测失败
+      </div>
+
+      <h3>熔断策略</h3>
+      <table>
+        <tr><th>策略</th><th>说明</th></tr>
+        <tr><td>慢调用比例</td><td>响应时间超过阈值的调用为慢调用，慢调用比例超过阈值时触发熔断</td></tr>
+        <tr><td>异常比例</td><td>异常数/总请求数 比例超过阈值时触发熔断</td></tr>
+        <tr><td>异常数</td><td>异常数超过阈值时触发熔断</td></tr>
+      </table>
+
+      <h3>熔断代码示例</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>private void initDegradeRules() {
+    List&lt;DegradeRule&gt; rules = new ArrayList&lt;&gt;();
+
+    DegradeRule rule = new DegradeRule();
+    rule.setResource("callRemoteService");
+    rule.setGrade(CircuitBreakerStrategy.SLOW_REQUEST_RATIO.getType());
+    rule.setCount(500);                // 慢调用阈值：500ms
+    rule.setSlowRatioThreshold(0.5);   // 慢调用比例：50%
+    rule.setMinRequestAmount(10);      // 最小请求数：10
+    rule.setStatIntervalMs(10000);     // 统计时长：10秒
+    rule.setTimeWindow(30);            // 熔断时长：30秒
+
+    rules.add(rule);
+    DegradeRuleManager.loadRules(rules);
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🌡️</div><h2 class="section-title">系统保护规则</h2></div>
+    <div class="section-body">
+      <p>从系统整体维度（CPU、内存、QPS、RT）进行保护，避免系统过载导致整体不可用。</p>
+      <table>
+        <tr><th>规则类型</th><th>说明</th></tr>
+        <tr><td>Load</td><td>系统负载（Linux 1分钟平均负载）</td></tr>
+        <tr><td>CPU使用率</td><td>CPU使用率超过阈值触发限流</td></tr>
+        <tr><td>平均RT</td><td>所有入口流量的平均响应时间</td></tr>
+        <tr><td>并发线程数</td><td>并发线程数超过阈值触发限流</td></tr>
+        <tr><td>入口QPS</td><td>所有入口流量的QPS</td></tr>
+      </table>
+
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>private void initSystemRules() {
+    List&lt;SystemRule&gt; rules = new ArrayList&lt;&gt;();
+
+    SystemRule rule = new SystemRule();
+    rule.setHighestSystemLoad(10);     // 系统负载阈值
+    rule.setHighestCpuUsage(0.8);      // CPU使用率80%
+    rule.setAvgRt(500);                // 平均响应时间500ms
+    rule.setMaxThread(500);            // 最大并发线程
+    rule.setQps(10000);                // 入口QPS阈值
+
+    rules.add(rule);
+    SystemRuleManager.loadRules(rules);
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">热点参数限流</h2></div>
+    <div class="section-body">
+      <p>针对请求中的热点参数进行限流，如热门商品ID、特定用户ID等。</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@GetMapping("/product/{id}")
+@SentinelResource(value = "getProduct", blockHandler = "getProductBlock")
+public Product getProduct(
+    @PathVariable @SentinelParam("productId") String productId) {
+    return productService.getById(productId);
+}
+
+// 配置热点参数限流规则
+private void initParamFlowRules() {
+    ParamFlowRule rule = new ParamFlowRule();
+    rule.setResource("getProduct");
+    rule.setCount(100);                    // 默认阈值100 QPS
+    rule.setGrade(RuleConstant.FLOW_GRADE_QPS);
+    rule.setDurationInSec(1);              // 统计窗口1秒
+
+    // 特定参数值单独设置阈值
+    List&lt;ParamFlowItem&gt; items = new ArrayList&lt;&gt;();
+
+    // 热门商品ID限流阈值更高
+    ParamFlowItem item1 = new ParamFlowItem();
+    item1.setObject("1001");               // 商品ID
+    item1.setClassType(String.class.getName());
+    item1.setCount(500);                   // 阈值500
+    items.add(item1);
+
+    rule.setParamFlowItemList(items);
+    ParamFlowRuleManager.loadRules(Collections.singletonList(rule));
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📝</div><h2 class="section-title">授权规则（黑白名单）</h2></div>
+    <div class="section-body">
+      <p>根据调用来源限制资源的访问，实现黑白名单控制。</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 实现RequestOriginParser接口
+@Component
+public class RequestOriginParserDefinition implements RequestOriginParser {
+
+    @Override
+    public String parseOrigin(HttpServletRequest request) {
+        // 从请求头获取来源标识
+        String origin = request.getHeader("S-Origin");
+        if (StringUtils.isEmpty(origin)) {
+            origin = request.getParameter("origin");
+        }
+        return origin;
+    }
+}
+
+// 配置授权规则（只允许app1和app2访问）
+private void initAuthorityRules() {
+    AuthorityRule rule = new AuthorityRule();
+    rule.setResource("getUser");
+    rule.setStrategy(RuleConstant.AUTHORITY_WHITE);  // 白名单
+    rule.setLimitApp("app1,app2");                   // 只允许app1和app2
+
+    AuthorityRuleManager.loadRules(Collections.singletonList(rule));
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💾</div><h2 class="section-title">规则持久化（Nacos）</h2></div>
+    <div class="section-body">
+      <p>默认规则存储在内存中，应用重启后丢失。通过Nacos实现规则持久化：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>spring:
+  cloud:
+    sentinel:
+      datasource:
+        # 限流规则
+        flow:
+          nacos:
+            server-addr: localhost:8848
+            data-id: ${spring.application.name}-flow-rules
+            group-id: SENTINEL_GROUP
+            rule-type: flow
+        # 熔断规则
+        degrade:
+          nacos:
+            server-addr: localhost:8848
+            data-id: ${spring.application.name}-degrade-rules
+            group-id: SENTINEL_GROUP
+            rule-type: degrade
+        # 热点参数规则
+        param-flow:
+          nacos:
+            server-addr: localhost:8848
+            data-id: ${spring.application.name}-param-rules
+            group-id: SENTINEL_GROUP
+            rule-type: param-flow</code></pre></div>
+      </div>
+      <div class="mermaid">
+flowchart LR
+    A[Dashboard控制台] -->|规则变更| B[Nacos配置中心]
+    B -->|推送规则| C[应用实例1]
+    B -->|推送规则| D[应用实例2]
+    B -->|推送规则| E[应用实例3]
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📈</div><h2 class="section-title">Sentinel控制台</h2></div>
+    <div class="section-body">
+      <h3>控制台部署</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Bash</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># 下载控制台jar包
+wget https://github.com/alibaba/Sentinel/releases/download/1.8.6/sentinel-dashboard-1.8.6.jar
+
+# 启动控制台
+java -Dserver.port=8080 \
+     -Dcsp.sentinel.dashboard.server=localhost:8080 \
+     -Dproject.name=sentinel-dashboard \
+     -jar sentinel-dashboard-1.8.6.jar
+
+# 访问地址：http://localhost:8080
+# 默认账号：sentinel / sentinel</code></pre></div>
+      </div>
+
+      <h3>应用接入控制台</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>spring:
+  cloud:
+    sentinel:
+      transport:
+        dashboard: localhost:8080    # 控制台地址
+        port: 8719                    # 与控制台通信端口
+      eager: true                     # 应用启动立即连接</code></pre></div>
+      </div>
+
+      <p>控制台功能：</p>
+      <ul>
+        <li>实时监控：查看QPS、RT、并发线程数等指标</li>
+        <li>规则管理：动态配置限流、熔断、系统保护规则</li>
+        <li>机器管理：查看和管理应用实例</li>
+        <li>簇点链路：查看资源调用链路</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">✅</div><h2 class="section-title">最佳实践</h2></div>
+    <div class="section-body">
+      <h3>限流阈值设置</h3>
+      <ul>
+        <li>根据压测结果设置，留20%-30%余量</li>
+        <li>分级限流：网关层全局限流、应用层接口限流、方法层核心方法限流</li>
+        <li>限流响应返回友好提示和HTTP 429状态码</li>
+      </ul>
+
+      <h3>熔断阈值设置</h3>
+      <ul>
+        <li>慢调用RT阈值：根据SLA设置</li>
+        <li>比例阈值：50%-70%</li>
+        <li>熔断时长：30秒-60秒</li>
+      </ul>
+
+      <h3>降级策略</h3>
+      <ul>
+        <li>返回默认值：适用于查询类接口</li>
+        <li>返回缓存数据：适用于数据一致性要求不高场景</li>
+        <li>调用备用服务：适用于有备用服务场景</li>
+        <li>返回错误提示：适用于无法降级场景</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', primaryTextColor: '#e8e6e3', primaryBorderColor: '#4ecdc4', lineColor: '#4ecdc4', background: '#0a0e17', mainBkg: '#0a0e17', secondBkg: '#101624', tertiaryBkg: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

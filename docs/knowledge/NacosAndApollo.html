@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nacos与Apollo配置中心 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --text-dim: #4a5068; --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+    --amber-dim: rgba(240, 180, 41, 0.08); --cyan-dim: rgba(78, 205, 196, 0.15);
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --cyan: #0d7377; --text-primary: #1a1a2e;
+    --amber-dim: rgba(184, 134, 11, 0.06); --cyan-dim: rgba(13, 115, 119, 0.12);
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; line-height: 1.7; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--amber-dim), var(--cyan-dim)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul, .section-body ol { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .section-body h3 { font-weight: 600; font-size: 17px; color: var(--text-primary); margin: 24px 0 12px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body code { color: var(--text-primary); }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: var(--amber-dim); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .tip { background: var(--cyan-dim); border-left: 4px solid var(--cyan); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+  .warning { background: rgba(255, 123, 114, 0.1); border-left: 4px solid var(--red); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+  .highlight { color: var(--amber); font-weight: 600; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring Cloud / 配置中心</span></nav>
+  <header class="hero">
+    <div class="hero-badge">⚙️ CONFIG CENTER</div>
+    <h1 class="hero-title">Nacos与Apollo配置中心</h1>
+    <p class="hero-desc">Nacos和Apollo是微服务架构中主流的注册中心和配置中心解决方案，提供服务发现、动态配置管理、服务治理等核心能力。</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">❓</div><h2 class="section-title">为什么需要配置中心</h2></div>
+    <div class="section-body">
+      <p>在传统应用中，配置通常写在代码或配置文件中，但随着微服务架构的演进，配置管理面临诸多挑战：</p>
+      <ul>
+        <li><span class="highlight">配置分散：</span>数百个微服务的配置分散在各处，难以统一管理</li>
+        <li><span class="highlight">环境隔离：</span>开发、测试、生产环境需要不同的配置</li>
+        <li><span class="highlight">动态更新：</span>修改配置需要重新打包部署，效率低下</li>
+        <li><span class="highlight">版本管理：</span>配置变更历史难以追溯，回滚困难</li>
+        <li><span class="highlight">实时生效：</span>需要配置变更后立即生效，无需重启服务</li>
+        <li><span class="highlight">灰度发布：</span>配置变更需要支持灰度验证</li>
+      </ul>
+      <div class="mermaid">
+flowchart LR
+    A[配置中心] -->|统一存储| B[应用1]
+    A -->|统一存储| C[应用2]
+    A -->|统一存储| D[应用3]
+    A -->|实时推送| B
+    A -->|实时推送| C
+    A -->|实时推送| D
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">主流方案对比</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>产品</th><th>注册中心</th><th>配置中心</th><th>维护方</th></tr>
+        <tr><td>Nacos</td><td>✅ 支持</td><td>✅ 支持</td><td>阿里巴巴</td></tr>
+        <tr><td>Apollo</td><td>❌ 不支持</td><td>✅ 支持（专业）</td><td>携程</td></tr>
+        <tr><td>Eureka</td><td>✅ 支持</td><td>❌ 不支持</td><td>Netflix（停更）</td></tr>
+        <tr><td>Consul</td><td>✅ 支持</td><td>✅ 支持（较弱）</td><td>HashiCorp</td></tr>
+        <tr><td>ZooKeeper</td><td>✅ 支持</td><td>✅ 支持（较弱）</td><td>Apache</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔵</div><h2 class="section-title">Nacos</h2></div>
+    <div class="section-body">
+      <p>Nacos（Dynamic Naming and Configuration Service）是阿里巴巴开源的服务发现和配置管理平台，提供一站式解决方案。</p>
+
+      <h3>架构设计</h3>
+      <div class="mermaid">
+graph TB
+    subgraph "客户端"
+        A[服务提供者]
+        B[服务消费者]
+        C[配置管理台]
+    end
+
+    subgraph "Nacos Server集群"
+        D[Naming Service<br/>服务注册]
+        E[Config Service<br/>配置管理]
+        F[Core Module<br/>核心模块]
+    end
+
+    G[(存储<br/>MySQL/内置)]
+
+    A -->|注册/心跳| D
+    B -->|服务发现| D
+    C -->|配置管理| E
+    D --> G
+    E --> G
+      </div>
+
+      <h3>服务注册与发现</h3>
+      <div class="mermaid">
+sequenceDiagram
+    participant P as Provider
+    participant N as Nacos Server
+    participant C as Consumer
+
+    P->>N: 注册服务(IP, Port, ServiceName)
+    N-->>P: 注册成功
+    loop 每5秒
+        P->>N: 发送心跳
+    end
+
+    C->>N: 订阅服务列表
+    N-->>C: 返回实例列表
+    Note over N,C: 实例变更时主动推送
+      </div>
+
+      <h3>健康检查机制</h3>
+      <table>
+        <tr><th>模式</th><th>说明</th><th>适用场景</th></tr>
+        <tr><td>临时实例</td><td>客户端主动心跳，15秒无心跳标记不健康，30秒剔除</td><td>微服务</td></tr>
+        <tr><td>持久实例</td><td>服务端主动探测（TCP/HTTP）</td><td>数据库、缓存等基础设施</td></tr>
+      </table>
+
+      <h3>配置管理模型</h3>
+      <div class="mermaid">
+graph TB
+    subgraph "Namespace"
+        subgraph "Group"
+            A[Data ID: application.yml]
+            B[Data ID: redis.yml]
+            C[Data ID: mysql.yml]
+        end
+    end
+      </div>
+      <ul>
+        <li><span class="highlight">Namespace：</span>命名空间，用于环境隔离（dev/test/prod）</li>
+        <li><span class="highlight">Group：</span>配置分组，默认DEFAULT_GROUP</li>
+        <li><span class="highlight">Data ID：</span>配置文件名，格式：${spring.application.name}-${profile}.${file-extension}</li>
+      </ul>
+
+      <h3>Nacos配置示例</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>spring:
+  application:
+    name: order-service
+  cloud:
+    nacos:
+      # 注册中心配置
+      discovery:
+        server-addr: 127.0.0.1:8848
+        namespace: dev
+        group: DEFAULT_GROUP
+        metadata:
+          version: 1.0.0
+          region: cn-hangzhou
+      # 配置中心配置
+      config:
+        server-addr: 127.0.0.1:8848
+        namespace: dev
+        group: DEFAULT_GROUP
+        file-extension: yaml
+        # 共享配置
+        shared-configs:
+          - data-id: common.yaml
+            refresh: true
+        # 扩展配置
+        extension-configs:
+          - data-id: redis.yaml
+            refresh: true</code></pre></div>
+      </div>
+
+      <h3>动态配置刷新</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@RefreshScope  // 支持配置动态刷新
+@Service
+public class ConfigService {
+
+    @Value("${app.config.timeout:3000}")
+    private int timeout;
+
+    @Value("${app.config.feature.enabled:false}")
+    private boolean featureEnabled;
+
+    public void printConfig() {
+        System.out.println("timeout: " + timeout);
+        System.out.println("featureEnabled: " + featureEnabled);
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🟢</div><h2 class="section-title">Apollo</h2></div>
+    <div class="section-body">
+      <p>Apollo是携程开源的分布式配置中心，专注于配置管理领域，功能比Nacos更加专业和完善。</p>
+
+      <h3>架构设计</h3>
+      <div class="mermaid">
+graph TB
+    A[Portal<br/>管理界面] -->|管理配置| B[Admin Service]
+    B -->|存储配置| C[(Config DB)]
+
+    D[Config Service] -->|读取配置| C
+    E[Client] -->|长轮询| D
+
+    B -->|推送变更| D
+    D -->|推送变更| E
+      </div>
+
+      <h3>核心组件</h3>
+      <table>
+        <tr><th>组件</th><th>说明</th></tr>
+        <tr><td>Portal</td><td>配置管理界面，提供Web端配置操作</td></tr>
+        <tr><td>Admin Service</td><td>配置管理服务，提供配置的增删改查接口</td></tr>
+        <tr><td>Config Service</td><td>配置读取服务，客户端通过它获取配置</td></tr>
+        <tr><td>Client</td><td>客户端SDK，嵌入应用程序中</td></tr>
+      </table>
+
+      <h3>核心概念</h3>
+      <table>
+        <tr><th>概念</th><th>说明</th></tr>
+        <tr><td>AppId</td><td>应用唯一标识</td></tr>
+        <tr><td>Environment</td><td>环境（DEV/FAT/UAT/PRO）</td></tr>
+        <tr><td>Cluster</td><td>集群，支持多数据中心</td></tr>
+        <tr><td>Namespace</td><td>命名空间（配置文件）</td></tr>
+        <tr><td>Release</td><td>配置发布版本</td></tr>
+      </table>
+
+      <h3>命名空间类型</h3>
+      <table>
+        <tr><th>类型</th><th>说明</th></tr>
+        <tr><td>私有Namespace</td><td>只有当前应用可使用</td></tr>
+        <tr><td>公共Namespace</td><td>多应用共享，如公共数据库配置</td></tr>
+        <tr><td>关联Namespace</td><td>继承公共Namespace，可覆盖配置</td></tr>
+      </table>
+
+      <h3>Apollo配置示例</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Properties</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code># Apollo应用ID
+app.id=order-service
+# Apollo Meta Server地址
+apollo.meta=http://127.0.0.1:8080
+# 启用的命名空间
+apollo.bootstrap.enabled=true
+apollo.bootstrap.namespaces=application,common-db
+# 集群名称
+apollo.cluster=default</code></pre></div>
+      </div>
+
+      <h3>配置变更监听</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Component
+public class ApolloConfigChangeListener {
+
+    @ApolloConfigChangeListener
+    public void onChange(ConfigChangeEvent changeEvent) {
+        for (String key : changeEvent.changedKeys()) {
+            ConfigChange change = changeEvent.getChange(key);
+            System.out.println(String.format(
+                "配置变更: %s, 旧值: %s, 新值: %s",
+                key, change.getOldValue(), change.getNewValue()
+            ));
+        }
+    }
+}</code></pre></div>
+      </div>
+
+      <h3>灰度发布</h3>
+      <div class="mermaid">
+flowchart LR
+    A[修改配置] --> B[创建灰度]
+    B --> C[选择灰度IP]
+    C --> D[灰度发布]
+    D --> E{验证结果}
+    E -->|成功| F[全量发布]
+    E -->|失败| G[放弃灰度]
+      </div>
+      <p>Apollo支持按IP列表或应用实例进行灰度发布，只有灰度机器会收到新配置，验证通过后再全量发布。</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">Nacos vs Apollo对比</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>对比项</th><th>Nacos</th><th>Apollo</th></tr>
+        <tr><td>定位</td><td>注册中心 + 配置中心</td><td>专业配置中心</td></tr>
+        <tr><td>服务发现</td><td>✅ 支持</td><td>❌ 不支持</td></tr>
+        <tr><td>配置管理</td><td>✅ 支持</td><td>✅ 支持（功能更强）</td></tr>
+        <tr><td>灰度发布</td><td>❌ 不支持</td><td>✅ 支持</td></tr>
+        <tr><td>配置回滚</td><td>✅ 支持</td><td>✅ 支持</td></tr>
+        <tr><td>权限管理</td><td>较弱</td><td>✅ 完善</td></tr>
+        <tr><td>审计日志</td><td>基础</td><td>✅ 完善</td></tr>
+        <tr><td>部署复杂度</td><td>简单</td><td>较复杂（多模块）</td></tr>
+        <tr><td>社区活跃度</td><td>高（阿里维护）</td><td>中（携程维护）</td></tr>
+      </table>
+
+      <div class="tip">
+        <strong>💡 选型建议：</strong><br>
+        - 需要同时使用注册中心和配置中心 → 选择Nacos<br>
+        - 已有Eureka/Nacos做注册中心，需要专业配置中心 → 选择Apollo<br>
+        - 需要灰度发布能力 → 选择Apollo<br>
+        - 追求部署简单、运维成本低 → 选择Nacos
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">✅</div><h2 class="section-title">最佳实践</h2></div>
+    <div class="section-body">
+      <h3>配置分类建议</h3>
+      <ul>
+        <li><span class="highlight">按环境隔离：</span>DEV/FAT/UAT/PRO使用不同Namespace</li>
+        <li><span class="highlight">按应用隔离：</span>每个微服务有自己的配置</li>
+        <li><span class="highlight">按模块隔离：</span>db.yml/redis.yml/mq.yml分开管理</li>
+      </ul>
+
+      <h3>敏感配置处理</h3>
+      <ul>
+        <li>数据库密码、API密钥等敏感信息加密存储</li>
+        <li>生产环境配置只允许特定人员修改</li>
+        <li>记录所有配置变更审计日志</li>
+      </ul>
+
+      <h3>配置变更规范</h3>
+      <ol>
+        <li>变更前：通知相关人员</li>
+        <li>变更中：灰度发布（Apollo）或小范围验证</li>
+        <li>变更后：验证配置生效</li>
+        <li>异常时：快速回滚</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', primaryTextColor: '#e8e6e3', primaryBorderColor: '#4ecdc4', lineColor: '#4ecdc4', background: '#0a0e17', mainBkg: '#0a0e17', secondBkg: '#101624', tertiaryBkg: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

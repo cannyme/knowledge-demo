@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MySQL索引优化 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .section-body strong { color: var(--amber); }
+  .section-body em { color: var(--cyan); font-style: normal; }
+  .tip { background: rgba(78, 205, 196, 0.1); border-left: 4px solid var(--cyan); padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .warning { background: rgba(255, 123, 114, 0.1); border-left: 4px solid var(--red); padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .tip-title, .warning-title { font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .tip-title { color: var(--cyan); }
+  .warning-title { color: var(--red); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .check { color: var(--green); font-weight: 700; }
+  .cross { color: var(--red); font-weight: 700; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>数据库</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <h1 class="hero-title">MySQL索引优化</h1>
+    <p class="hero-desc">MySQL索引优化的详细解析和最佳实践</p>
+  </header>
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">索引原理</h2></div>
+    <div class="section-body">
+      <p>索引是帮助MySQL高效获取数据的数据结构。InnoDB使用B+树作为索引结构，通过索引可以快速定位到数据行，避免全表扫描。</p>
+      <div class="mermaid">flowchart TD
+    A[SQL查询] --> B[查询优化器]
+    B --> C{使用索引?}
+    C -->|是| D[索引查找]
+    C -->|否| E[全表扫描]
+    D --> F[返回结果]
+    E --> F</div>
+      <div class="tip"><div class="tip-title">💡 索引的本质</div>索引本质上是一种空间换时间的策略。通过额外的存储空间维护有序的数据结构，将查询的时间复杂度从O(n)降低到O(log n)。</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🌳</div><h2 class="section-title">B+树结构详解</h2></div>
+    <div class="section-body">
+      <p>B+树是MySQL InnoDB存储引擎的默认索引结构，具有以下特点：</p>
+      <ul>
+        <li><strong>非叶子节点不存储数据</strong>，只存储键值和子节点指针</li>
+        <li><strong>叶子节点存储所有数据</strong>，并通过双向指针连接，便于范围查询</li>
+        <li><strong>树高度低</strong>（通常3-4层），每次查询只需3-4次磁盘IO</li>
+        <li><strong>数据有序存储</strong>，支持高效的范围查找和排序</li>
+      </ul>
+      <div class="mermaid">flowchart TB
+    subgraph "非叶子节点（仅存储键值）"
+    A[15|30|45]
+    end
+    subgraph "叶子节点（存储完整数据或主键）"
+    B1[1,2...14] --> B2[15,16...29]
+    B2 --> B3[30,31...44]
+    B3 --> B4[45,46...60]
+    end
+    A --> B1
+    A --> B2
+    A --> B3
+    A --> B4
+    style A fill:#f0b429,stroke:#f0b429,color:#0a0e17
+    style B1 fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17
+    style B2 fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17
+    style B3 fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17
+    style B4 fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17</div>
+      <div class="two-col">
+        <div>
+          <h4 style="color: var(--amber); margin-bottom: 12px;">B+树 vs B树</h4>
+          <table>
+            <tr><th>特性</th><th>B+树</th><th>B树</th></tr>
+            <tr><td>数据存储</td><td>仅叶子节点</td><td>所有节点</td></tr>
+            <tr><td>叶子节点</td><td>有序链表连接</td><td>无连接</td></tr>
+            <tr><td>范围查询</td><td>高效</td><td>需遍历</td></tr>
+            <tr><td>IO次数</td><td>更少</td><td>较多</td></tr>
+          </table>
+        </div>
+        <div>
+          <h4 style="color: var(--amber); margin-bottom: 12px;">计算示例</h4>
+          <p style="font-size: 14px;">假设每页16KB，主键BIGINT(8字节)，指针6字节：</p>
+          <ul style="font-size: 14px;">
+            <li>每个非叶子节点可存：16384/(8+6) ≈ 1170个键</li>
+            <li>三层B+树可存：1170³ ≈ <strong>16亿</strong>条记录</li>
+            <li>查询只需<strong>3次磁盘IO</strong></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📑</div><h2 class="section-title">索引类型</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>索引类型</th><th>特点</th><th>使用场景</th><th>是否可为NULL</th></tr>
+        <tr><td><strong>主键索引</strong><br><em>PRIMARY KEY</em></td><td>聚簇索引，叶子节点存储完整行数据</td><td>表的主键，唯一标识每行记录</td><td>否</td></tr>
+        <tr><td><strong>唯一索引</strong><br><em>UNIQUE</em></td><td>列值必须唯一，允许一个NULL</td><td>手机号、邮箱、身份证号等</td><td>是（仅一个）</td></tr>
+        <tr><td><strong>普通索引</strong><br><em>INDEX</em></td><td>无唯一性约束，仅加速查询</td><td>频繁作为查询条件的列</td><td>是</td></tr>
+        <tr><td><strong>全文索引</strong><br><em>FULLTEXT</em></td><td>用于文本内容的模糊搜索</td><td>文章标题、内容、描述等</td><td>是</td></tr>
+        <tr><td><strong>组合索引</strong><br><em>多列索引</em></td><td>多列组合，遵循最左前缀原则</td><td>多条件组合查询</td><td>是</td></tr>
+      </table>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">SQL</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>-- 用户表索引创建示例
+CREATE TABLE `user` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(50) NOT NULL,
+    `email` VARCHAR(100),
+    `age` INT,
+    `department_id` BIGINT,
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),                    -- 主键索引（聚簇）
+    UNIQUE KEY `uk_email` (`email`),       -- 唯一索引
+    KEY `idx_name_age` (`name`, `age`),    -- 组合索引
+    KEY `idx_department` (`department_id`) -- 普通索引
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🗂️</div><h2 class="section-title">InnoDB索引实现</h2></div>
+    <div class="section-body">
+      <div class="two-col">
+        <div>
+          <h4 style="color: var(--amber); margin-bottom: 12px;">聚簇索引（主键索引）</h4>
+          <ul>
+            <li>叶子节点存储<strong>完整行数据</strong></li>
+            <li>一张表<strong>只能有一个</strong>聚簇索引</li>
+            <li>数据按主键<strong>顺序存储</strong></li>
+            <li>主键查询效率极高</li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="color: var(--cyan); margin-bottom: 12px;">非聚簇索引（二级索引）</h4>
+          <ul>
+            <li>叶子节点存储<strong>主键值</strong></li>
+            <li>一张表可以有<strong>多个</strong>二级索引</li>
+            <li>查询需要<strong>"回表"</strong>操作</li>
+            <li>通过主键值去聚簇索引查完整数据</li>
+          </ul>
+        </div>
+      </div>
+      <div class="mermaid">flowchart LR
+    subgraph "二级索引 idx_name"
+    A1[张三] -->|id=1| B1
+    A2[李四] -->|id=2| B2
+    A3[王五] -->|id=3| B3
+    end
+    subgraph "聚簇索引 PRIMARY KEY"
+    B1[(id=1\nname=张三\nage=25\n...)]
+    B2[(id=2\nname=李四\nage=30\n...)]
+    B3[(id=3\nname=王五\nage=28\n...)]
+    end
+    style B1 fill:#f0b429,stroke:#f0b429,color:#0a0e17
+    style B2 fill:#f0b429,stroke:#f0b429,color:#0a0e17
+    style B3 fill:#f0b429,stroke:#f0b429,color:#0a0e17</div>
+      <div class="tip"><div class="tip-title">💡 回表示例</div>
+        <p>SELECT * FROM user WHERE name = '张三';</p>
+        <ol style="margin-top: 8px;">
+          <li>在idx_name索引中找到 name='张三' 对应的主键id</li>
+          <li>根据id去主键索引中查找完整行数据（回表）</li>
+        </ol>
+      </div>
+      <div class="tip"><div class="tip-title">✅ 覆盖索引</div>
+        <p>当查询的列都在索引中时，无需回表，直接从索引返回数据：</p>
+        <p>SELECT <em>id, name</em> FROM user WHERE name = '张三'; -- 覆盖索引</p>
+        <p>SELECT <em>*</em> FROM user WHERE name = '张三'; -- 需要回表</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">索引优化原则</h2></div>
+    <div class="section-body">
+      <h4 style="color: var(--amber); margin-bottom: 12px;">1. 最左前缀原则</h4>
+      <p>联合索引 idx_name_age(name, age) 的使用情况：</p>
+      <table>
+        <tr><th>查询条件</th><th>是否使用索引</th><th>说明</th></tr>
+        <tr><td>WHERE name = '张三'</td><td><span class="check">✅ 使用</span></td><td>使用name字段</td></tr>
+        <tr><td>WHERE name = '张三' AND age = 25</td><td><span class="check">✅ 使用</span></td><td>使用name和age字段</td></tr>
+        <tr><td>WHERE name = '张三' AND age > 20</td><td><span class="check">✅ 使用</span></td><td>name定位，age范围扫描</td></tr>
+        <tr><td>WHERE age = 25</td><td><span class="cross">❌ 不使用</span></td><td>不满足最左前缀</td></tr>
+        <tr><td>WHERE name LIKE '%张'</td><td><span class="cross">❌ 不使用</span></td><td>前缀模糊匹配失效</td></tr>
+        <tr><td>WHERE name = '张三' OR age = 25</td><td><span class="cross">❌ 不使用</span></td><td>OR破坏索引使用</td></tr>
+        <tr><td>WHERE name LIKE '张%' AND age = 25</td><td><span class="check">✅ 使用</span></td><td>name用索引，age可能用到</td></tr>
+        <tr><td>WHERE name = '张三' ORDER BY age</td><td><span class="check">✅ 使用</span></td><td>name用索引，排序也用索引</td></tr>
+      </table>
+
+      <h4 style="color: var(--amber); margin: 24px 0 12px;">2. 联合索引设计原则</h4>
+      <ul>
+        <li>将<strong>选择性高</strong>（区分度高）的列放前面</li>
+        <li>考虑查询场景，尽量<strong>覆盖更多查询</strong></li>
+        <li>避免索引列参与计算或使用函数</li>
+        <li>范围查询字段放后面（范围后的列不走索引）</li>
+      </ul>
+
+      <h4 style="color: var(--amber); margin: 24px 0 12px;">3. 索引下推（ICP）</h4>
+      <p>MySQL 5.6+ 引入的优化，将WHERE条件的过滤下推到存储引擎层：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">SQL</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>-- 索引下推示例
+KEY idx_name_age(name, age)
+SELECT * FROM user WHERE name LIKE '张%' AND age = 25;
+
+-- 没有ICP：先找到所有name以'张'开头的记录，再回表过滤age
+-- 有ICP：在存储引擎层就过滤掉不满足age=25的记录，减少回表</code></pre></div>
+      </div>
+
+      <h4 style="color: var(--amber); margin: 24px 0 12px;">4. 前缀索引</h4>
+      <p>对长字符串列，可以使用前缀索引节省空间：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">SQL</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>-- 计算前缀选择性
+SELECT COUNT(DISTINCT LEFT(email, 6)) / COUNT(DISTINCT email) FROM user;
+
+-- 创建前缀索引
+ALTER TABLE user ADD INDEX idx_email(email(10));</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔍</div><h2 class="section-title">EXPLAIN分析详解</h2></div>
+    <div class="section-body">
+      <p>使用EXPLAIN分析SQL执行计划，找出性能瓶颈：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">SQL</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>EXPLAIN SELECT * FROM user WHERE name = '张三';</code></pre></div>
+      </div>
+
+      <h4 style="color: var(--amber); margin: 20px 0 12px;">type：访问类型（从好到差）</h4>
+      <table>
+        <tr><th>类型</th><th>说明</th><th>性能</th></tr>
+        <tr><td><strong>system</strong></td><td>单行数据（系统表）</td><td><span class="check">⭐⭐⭐⭐⭐</span></td></tr>
+        <tr><td><strong>const</strong></td><td>主键或唯一索引等值查询</td><td><span class="check">⭐⭐⭐⭐⭐</span></td></tr>
+        <tr><td><strong>eq_ref</strong></td><td>JOIN时使用主键或唯一索引</td><td><span class="check">⭐⭐⭐⭐</span></td></tr>
+        <tr><td><strong>ref</strong></td><td>非唯一索引等值查询</td><td><span class="check">⭐⭐⭐</span></td></tr>
+        <tr><td><strong>range</strong></td><td>范围查询（BETWEEN, >, <, IN）</td><td><span class="check">⭐⭐⭐</span></td></tr>
+        <tr><td><strong>index</strong></td><td>全索引扫描</td><td><span class="cross">⭐⭐</span></td></tr>
+        <tr><td><strong>ALL</strong></td><td>全表扫描</td><td><span class="cross">⭐ 最差</span></td></tr>
+      </table>
+
+      <h4 style="color: var(--amber); margin: 20px 0 12px;">关键字段说明</h4>
+      <table>
+        <tr><th>字段</th><th>说明</th></tr>
+        <tr><td><strong>key</strong></td><td>实际使用的索引名称</td></tr>
+        <tr><td><strong>key_len</strong></td><td>使用的索引长度，用于判断联合索引使用了多少列</td></tr>
+        <tr><td><strong>rows</strong></td><td>预估需要扫描的行数，越小越好</td></tr>
+        <tr><td><strong>Extra</strong></td><td>额外信息，包含优化建议</td></tr>
+      </table>
+
+      <h4 style="color: var(--amber); margin: 20px 0 12px;">Extra字段详解</h4>
+      <table>
+        <tr><th>值</th><th>含义</th><th>优化建议</th></tr>
+        <tr><td><strong>Using index</strong></td><td>覆盖索引</td><td><span class="check">✅ 优秀</span></td></tr>
+        <tr><td><strong>Using where</strong></td><td>WHERE条件过滤</td><td>正常</td></tr>
+        <tr><td><strong>Using temporary</strong></td><td>使用临时表</td><td><span class="cross">⚠️ 需优化</span></td></tr>
+        <tr><td><strong>Using filesort</strong></td><td>文件排序</td><td><span class="cross">⚠️ 需优化</span></td></tr>
+        <tr><td><strong>Using index condition</strong></td><td>索引下推</td><td><span class="check">✅ 优秀</span></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">索引失效场景</h2></div>
+    <div class="section-body">
+      <div class="warning"><div class="warning-title">🚫 1. 对索引列使用函数或运算</div>
+        <p><span class="cross">❌</span> WHERE YEAR(create_time) = 2024</p>
+        <p><span class="check">✅</span> WHERE create_time >= '2024-01-01' AND create_time < '2025-01-01'</p>
+      </div>
+
+      <div class="warning"><div class="warning-title">🚫 2. 隐式类型转换</div>
+        <p><span class="cross">❌</span> WHERE phone = 13800138000 <em>-- phone是VARCHAR类型</em></p>
+        <p><span class="check">✅</span> WHERE phone = '13800138000'</p>
+      </div>
+
+      <div class="warning"><div class="warning-title">🚫 3. LIKE 以通配符开头</div>
+        <p><span class="cross">❌</span> WHERE name LIKE '%张%'</p>
+        <p><span class="check">✅</span> WHERE name LIKE '张%'</p>
+      </div>
+
+      <div class="warning"><div class="warning-title">🚫 4. OR 条件（除非所有列都有索引）</div>
+        <p><span class="cross">❌</span> WHERE name = '张三' OR age = 25</p>
+        <p><span class="check">✅</span> 使用UNION替代，或为age也创建索引</p>
+      </div>
+
+      <div class="warning"><div class="warning-title">🚫 5. NOT IN / NOT EXISTS / <></div>
+        <p><span class="cross">❌</span> WHERE age NOT IN (1, 2, 3)</p>
+        <p><span class="check">✅</span> 考虑使用范围查询或反向思维改写</p>
+      </div>
+
+      <div class="warning"><div class="warning-title">🚫 6. 联合索引中间列使用范围查询</div>
+        <p>KEY idx_a_b_c(a, b, c)</p>
+        <p><span class="cross">❌</span> WHERE a = 1 AND b > 2 AND c = 3 <em>-- c无法使用索引</em></p>
+        <p><span class="check">✅</span> WHERE a = 1 AND b = 2 AND c = 3</p>
+      </div>
+
+      <div class="warning"><div class="warning-title">🚫 7. 索引列允许NULL</div>
+        <p>NULL值会影响索引统计，建议设置NOT NULL并设置默认值</p>
+      </div>
+
+      <div class="warning"><div class="warning-title">🚫 8. 索引选择性过低</div>
+        <p>如性别字段（男/女），区分度太低，建索引效果不佳</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💼</div><h2 class="section-title">SQL优化案例</h2></div>
+    <div class="section-body">
+      <h4 style="color: var(--amber); margin-bottom: 16px;">案例1：大偏移分页优化</h4>
+      <div class="warning"><div class="warning-title">❌ 问题SQL</div>
+        <p>SELECT * FROM user LIMIT 1000000, 10;</p>
+        <p style="font-size: 14px;">需要扫描前1000010行，丢弃前1000000行，效率极低</p>
+      </div>
+      <div class="tip"><div class="tip-title">✅ 优化方案1：子查询+JOIN</div>
+        <div class="code-container" style="margin: 0;">
+          <div class="code-body"><pre><code>SELECT * FROM user u
+INNER JOIN (SELECT id FROM user LIMIT 1000000, 10) t
+ON u.id = t.id;
+-- 先通过覆盖索引快速获取id，再JOIN查询完整数据</code></pre></div>
+        </div>
+      </div>
+      <div class="tip"><div class="tip-title">✅ 优化方案2：记录上次查询位置</div>
+        <div class="code-container" style="margin: 0;">
+          <div class="code-body"><pre><code>SELECT * FROM user
+WHERE id > #{lastId}
+ORDER BY id
+LIMIT 10;
+-- 利用主键索引，避免大偏移量</code></pre></div>
+        </div>
+      </div>
+
+      <h4 style="color: var(--amber); margin: 32px 0 16px;">案例2：SELECT * 导致回表</h4>
+      <div class="warning"><div class="warning-title">❌ 问题SQL</div>
+        <p>SELECT * FROM user WHERE name = '张三';</p>
+        <p style="font-size: 14px;">需要回表查询所有字段</p>
+      </div>
+      <div class="tip"><div class="tip-title">✅ 优化方案</div>
+        <div class="code-container" style="margin: 0;">
+          <div class="code-body"><pre><code>-- 只查询需要的字段
+SELECT id, name, age FROM user WHERE name = '张三';
+
+-- 创建覆盖索引
+ALTER TABLE user ADD INDEX idx_name_age(name, age);
+-- 这样查询可以直接从索引返回，无需回表</code></pre></div>
+        </div>
+      </div>
+
+      <h4 style="color: var(--amber); margin: 32px 0 16px;">案例3：ORDER BY 导致 filesort</h4>
+      <div class="warning"><div class="warning-title">❌ 问题SQL</div>
+        <p>SELECT * FROM user WHERE department_id = 1 ORDER BY create_time DESC;</p>
+        <p style="font-size: 14px;">department_id索引无法用于排序，需要filesort</p>
+      </div>
+      <div class="tip"><div class="tip-title">✅ 优化方案</div>
+        <div class="code-container" style="margin: 0;">
+          <div class="code-body"><pre><code>-- 创建联合索引，满足最左前缀
+ALTER TABLE user ADD INDEX idx_dept_time(department_id, create_time);
+
+-- 这样WHERE和ORDER BY都能使用索引，避免filesort</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

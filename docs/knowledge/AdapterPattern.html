@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>适配器模式 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+    --text-dim: #4a5068; --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e; --text-dim: #7a7a8e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .highlight { background: linear-gradient(135deg, rgba(240, 180, 41, 0.2), rgba(78, 205, 196, 0.15)); padding: 16px; border-radius: 8px; border-left: 3px solid var(--amber); margin: 16px 0; }
+  .tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .tip-title { color: var(--green); font-weight: 600; margin-bottom: 8px; }
+  .warning { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.3); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .warning-title { color: var(--red); font-weight: 600; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>设计模式</span></nav>
+  <header class="hero">
+    <div class="hero-badge">📚 DESIGN PATTERN</div>
+    <h1 class="hero-title">适配器模式</h1>
+    <p class="hero-desc">将一个类的接口转换成客户希望的另外一个接口，使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。</p>
+  </header>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">模式定义与意图</h2></div>
+    <div class="section-body">
+      <p><strong>适配器模式（Adapter Pattern）</strong>是一种结构型设计模式，它允许接口不兼容的类相互合作。适配器将一个类的接口转换成客户希望的另外一个接口。</p>
+      <div class="highlight">
+        <strong>核心思想：</strong>通过包装（Wrapper）将不兼容的接口转换为兼容的接口，让原本不能一起工作的类协同工作。
+      </div>
+      <p>生活中的类比：</p>
+      <ul>
+        <li>电源适配器：将220V交流电转换为设备需要的电压</li>
+        <li>USB转接头：让Type-C接口兼容传统USB设备</li>
+        <li>翻译官：让说不同语言的人能够交流</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🏗️</div><h2 class="section-title">架构原理</h2></div>
+    <div class="section-body">
+      <div class="mermaid">
+classDiagram
+    class Target {
+        <<interface>>
+        +request()
+    }
+    class Adapter {
+        -adaptee: Adaptee
+        +request()
+    }
+    class Adaptee {
+        +specificRequest()
+    }
+    class Client
+    Target <|.. Adapter
+    Adapter --> Adaptee
+    Client --> Target
+      </div>
+      <p><strong>角色说明：</strong></p>
+      <table>
+        <tr><th>角色</th><th>说明</th></tr>
+        <tr><td>Target</td><td>目标接口，客户端期望的接口</td></tr>
+        <tr><td>Adaptee</td><td>被适配者，已存在的接口</td></tr>
+        <tr><td>Adapter</td><td>适配器，将Adaptee接口转为Target接口</td></tr>
+        <tr><td>Client</td><td>客户端，使用Target接口</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📝</div><h2 class="section-title">三种实现方式</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="object-adapter">对象适配器</button>
+        <button class="tab" data-tab="class-adapter">类适配器</button>
+        <button class="tab" data-tab="interface-adapter">接口适配器</button>
+      </div>
+
+      <div id="object-adapter" class="tab-content active">
+        <p><strong>对象适配器（组合方式）- 推荐</strong></p>
+        <p>通过组合持有被适配者对象，更灵活，符合"组合优于继承"原则。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 目标接口
+interface MediaPlayer {
+    void play(String filename);
+}
+
+// 被适配者
+class AdvancedMediaPlayer {
+    public void playVlc(String filename) {
+        System.out.println("播放VLC文件：" + filename);
+    }
+    public void playMp4(String filename) {
+        System.out.println("播放MP4文件：" + filename);
+    }
+}
+
+// 对象适配器
+class MediaAdapter implements MediaPlayer {
+    private final AdvancedMediaPlayer advancedPlayer;
+
+    public MediaAdapter(AdvancedMediaPlayer advancedPlayer) {
+        this.advancedPlayer = advancedPlayer;
+    }
+
+    @Override
+    public void play(String filename) {
+        if (filename.endsWith(".vlc")) {
+            advancedPlayer.playVlc(filename);
+        } else if (filename.endsWith(".mp4")) {
+            advancedPlayer.playMp4(filename);
+        }
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="class-adapter" class="tab-content">
+        <p><strong>类适配器（继承方式）</strong></p>
+        <p>通过继承被适配者类实现适配，耦合度较高，受Java单继承限制。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 类适配器：通过继承实现
+class MediaAdapterByClass extends AdvancedMediaPlayer
+                         implements MediaPlayer {
+    @Override
+    public void play(String filename) {
+        if (filename.endsWith(".vlc")) {
+            playVlc(filename);  // 调用父类方法
+        } else if (filename.endsWith(".mp4")) {
+            playMp4(filename);  // 调用父类方法
+        }
+    }
+}</code></pre></div>
+        </div>
+        <div class="warning">
+          <div class="warning-title">⚠️ 注意事项</div>
+          类适配器由于使用继承，无法适配Adaptee的子类，且Java单继承限制了扩展性。
+        </div>
+      </div>
+
+      <div id="interface-adapter" class="tab-content">
+        <p><strong>接口适配器（缺省适配器）</strong></p>
+        <p>当接口方法很多，但只需要实现部分方法时使用。通过抽象类提供默认空实现。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 定义多个方法的接口
+interface FileOperation {
+    void read();
+    void modify();
+    void remove();
+    void copy();
+    void move();
+}
+
+// 抽象适配器：提供默认空实现
+abstract class FileAdapter implements FileOperation {
+    @Override public void read() {}
+    @Override public void modify() {}
+    @Override public void remove() {}
+    @Override public void copy() {}
+    @Override public void move() {}
+}
+
+// 具体实现：只需覆盖需要的方法
+class ReadOnlyFile extends FileAdapter {
+    @Override
+    public void read() {
+        System.out.println("只读文件");
+    }
+    // 其他方法使用默认空实现
+}</code></pre></div>
+        </div>
+      </div>
+
+      <table>
+        <tr><th>方式</th><th>实现</th><th>优点</th><th>缺点</th></tr>
+        <tr><td>对象适配器</td><td>组合</td><td>灵活、可适配子类</td><td>需要额外引用</td></tr>
+        <tr><td>类适配器</td><td>继承</td><td>简单直接</td><td>耦合高、单继承限制</td></tr>
+        <tr><td>接口适配器</td><td>抽象类</td><td>减少空实现</td><td>仅适用于接口方法多的场景</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">💡</div><h2 class="section-title">适用场景</h2></div>
+    <div class="section-body">
+      <ul>
+        <li><strong>遗留系统集成：</strong>需要使用已有的类，但其接口与需求不匹配</li>
+        <li><strong>第三方SDK集成：</strong>第三方库接口与项目规范不一致</li>
+        <li><strong>接口升级：</strong>旧版本API需要兼容新版本调用方式</li>
+        <li><strong>日志框架统一：</strong>SLF4J通过适配器支持Log4j、Logback等</li>
+        <li><strong>数据转换：</strong>不同数据格式之间的转换</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔧</div><h2 class="section-title">JDK中的适配器</h2></div>
+    <div class="section-body">
+      <h3>1. InputStreamReader</h3>
+      <p>将字节流（InputStream）适配为字符流（Reader）：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// InputStreamReader是字节流到字符流的适配器
+InputStream inputStream = new FileInputStream("file.txt");
+Reader reader = new InputStreamReader(inputStream, "UTF-8");
+
+// BufferedReader包装Reader提供缓冲功能
+BufferedReader br = new BufferedReader(reader);</code></pre></div>
+      </div>
+
+      <h3>2. Arrays.asList()</h3>
+      <p>将数组适配为List接口：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 数组适配为List
+String[] array = {"a", "b", "c"};
+List&lt;String&gt; list = Arrays.asList(array);  // 返回适配器视图</code></pre></div>
+      </div>
+
+      <h3>3. Spring MVC HandlerAdapter</h3>
+      <p>Spring使用适配器模式统一处理不同类型的Controller：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// HandlerAdapter接口
+public interface HandlerAdapter {
+    boolean supports(Object handler);
+    ModelAndView handle(HttpServletRequest request,
+                        HttpServletResponse response,
+                        Object handler);
+}
+
+// 不同类型的Controller使用不同适配器
+// - RequestMappingHandlerAdapter
+// - HttpRequestHandlerAdapter
+// - SimpleControllerHandlerAdapter</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">优缺点分析</h2></div>
+    <div class="section-body">
+      <div class="tip">
+        <div class="tip-title">✅ 优点</div>
+        <ul>
+          <li><strong>解耦：</strong>目标类和被适配者类解耦，通过适配器间接调用</li>
+          <li><strong>复用性：</strong>复用已有的类，无需修改原有代码</li>
+          <li><strong>扩展性：</strong>可以适配多个被适配者</li>
+          <li><strong>单一职责：</strong>将接口转换逻辑隔离到适配器中</li>
+        </ul>
+      </div>
+      <div class="warning">
+        <div class="warning-title">❌ 缺点</div>
+        <ul>
+          <li>增加系统复杂度，需要额外编写适配器类</li>
+          <li>过多使用适配器会导致代码结构混乱</li>
+          <li>类适配器受单继承限制</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">与其他模式对比</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>模式</th><th>目的</th><th>区别</th></tr>
+        <tr><td>适配器模式</td><td>接口转换</td><td>改变已有接口以兼容目标接口</td></tr>
+        <tr><td>装饰器模式</td><td>功能增强</td><td>不改变接口，动态添加职责</td></tr>
+        <tr><td>代理模式</td><td>访问控制</td><td>不改变接口，控制对对象的访问</td></tr>
+        <tr><td>外观模式</td><td>简化接口</td><td>为子系统提供统一的高层接口</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+</script>
+</body>
+</html>

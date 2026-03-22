@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MVCC多版本并发控制 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+
+  :root {
+    --bg-deep: #0a0e17;
+    --bg-card: rgba(16, 22, 36, 0.7);
+    --bg-card-hover: rgba(22, 30, 50, 0.85);
+    --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12);
+    --border-card-hover: rgba(240, 180, 41, 0.4);
+    --amber: #f0b429;
+    --amber-light: #ffd166;
+    --amber-dim: rgba(240, 180, 41, 0.08);
+    --cyan: #4ecdc4;
+    --cyan-dim: rgba(78, 205, 196, 0.15);
+    --cyan-light: #6ee7df;
+    --text-primary: #e8e6e3;
+    --text-secondary: #8a8f98;
+    --text-dim: #4a5068;
+    --glow-amber: 0 0 30px rgba(240, 180, 41, 0.15);
+    --glow-cyan: 0 0 25px rgba(78, 205, 196, 0.12);
+    --font-code: 'JetBrains Mono', monospace;
+    --font-heading: 'Outfit', sans-serif;
+  }
+
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18);
+    --border-card-hover: rgba(160, 120, 20, 0.4);
+    --amber: #b8860b;
+    --amber-light: #996600;
+    --amber-dim: rgba(184, 134, 11, 0.06);
+    --cyan: #0d7377;
+    --cyan-dim: rgba(13, 115, 119, 0.12);
+    --text-primary: #1a1a2e;
+    --text-secondary: #4a4a5e;
+    --text-dim: #7a7a8e;
+    --glow-amber: 0 0 20px rgba(184, 134, 11, 0.08);
+    --glow-cyan: 0 0 20px rgba(13, 115, 119, 0.08);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-heading);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.4s ease, color 0.4s ease;
+    line-height: 1.7;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  [data-theme="light"] body::before {
+    background-image:
+      linear-gradient(rgba(160, 120, 20, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(160, 120, 20, 0.06) 1px, transparent 1px);
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 30%, rgba(78, 205, 196, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 60%, rgba(240, 180, 41, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 999;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border-card);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    box-shadow: var(--glow-amber);
+  }
+  .theme-toggle:hover {
+    border-color: var(--amber);
+    transform: scale(1.1);
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 32px;
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .breadcrumb a {
+    color: var(--cyan);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--amber);
+  }
+
+  .breadcrumb .sep {
+    color: var(--text-dim);
+  }
+
+  .kp-header {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 32px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kp-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber));
+  }
+
+  .kp-tag {
+    display: inline-block;
+    font-family: var(--font-code);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cyan);
+    background: var(--cyan-dim);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    border-radius: 6px;
+    padding: 4px 14px;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .kp-title {
+    font-weight: 800;
+    font-size: clamp(28px, 5vw, 42px);
+    line-height: 1.2;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--amber-light) 0%, var(--amber) 50%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .kp-package {
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .kp-desc {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .kp-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+  }
+
+  .kp-section:hover {
+    border-color: var(--border-card-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--glow-amber);
+  }
+
+  .section-title {
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-card);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(180deg, var(--amber), var(--cyan));
+    border-radius: 2px;
+  }
+
+  .section-content {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .section-content h3 {
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--text-primary);
+    margin: 24px 0 12px;
+  }
+
+  .section-content h4 {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--amber);
+    margin: 20px 0 10px;
+  }
+
+  .section-content p {
+    margin-bottom: 12px;
+  }
+
+  .section-content ul, .section-content ol {
+    margin: 12px 0;
+    padding-left: 24px;
+  }
+
+  .section-content li {
+    margin-bottom: 8px;
+  }
+
+  .section-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-family: var(--font-code);
+    font-size: 13px;
+  }
+
+  .section-content th,
+  .section-content td {
+    padding: 12px 16px;
+    text-align: left;
+    border: 1px solid var(--border-card);
+  }
+
+  .section-content th {
+    background: var(--amber-dim);
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .section-content tr:hover {
+    background: rgba(240, 180, 41, 0.03);
+  }
+
+  /* Tip and Warning Boxes */
+  .tip-box {
+    background: var(--cyan-dim);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    position: relative;
+  }
+
+  .tip-box::before {
+    content: 'TIP';
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--bg-card);
+    padding: 0 8px;
+    font-family: var(--font-code);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cyan);
+    letter-spacing: 1px;
+  }
+
+  .warning-box {
+    background: rgba(240, 180, 41, 0.08);
+    border: 1px solid rgba(240, 180, 41, 0.25);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    position: relative;
+  }
+
+  .warning-box::before {
+    content: 'WARNING';
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--bg-card);
+    padding: 0 8px;
+    font-family: var(--font-code);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--amber);
+    letter-spacing: 1px;
+  }
+
+  /* Highlight Text */
+  .highlight {
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .code-term {
+    font-family: var(--font-code);
+    background: var(--bg-code);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--cyan);
+  }
+
+  /* Code Blocks */
+  .code-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+
+  .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(240, 180, 41, 0.05);
+    border-bottom: 1px solid var(--border-card);
+  }
+
+  .code-title {
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .copy-btn {
+    font-family: var(--font-code);
+    font-size: 11px;
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid var(--border-card);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  .code-block pre {
+    padding: 20px;
+    overflow-x: auto;
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .code-block code {
+    color: var(--text-primary);
+    background: transparent;
+  }
+
+  /* Syntax Highlighting */
+  .code-block .keyword { color: #c792ea; }
+  .code-block .string { color: #c3e88d; }
+  .code-block .comment { color: #676e95; font-style: italic; }
+  .code-block .number { color: #f78c6c; }
+  .code-block .class-name { color: #ffcb6b; }
+  .code-block .method { color: #82aaff; }
+
+  [data-theme="light"] .code-block .keyword { color: #7c4dff; }
+  [data-theme="light"] .code-block .string { color: #448c27; }
+  [data-theme="light"] .code-block .comment { color: #8e908c; }
+  [data-theme="light"] .code-block .number { color: #f5871f; }
+  [data-theme="light"] .code-block .class-name { color: #c99e00; }
+  [data-theme="light"] .code-block .method { color: #4271ae; }
+
+  /* ASCII Art */
+  .ascii-art {
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--bg-code);
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    color: var(--cyan);
+    margin: 16px 0;
+  }
+
+  /* Mermaid Diagrams */
+  .mermaid-container {
+    background: var(--bg-code);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+  }
+
+  .mermaid {
+    display: inline-block;
+  }
+
+  /* Back to top */
+  .back-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border-card);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    z-index: 100;
+  }
+
+  .back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .back-to-top:hover {
+    border-color: var(--amber);
+    transform: translateY(-4px);
+    box-shadow: var(--glow-amber);
+  }
+
+  /* Footer */
+  .kp-footer {
+    text-align: center;
+    margin-top: 60px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border-card);
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .container { padding: 24px 16px 60px; }
+    .kp-header { padding: 24px; }
+    .kp-section { padding: 20px; }
+    .code-block pre { padding: 16px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+
+<div class="container">
+  <nav class="breadcrumb">
+    <a href="knowledge-map.html">📚 知识地图</a>
+    <span class="sep">/</span>
+    <a href="knowledge/database-mysql.html">database.mysql</a>
+    <span class="sep">/</span>
+    <span>MVCC</span>
+  </nav>
+
+  <header class="kp-header">
+    <div class="kp-tag">MySQL</div>
+    <h1 class="kp-title">MVCC多版本并发控制</h1>
+    <div class="kp-package">MVCC.java</div>
+    <p class="kp-desc">通过维护数据的历史版本，实现非阻塞读。读操作读取历史版本，写操作创建新版本，读写互不阻塞。</p>
+  </header>
+
+  <main class="kp-content">
+    <!-- 什么是MVCC -->
+    <section class="kp-section">
+      <h2 class="section-title">什么是MVCC</h2>
+      <div class="section-content">
+        <p><span class="highlight">MVCC（Multi-Version Concurrency Control）</span> 即多版本并发控制，是一种数据库并发控制技术。它通过为每个事务创建数据的不同版本，使得读操作和写操作可以并发执行而不会互相阻塞。</p>
+
+        <h3>核心思想</h3>
+        <ul>
+          <li><strong>写操作</strong>：创建数据的新版本，旧版本保留在系统中</li>
+          <li><strong>读操作</strong>：根据事务的隔离级别，读取合适版本的数据</li>
+          <li><strong>版本链</strong>：通过链表结构维护同一数据的多个历史版本</li>
+        </ul>
+
+        <div class="mermaid-container">
+          <div class="mermaid">
+graph LR
+    A[事务A读取] --> B[数据版本V1]
+    C[事务B修改] --> D[创建版本V2]
+    E[事务C读取] --> B
+    F[事务D读取] --> D
+    style B fill:#4ecdc4,stroke:#0a0e17,stroke-width:2px
+    style D fill:#f0b429,stroke:#0a0e17,stroke-width:2px
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MVCC解决的问题 -->
+    <section class="kp-section">
+      <h2 class="section-title">MVCC解决的问题</h2>
+      <div class="section-content">
+        <h3>1. 读写冲突</h3>
+        <p>在传统锁机制中，读操作需要加共享锁（S锁），写操作需要加排他锁（X锁）。读写操作会相互阻塞，降低并发性能。MVCC通过读取历史版本，避免了读锁和写锁的冲突。</p>
+
+        <h3>2. 不可重复读与幻读</h3>
+        <p>在可重复读（RR）隔离级别下，同一个事务内多次查询应该返回相同结果。MVCC通过 Read View 机制确保事务内看到的数据快照是一致的。</p>
+
+        <div class="tip-box">
+          <p><strong>MVCC的主要优势：</strong></p>
+          <ul>
+            <li>读操作不阻塞写操作</li>
+            <li>写操作不阻塞读操作</li>
+            <li>提高了数据库的并发处理能力</li>
+          </ul>
+        </div>
+
+        <table>
+          <tr>
+            <th>问题</th>
+            <th>传统锁机制</th>
+            <th>MVCC方案</th>
+          </tr>
+          <tr>
+            <td>读写冲突</td>
+            <td>读加S锁，写加X锁，相互阻塞</td>
+            <td>读历史版本，写创建新版本，互不阻塞</td>
+          </tr>
+          <tr>
+            <td>不可重复读</td>
+            <td>读时加锁直到事务结束</td>
+            <td>使用Read View保证一致性快照</td>
+          </tr>
+          <tr>
+            <td>并发性能</td>
+            <td>较低，锁竞争激烈</td>
+            <td>较高，读写分离</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- InnoDB MVCC实现原理 -->
+    <section class="kp-section">
+      <h2 class="section-title">InnoDB MVCC实现原理</h2>
+      <div class="section-content">
+        <p>InnoDB通过以下三个核心组件实现MVCC：</p>
+
+        <h3>1. 隐藏字段（Hidden Fields）</h3>
+        <p>InnoDB在每行数据后面添加三个隐藏字段：</p>
+
+        <table>
+          <tr>
+            <th>字段名</th>
+            <th>大小</th>
+            <th>说明</th>
+          </tr>
+          <tr>
+            <td><span class="code-term">DB_TRX_ID</span></td>
+            <td>6字节</td>
+            <td>最后插入或更新该行的事务ID</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">DB_ROLL_PTR</span></td>
+            <td>7字节</td>
+            <td>回滚指针，指向Undo Log中的上一版本</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">DB_ROW_ID</span></td>
+            <td>6字节</td>
+            <td>行ID，自增（如果表没有主键时使用）</td>
+          </tr>
+        </table>
+
+        <div class="ascii-art">
+┌─────────────────────────────────────────────────────────────────┐
+│                         数据行结构                               │
+├─────────────────────────────────────────────────────────────────┤
+│  id  │  name  │  age  │ DB_TRX_ID │ DB_ROLL_PTR │  DB_ROW_ID   │
+├─────────────────────────────────────────────────────────────────┤
+│  1   │  张三  │  25   │   100     │  0x7FF...   │    (隐藏)    │
+└─────────────────────────────────────────────────────────────────┘
+        </div>
+
+        <h3>2. Undo Log（回滚日志）</h3>
+        <p>Undo Log用于存储数据的历史版本，当事务需要回滚或读取旧版本数据时使用。</p>
+
+        <div class="mermaid-container">
+          <div class="mermaid">
+graph TB
+    A[当前数据<br/>id=1, name='王五'<br/>DB_TRX_ID=102] -->|DB_ROLL_PTR| B[Undo Log版本1<br/>id=1, name='李四'<br/>DB_TRX_ID=101]
+    B -->|DB_ROLL_PTR| C[Undo Log版本2<br/>id=1, name='张三'<br/>DB_TRX_ID=100]
+    C -->|DB_ROLL_PTR| D[NULL]
+    style A fill:#f0b429,stroke:#0a0e17,stroke-width:2px
+    style B fill:#4ecdc4,stroke:#0a0e17,stroke-width:2px
+    style C fill:#4ecdc4,stroke:#0a0e17,stroke-width:2px
+          </div>
+        </div>
+
+        <h3>3. Read View（读视图）</h3>
+        <p>Read View是快照读时生成的视图，用于判断数据版本对当前事务的可见性。</p>
+
+        <table>
+          <tr>
+            <th>字段</th>
+            <th>说明</th>
+          </tr>
+          <tr>
+            <td><span class="code-term">m_ids</span></td>
+            <td>生成Read View时，活跃的事务ID列表</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">min_trx_id</span></td>
+            <td>活跃事务中最小的事务ID</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">max_trx_id</span></td>
+            <td>生成Read View时，系统应分配的下一个事务ID</td>
+          </tr>
+          <tr>
+            <td><span class="code-term">creator_trx_id</span></td>
+            <td>生成该Read View的事务ID</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- 可见性判断规则 -->
+    <section class="kp-section">
+      <h2 class="section-title">可见性判断规则</h2>
+      <div class="section-content">
+        <p>当读取一行数据时，InnoDB会根据Read View判断该版本是否可见：</p>
+
+        <div class="mermaid-container">
+          <div class="mermaid">
+flowchart TD
+    A[开始判断] --> B{DB_TRX_ID ==<br/>creator_trx_id?}
+    B -->|是| C[可见<br/>自己修改的]
+    B -->|否| D{DB_TRX_ID <<br/>min_trx_id?}
+    D -->|是| E[可见<br/>事务已提交]
+    D -->|否| F{DB_TRX_ID >=<br/>max_trx_id?}
+    F -->|是| G[不可见<br/>事务在Read View之后开启]
+    F -->|否| H{DB_TRX_ID 在<br/>m_ids中?}
+    H -->|是| I[不可见<br/>事务未提交]
+    H -->|否| J[可见<br/>事务已提交]
+    style C fill:#4ecdc4,stroke:#0a0e17,stroke-width:2px
+    style E fill:#4ecdc4,stroke:#0a0e17,stroke-width:2px
+    style J fill:#4ecdc4,stroke:#0a0e17,stroke-width:2px
+    style G fill:#ff6b6b,stroke:#0a0e17,stroke-width:2px
+    style I fill:#ff6b6b,stroke:#0a0e17,stroke-width:2px
+          </div>
+        </div>
+
+        <h4>判断规则详解</h4>
+        <ol>
+          <li><span class="code-term">DB_TRX_ID == creator_trx_id</span>：当前事务修改的数据，可见</li>
+          <li><span class="code-term">DB_TRX_ID < min_trx_id</span>：生成Read View时已提交的事务，可见</li>
+          <li><span class="code-term">DB_TRX_ID >= max_trx_id</span>：生成Read View后开启的事务，不可见</li>
+          <li><span class="code-term">min_trx_id <= DB_TRX_ID < max_trx_id</span>：
+            <ul>
+              <li>如果在<span class="code-term">m_ids</span>中：事务未提交，不可见</li>
+              <li>如果不在<span class="code-term">m_ids</span>中：事务已提交，可见</li>
+            </ul>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 快照读 vs 当前读 -->
+    <section class="kp-section">
+      <h2 class="section-title">快照读 vs 当前读</h2>
+      <div class="section-content">
+        <h3>快照读（Snapshot Read）</h3>
+        <p>普通的SELECT语句，不加锁，读取历史版本数据。这是MVCC实现非阻塞读的基础。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">快照读示例</span>
+            <button class="copy-btn" onclick="copyCode(this)">复制</button>
+          </div>
+          <pre><code><span class="comment">-- 普通SELECT，快照读，不加锁</span>
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> user <span class="keyword">WHERE</span> id = <span class="number">1</span>;
+
+<span class="comment">-- 在RR隔离级别下，多次查询结果一致</span>
+<span class="keyword">BEGIN</span>;
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> user <span class="keyword">WHERE</span> id = <span class="number">1</span>;  <span class="comment">-- 生成Read View</span>
+<span class="comment">-- 其他事务修改并提交</span>
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> user <span class="keyword">WHERE</span> id = <span class="number">1</span>;  <span class="comment">-- 复用Read View，结果不变</span>
+<span class="keyword">COMMIT</span>;</code></pre>
+        </div>
+
+        <h3>当前读（Current Read）</h3>
+        <p>读取最新版本数据，并加锁。以下操作都属于当前读：</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">当前读示例</span>
+            <button class="copy-btn" onclick="copyCode(this)">复制</button>
+          </div>
+          <pre><code><span class="comment">-- 共享锁（S锁）</span>
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> user <span class="keyword">WHERE</span> id = <span class="number">1</span> <span class="keyword">LOCK IN SHARE MODE</span>;
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> user <span class="keyword">WHERE</span> id = <span class="number">1</span> <span class="keyword">FOR SHARE</span>;  <span class="comment">-- MySQL 8.0+</span>
+
+<span class="comment">-- 排他锁（X锁）</span>
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> user <span class="keyword">WHERE</span> id = <span class="number">1</span> <span class="keyword">FOR UPDATE</span>;
+
+<span class="comment">-- DML操作也是当前读</span>
+<span class="keyword">UPDATE</span> user <span class="keyword">SET</span> name = <span class="string">'王五'</span> <span class="keyword">WHERE</span> id = <span class="number">1</span>;
+<span class="keyword">DELETE FROM</span> user <span class="keyword">WHERE</span> id = <span class="number">1</span>;
+<span class="keyword">INSERT INTO</span> user <span class="keyword">VALUES</span> (<span class="number">1</span>, <span class="string">'赵六'</span>);</code></pre>
+        </div>
+
+        <table>
+          <tr>
+            <th>特性</th>
+            <th>快照读</th>
+            <th>当前读</th>
+          </tr>
+          <tr>
+            <td>读取版本</td>
+            <td>历史版本</td>
+            <td>最新版本</td>
+          </tr>
+          <tr>
+            <td>是否加锁</td>
+            <td>不加锁</td>
+            <td>加锁（S锁或X锁）</td>
+          </tr>
+          <tr>
+            <td>性能</td>
+            <td>高</td>
+            <td>相对较低</td>
+          </tr>
+          <tr>
+            <td>一致性</td>
+            <td>事务级一致性</td>
+            <td>实时一致性</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- MVCC与事务隔离级别 -->
+    <section class="kp-section">
+      <h2 class="section-title">MVCC与事务隔离级别</h2>
+      <div class="section-content">
+        <h3>READ UNCOMMITTED</h3>
+        <p>直接读取最新版本数据，不使用MVCC机制。可能导致脏读、不可重复读、幻读。</p>
+
+        <h3>READ COMMITTED（RC）</h3>
+        <p><span class="highlight">每次SELECT都生成新的Read View</span>，因此能看到其他事务已提交的最新数据。</p>
+
+        <div class="mermaid-container">
+          <div class="mermaid">
+sequenceDiagram
+    participant A as 事务A
+    participant B as 事务B
+    A->>A: BEGIN
+    B->>B: BEGIN
+    A->>A: SELECT (生成Read View R1)
+    B->>B: UPDATE user SET name='李四'
+    A->>A: SELECT (生成Read View R2，仍读旧数据)
+    B->>B: COMMIT
+    A->>A: SELECT (生成Read View R3，读到新数据)
+    Note over A: 不可重复读！
+          </div>
+        </div>
+
+        <h3>REPEATABLE READ（RR）</h3>
+        <p><span class="highlight">第一次SELECT时生成Read View，后续SELECT复用同一个Read View</span>，确保事务内多次读取结果一致。</p>
+
+        <div class="mermaid-container">
+          <div class="mermaid">
+sequenceDiagram
+    participant A as 事务A
+    participant B as 事务B
+    A->>A: BEGIN
+    B->>B: BEGIN
+    A->>A: SELECT (生成Read View R1)
+    Note right of A: 后续所有SELECT复用R1
+    B->>B: UPDATE user SET name='李四'
+    A->>A: SELECT (使用R1，读旧版本)
+    B->>B: COMMIT
+    A->>A: SELECT (使用R1，仍读旧版本)
+    Note over A: 可重复读！
+    A->>A: COMMIT
+          </div>
+        </div>
+
+        <h3>SERIALIZABLE</h3>
+        <p>所有SELECT都加共享锁，不使用MVCC的快照读机制。完全串行化执行，隔离级别最高但性能最低。</p>
+
+        <table>
+          <tr>
+            <th>隔离级别</th>
+            <th>Read View生成时机</th>
+            <th>脏读</th>
+            <th>不可重复读</th>
+            <th>幻读</th>
+          </tr>
+          <tr>
+            <td>READ UNCOMMITTED</td>
+            <td>不使用MVCC</td>
+            <td>可能</td>
+            <td>可能</td>
+            <td>可能</td>
+          </tr>
+          <tr>
+            <td>READ COMMITTED</td>
+            <td>每次SELECT生成</td>
+            <td>不会</td>
+            <td>可能</td>
+            <td>可能</td>
+          </tr>
+          <tr>
+            <td>REPEATABLE READ</td>
+            <td>事务开始时生成</td>
+            <td>不会</td>
+            <td>不会</td>
+            <td>不会（快照读）</td>
+          </tr>
+          <tr>
+            <td>SERIALIZABLE</td>
+            <td>不使用快照读</td>
+            <td>不会</td>
+            <td>不会</td>
+            <td>不会</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- MVCC解决幻读 -->
+    <section class="kp-section">
+      <h2 class="section-title">MVCC解决幻读的原理</h2>
+      <div class="section-content">
+        <h3>什么是幻读</h3>
+        <p>幻读是指在同一事务中，两次相同条件的查询返回的行数不同，即"幻影行"的出现。</p>
+
+        <h3>MVCC如何解决快照读的幻读</h3>
+        <p>在RR隔离级别下，事务第一次执行SELECT时生成Read View。后续所有快照读都复用这个Read View，因此：</p>
+        <ul>
+          <li>即使其他事务插入了新数据并提交，当前事务也看不到这些新数据</li>
+          <li>因为新数据的<span class="code-term">DB_TRX_ID</span> >= <span class="code-term">max_trx_id</span>，对当前事务不可见</li>
+        </ul>
+
+        <h3>当前读的幻读问题</h3>
+        <p>MVCC只能解决快照读的幻读问题，当前读（如<span class="code-term">SELECT ... FOR UPDATE</span>）的幻读需要通过<span class="highlight">Next-Key Lock（间隙锁+记录锁）</span>来解决。</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">Next-Key Lock解决幻读</span>
+            <button class="copy-btn" onclick="copyCode(this)">复制</button>
+          </div>
+          <pre><code><span class="comment">-- 事务A</span>
+<span class="keyword">BEGIN</span>;
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> user <span class="keyword">WHERE</span> id > <span class="number">5</span> <span class="keyword">FOR UPDATE</span>;
+<span class="comment">-- 对id>5的范围加Next-Key Lock（间隙锁+记录锁）</span>
+
+<span class="comment">-- 事务B（被阻塞）</span>
+<span class="keyword">BEGIN</span>;
+<span class="keyword">INSERT INTO</span> user <span class="keyword">VALUES</span> (<span class="number">6</span>, <span class="string">'新用户'</span>);  <span class="comment">-- 等待事务A释放锁</span>
+
+<span class="comment">-- 事务A提交后，事务B才能继续</span>
+<span class="keyword">COMMIT</span>;</code></pre>
+        </div>
+
+        <div class="warning-box">
+          <p><strong>注意：</strong>MVCC + Next-Key Lock的组合使得MySQL在RR隔离级别下基本解决了幻读问题。但在某些特殊场景（如当前读和快照读混用）下，仍可能出现幻读现象。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Purge机制 -->
+    <section class="kp-section">
+      <h2 class="section-title">Purge机制（清理过期版本）</h2>
+      <div class="section-content">
+        <h3>为什么需要Purge</h3>
+        <p>随着事务的执行，Undo Log中会积累大量历史版本数据。如果不清理，会导致：</p>
+        <ul>
+          <li>磁盘空间持续增长</li>
+          <li>版本链过长，查询性能下降</li>
+          <li>表空间膨胀</li>
+        </ul>
+
+        <h3>Purge的工作原理</h3>
+        <p>Purge线程负责清理不再需要的Undo Log记录：</p>
+
+        <div class="mermaid-container">
+          <div class="mermaid">
+flowchart LR
+    A[Undo Log<br/>历史版本] --> B{是否还有<br/>事务引用?}
+    B -->|是| C[保留]
+    B -->|否| D[Purge清理]
+    C --> E[等待]
+    E --> B
+    style D fill:#f0b429,stroke:#0a0e17,stroke-width:2px
+          </div>
+        </div>
+
+        <h4>判断标准</h4>
+        <ul>
+          <li>如果某版本<span class="code-term">DB_TRX_ID</span> < 系统中活跃的最小事务ID（即没有事务需要读取该版本）</li>
+          <li>且该版本不是任何其他版本链的必要节点</li>
+          <li>则可以被Purge清理</li>
+        </ul>
+
+        <h3>长事务的危害</h3>
+        <div class="warning-box">
+          <p><strong>长事务会导致：</strong></p>
+          <ul>
+            <li>Undo Log无法及时清理，磁盘空间持续增长</li>
+            <li>版本链过长，读取操作需要遍历更多版本，性能下降</li>
+            <li>严重时可能导致表空间满，数据库无法写入</li>
+          </ul>
+          <p><strong>建议：</strong>尽量避免长事务，及时提交或回滚。</p>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-title">查看长事务</span>
+            <button class="copy-btn" onclick="copyCode(this)">复制</button>
+          </div>
+          <pre><code><span class="comment">-- 查看执行时间超过60秒的事务</span>
+<span class="keyword">SELECT</span>
+    trx_id,
+    trx_mysql_thread_id,
+    trx_state,
+    TIMESTAMPDIFF(<span class="keyword">SECOND</span>, trx_started, <span class="keyword">NOW</span>()) <span class="keyword">AS</span> trx_seconds
+<span class="keyword">FROM</span> information_schema.innodb_trx
+<span class="keyword">WHERE</span> TIMESTAMPDIFF(<span class="keyword">SECOND</span>, trx_started, <span class="keyword">NOW</span>()) > <span class="number">60</span>;</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 总结 -->
+    <section class="kp-section">
+      <h2 class="section-title">MVCC工作流程总结</h2>
+      <div class="section-content">
+        <div class="mermaid-container">
+          <div class="mermaid">
+flowchart TB
+    subgraph 写操作
+        W1[修改数据] --> W2[旧版本写入Undo Log]
+        W2 --> W3[更新DB_TRX_ID<br/>和DB_ROLL_PTR]
+        W3 --> W4[形成版本链]
+    end
+
+    subgraph 快照读
+        R1[生成/复用<br/>Read View] --> R2{根据可见性<br/>规则判断}
+        R2 -->|可见| R3[返回该版本]
+        R2 -->|不可见| R4[通过DB_ROLL_PTR<br/>找上一版本]
+        R4 --> R2
+    end
+
+    subgraph 当前读
+        C1[直接读取<br/>最新版本] --> C2[加锁保护]
+    end
+
+    subgraph Purge
+        P1[检查Undo Log] --> P2{是否有事务<br/>引用?}
+        P2 -->|无| P3[清理回收空间]
+        P2 -->|有| P4[保留]
+    end
+
+    style W1 fill:#f0b429,stroke:#0a0e17
+    style R1 fill:#4ecdc4,stroke:#0a0e17
+    style C1 fill:#ff6b6b,stroke:#0a0e17
+    style P1 fill:#9b59b6,stroke:#0a0e17
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <p><strong>MVCC核心要点回顾：</strong></p>
+          <ul>
+            <li><strong>隐藏字段：</strong>DB_TRX_ID、DB_ROLL_PTR、DB_ROW_ID</li>
+            <li><strong>Undo Log：</strong>存储历史版本，形成版本链</li>
+            <li><strong>Read View：</strong>定义可见性规则，RC每次生成，RR事务开始时生成</li>
+            <li><strong>快照读：</strong>读取历史版本，不加锁</li>
+            <li><strong>当前读：</strong>读取最新版本，加锁</li>
+            <li><strong>Purge：</strong>清理过期版本，防止Undo Log无限增长</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="kp-footer">
+    Java Knowledge Review Demo - 50 Knowledge Points<br>
+    <a href="knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a>
+  </footer>
+</div>
+
+<button class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</button>
+
+<script>
+(function() {
+  // Initialize Mermaid
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#f0b429',
+      primaryTextColor: '#0a0e17',
+      primaryBorderColor: '#f0b429',
+      lineColor: '#4ecdc4',
+      secondaryColor: '#4ecdc4',
+      tertiaryColor: '#1a1a2e',
+      background: '#0a0e17',
+      mainBkg: '#f0b429',
+      secondBkg: '#4ecdc4',
+      tertiaryBkg: '#1a1a2e'
+    },
+    flowchart: {
+      useMaxWidth: true,
+      htmlLabels: true,
+      curve: 'basis'
+    },
+    sequence: {
+      useMaxWidth: true
+    }
+  });
+
+  // Theme toggle
+  var themeToggle = document.getElementById('themeToggle');
+  function toggleTheme() {
+    var html = document.documentElement;
+    if (html.getAttribute('data-theme') === 'light') {
+      html.removeAttribute('data-theme');
+      themeToggle.textContent = '🌙';
+      localStorage.setItem('theme', 'dark');
+      mermaid.initialize({ theme: 'dark' });
+    } else {
+      html.setAttribute('data-theme', 'light');
+      themeToggle.textContent = '☀️';
+      localStorage.setItem('theme', 'light');
+      mermaid.initialize({ theme: 'default' });
+    }
+  }
+  themeToggle.addEventListener('click', toggleTheme);
+  if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = '☀️';
+  }
+
+  // Back to top
+  var backToTop = document.getElementById('backToTop');
+  window.addEventListener('scroll', function() {
+    if (window.pageYOffset > 300) {
+      backToTop.classList.add('visible');
+    } else {
+      backToTop.classList.remove('visible');
+    }
+  });
+
+  window.scrollToTop = function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Copy code
+  window.copyCode = function(btn) {
+    var code = btn.closest('.code-block').querySelector('code').textContent;
+    navigator.clipboard.writeText(code).then(function() {
+      var original = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.style.color = '#4ecdc4';
+      setTimeout(function() {
+        btn.textContent = original;
+        btn.style.color = '';
+      }, 2000);
+    });
+  };
+})();
+</script>
+</body>
+</html>
