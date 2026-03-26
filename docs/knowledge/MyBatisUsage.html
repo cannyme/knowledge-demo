@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MyBatis核心知识点 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -62,6 +64,18 @@
   th { background: rgba(240, 180, 41, 0.1); color: var(--amber); font-weight: 600; }
   tr:hover { background: rgba(240, 180, 41, 0.03); }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
 </style>
 </head>
 <body>
@@ -69,7 +83,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Framework</span></nav>
   <header class="hero">
-    <div class="hero-badge">🗄️ FRAMEWORK</div>
+    <div class="hero-badge">🗄️ MYBATIS · ORM框架</div>
     <h1 class="hero-title">MyBatis核心知识点</h1>
     <p class="hero-desc">MyBatis是一款优秀的半自动ORM框架，通过XML或注解方式将Java对象与SQL语句映射，提供灵活的SQL控制和强大的动态SQL支持。</p>
   </header>
@@ -86,13 +100,12 @@
         <tr><td>缓存机制</td><td>一级、二级缓存</td><td>一级、二级、查询缓存</td></tr>
         <tr><td>适用场景</td><td>复杂查询、遗留系统</td><td>快速开发、简单CRUD</td></tr>
       </table>
-      <div class="highlight">
-        <strong>选型建议：</strong>
-        <ul>
-          <li>需要优化SQL、复杂查询、遗留数据库 → 选择MyBatis</li>
-          <li>快速开发、对象驱动、简单CRUD → 选择JPA/Hibernate</li>
-          <li>混合使用：MyBatis处理复杂查询，JPA处理简单CRUD</li>
-        </ul>
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>选型建议</strong>
+          需要优化SQL、复杂查询、遗留数据库 → 选择MyBatis；快速开发、对象驱动、简单CRUD → 选择JPA/Hibernate；混合使用：MyBatis处理复杂查询，JPA处理简单CRUD。
+        </div>
       </div>
     </div>
   </section>
@@ -133,7 +146,7 @@ graph TD
         <p><strong>resultMap</strong>用于自定义结果集映射，解决列名与属性名不一致问题</p>
         <div class="code-container">
           <div class="code-header"><span class="code-lang">XML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>&lt;resultMap id="UserResultMap" type="com.example.entity.User"&gt;
+          <div class="code-body"><pre><code class="language-xml">&lt;resultMap id="UserResultMap" type="com.example.entity.User"&gt;
     &lt;id property="id" column="user_id"/&gt;
     &lt;result property="name" column="user_name"/&gt;
     &lt;result property="email" column="user_email"/&gt;
@@ -145,10 +158,13 @@ graph TD
     FROM user WHERE user_id = #{id}
 &lt;/select&gt;</code></pre></div>
         </div>
-        <div class="tip">
-          <div class="tip-title">💡 开启驼峰映射</div>
-          <p>在mybatis-config.xml中配置：<code>&lt;setting name="mapUnderscoreToCamelCase" value="true"/&gt;</code></p>
-          <p>可自动将create_time映射为createTime，简化resultMap配置</p>
+        <div class="alert alert-tip">
+          <span class="alert-icon">💡</span>
+          <div class="alert-body">
+            <strong>开启驼峰映射</strong>
+            在mybatis-config.xml中配置：<code>&lt;setting name="mapUnderscoreToCamelCase" value="true"/&gt;</code>
+            可自动将create_time映射为createTime，简化resultMap配置
+          </div>
         </div>
       </div>
 
@@ -156,7 +172,7 @@ graph TD
         <p><strong>动态SQL</strong>标签：if、where、foreach、choose、set</p>
         <div class="code-container">
           <div class="code-header"><span class="code-lang">XML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>&lt;!-- where标签自动处理AND/OR --&gt;
+          <div class="code-body"><pre><code class="language-xml">&lt;!-- where标签自动处理AND/OR --&gt;
 &lt;select id="selectByCondition" resultType="User"&gt;
     SELECT * FROM user
     &lt;where&gt;
@@ -207,7 +223,7 @@ graph TD
         <p><strong>association</strong>一对一，<strong>collection</strong>一对多</p>
         <div class="code-container">
           <div class="code-header"><span class="code-lang">XML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>&lt;resultMap id="UserWithDeptMap" type="User"&gt;
+          <div class="code-body"><pre><code class="language-xml">&lt;resultMap id="UserWithDeptMap" type="User"&gt;
     &lt;id property="id" column="user_id"/&gt;
     &lt;result property="name" column="user_name"/&gt;
     &lt;!-- 一对一关联 --&gt;
@@ -237,7 +253,7 @@ graph TD
     <div class="section-body">
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Mapper
+        <div class="code-body"><pre><code class="language-java">@Mapper
 public interface UserMapper {
 
     @Select("SELECT * FROM user WHERE id = #{id}")
@@ -266,13 +282,12 @@ public interface UserMapper {
     List&lt;User&gt; selectByCondition(UserCondition condition);
 }</code></pre></div>
       </div>
-      <div class="highlight">
-        <strong>XML vs 注解选择：</strong>
-        <ul>
-          <li>简单SQL、快速开发 → 注解方式</li>
-          <li>复杂SQL、动态SQL → XML方式（推荐）</li>
-          <li>混合使用：简单用注解，复杂用XML</li>
-        </ul>
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>XML vs 注解选择</strong>
+          简单SQL、快速开发 → 注解方式；复杂SQL、动态SQL → XML方式（推荐）；混合使用：简单用注解，复杂用XML。
+        </div>
       </div>
     </div>
   </section>
@@ -287,15 +302,16 @@ public interface UserMapper {
         <tr><td>适用场景</td><td>参数值（推荐）</td><td>表名、列名、动态排序</td></tr>
         <tr><td>示例</td><td>WHERE id = #{id}</td><td>ORDER BY ${column}</td></tr>
       </table>
-      <div class="warning">
-        <div class="warning-title">⚠️ SQL注入风险</div>
-        <p><strong>错误示例：</strong><code>WHERE name = '${name}'</code></p>
-        <p>如果name传入：<code>' OR '1'='1</code>，将导致全表数据泄露</p>
-        <p><strong>正确使用：</strong><code>WHERE name = #{name}</code> → 预编译为 WHERE name = ?</p>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>SQL注入风险</strong>
+          错误示例：<code>WHERE name = '${name}'</code>。如果name传入：<code>' OR '1'='1</code>，将导致全表数据泄露。正确使用：<code>WHERE name = #{name}</code> → 预编译为 WHERE name = ?
+        </div>
       </div>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 安全的动态表名查询
+        <div class="code-body"><pre><code class="language-java">// 安全的动态表名查询
 @Select("SELECT * FROM ${tableName} WHERE id = #{id}")
 User selectByTable(@Param("tableName") String tableName, @Param("id") Long id);
 
@@ -331,13 +347,12 @@ graph LR
         <tr><td>嵌套查询</td><td>简单、复用现有SQL</td><td>N+1性能问题</td><td>数据量小、关联简单</td></tr>
         <tr><td>联表查询</td><td>一次查询、性能好</td><td>SQL复杂、结果集大</td><td>数据量大、性能要求高</td></tr>
       </table>
-      <div class="tip">
-        <div class="tip-title">💡 解决N+1问题</div>
-        <ul>
-          <li><strong>延迟加载：</strong>lazyLoadingEnabled=true，按需加载</li>
-          <li><strong>@BatchSize：</strong>批量加载关联数据</li>
-          <li><strong>联表查询：</strong>使用JOIN一次性查询</li>
-        </ul>
+      <div class="alert alert-tip">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>解决N+1问题</strong>
+          延迟加载：lazyLoadingEnabled=true，按需加载；@BatchSize：批量加载关联数据；联表查询：使用JOIN一次性查询。
+        </div>
       </div>
     </div>
   </section>
@@ -348,7 +363,7 @@ graph LR
       <p>MyBatis插件可以拦截四大对象：Executor、StatementHandler、ParameterHandler、ResultSetHandler</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Intercepts({
+        <div class="code-body"><pre><code class="language-java">@Intercepts({
     @Signature(type = Executor.class, method = "query",
         args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class})
 })
@@ -407,7 +422,7 @@ graph TD
       </table>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">XML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>&lt;!-- 开启二级缓存 --&gt;
+        <div class="code-body"><pre><code class="language-xml">&lt;!-- 开启二级缓存 --&gt;
 &lt;settings&gt;
     &lt;setting name="cacheEnabled" value="true"/&gt;
 &lt;/settings&gt;
@@ -420,9 +435,12 @@ graph TD
     SELECT * FROM log ORDER BY create_time DESC LIMIT 10
 &lt;/select&gt;</code></pre></div>
       </div>
-      <div class="warning">
-        <div class="warning-title">⚠️ 分布式缓存注意事项</div>
-        <p>二级缓存默认是本地缓存，分布式环境下会导致数据不一致。建议使用Redis作为二级缓存实现。</p>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>分布式缓存注意事项</strong>
+          二级缓存默认是本地缓存，分布式环境下会导致数据不一致。建议使用Redis作为二级缓存实现。
+        </div>
       </div>
     </div>
   </section>
@@ -439,7 +457,7 @@ graph TD
       <div id="foreach" class="tab-content active">
         <div class="code-container">
           <div class="code-header"><span class="code-lang">XML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>&lt;insert id="batchInsert" useGeneratedKeys="true" keyProperty="id"&gt;
+          <div class="code-body"><pre><code class="language-xml">&lt;insert id="batchInsert" useGeneratedKeys="true" keyProperty="id"&gt;
     INSERT INTO user (name, email) VALUES
     &lt;foreach collection="list" item="user" separator=","&gt;
         (#{user.name}, #{user.email})
@@ -448,16 +466,19 @@ graph TD
 
 // 生成SQL：INSERT INTO user (name, email) VALUES ('a','a@mail'),('b','b@mail')</code></pre></div>
         </div>
-        <div class="tip">
-          <div class="tip-title">💡 注意</div>
-          <p>单次插入数据量过大可能导致SQL过长，建议分批处理，每批1000条左右</p>
+        <div class="alert alert-tip">
+          <span class="alert-icon">💡</span>
+          <div class="alert-body">
+            <strong>注意</strong>
+            单次插入数据量过大可能导致SQL过长，建议分批处理，每批1000条左右
+          </div>
         </div>
       </div>
 
       <div id="batch" class="tab-content">
         <div class="code-container">
           <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>// 使用Batch Executor
+          <div class="code-body"><pre><code class="language-java">// 使用Batch Executor
 SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH);
 try {
     UserMapper mapper = session.getMapper(UserMapper.class);
@@ -475,23 +496,129 @@ public SqlSessionTemplate sqlSessionTemplate(SqlSessionFactory factory) {
     return new SqlSessionTemplate(factory, ExecutorType.BATCH);
 }</code></pre></div>
         </div>
-        <div class="tip">
-          <div class="tip-title">💡 Batch Executor优势</div>
-          <ul>
-            <li>重用预编译语句，减少SQL解析开销</li>
-            <li>批量提交，减少网络往返</li>
-            <li>性能比foreach更好（大数据量）</li>
-          </ul>
+        <div class="alert alert-tip">
+          <span class="alert-icon">💡</span>
+          <div class="alert-body">
+            <strong>Batch Executor优势</strong>
+            重用预编译语句，减少SQL解析开销；批量提交，减少网络往返；性能比foreach更好（大数据量）。
+          </div>
         </div>
       </div>
 
       <div id="compare" class="tab-content">
         <table>
           <tr><th>方式</th><th>适用场景</th><th>性能</th><th>复杂度</th></tr>
-          <tr><td>foreach</td><td>小到中等数据量（<1000条）</td><td>良好</td><td>简单</td></tr>
-          <tr><td>Batch Executor</td><td>大数据量（>1000条）</td><td>优秀</td><td>中等</td></tr>
+          <tr><td>foreach</td><td>小到中等数据量（&lt;1000条）</td><td>良好</td><td>简单</td></tr>
+          <tr><td>Batch Executor</td><td>大数据量（&gt;1000条）</td><td>优秀</td><td>中等</td></tr>
           <tr><td>单条循环</td><td>不推荐</td><td>差</td><td>简单</td></tr>
         </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">动态SQL实战</h2></div>
+    <div class="section-body">
+      <p>MyBatis 动态 SQL 让查询条件的拼接变得优雅，避免手动字符串拼接：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">xml</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-xml">&lt;!-- 复杂查询：多条件动态拼接 --&gt;
+&lt;select id="searchOrders" resultType="Order"&gt;
+  SELECT * FROM orders
+  &lt;where&gt;
+    &lt;if test="userId != null"&gt;
+      AND user_id = #{userId}
+    &lt;/if&gt;
+    &lt;if test="status != null and status != ''"&gt;
+      AND status = #{status}
+    &lt;/if&gt;
+    &lt;if test="startTime != null"&gt;
+      AND create_time &gt;= #{startTime}
+    &lt;/if&gt;
+    &lt;if test="endTime != null"&gt;
+      AND create_time &lt;= #{endTime}
+    &lt;/if&gt;
+    &lt;if test="keywords != null and keywords != ''"&gt;
+      AND (order_no LIKE CONCAT('%', #{keywords}, '%')
+           OR remark LIKE CONCAT('%', #{keywords}, '%'))
+    &lt;/if&gt;
+  &lt;/where&gt;
+  ORDER BY create_time DESC
+  &lt;if test="limit != null"&gt;
+    LIMIT #{offset}, #{limit}
+  &lt;/if&gt;
+&lt;/select&gt;
+
+&lt;!-- 批量插入 --&gt;
+&lt;insert id="batchInsert" useGeneratedKeys="true" keyProperty="id"&gt;
+  INSERT INTO order_item (order_id, product_id, qty, price) VALUES
+  &lt;foreach collection="items" item="item" separator=","&gt;
+    (#{item.orderId}, #{item.productId}, #{item.qty}, #{item.price})
+  &lt;/foreach&gt;
+&lt;/insert&gt;
+
+&lt;!-- 批量更新（MySQL） --&gt;
+&lt;update id="batchUpdate"&gt;
+  &lt;foreach collection="list" item="item" separator=";"&gt;
+    UPDATE orders SET status = #{item.status} WHERE id = #{item.id}
+  &lt;/foreach&gt;
+&lt;/update&gt;</code></pre></div>
+      </div>
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>&lt;where&gt; 标签的智能处理</strong>
+          &lt;where&gt; 标签会自动去掉第一个条件前的 AND/OR，并在有条件时才添加 WHERE 关键字。比手动写 WHERE 1=1 更优雅，避免空查询时生成无效的 WHERE 子句。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: MyBatis 中 #{} 和 ${} 的区别？</div>
+        <div class="interview-a">#{} 是预编译参数（PreparedStatement），MyBatis 将其替换为 ? 占位符，参数值在执行时绑定，能有效防止 SQL 注入，是推荐方式。${} 是字符串替换（Statement），直接将参数值替换到 SQL 中，存在 SQL 注入风险，仅在动态表名/列名等无法用预编译的场景下使用，且必须严格校验输入。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: MyBatis 一级缓存和二级缓存的区别？</div>
+        <div class="interview-a">一级缓存（本地缓存）：SqlSession 级别，默认开启，同一 SqlSession 内相同查询直接从缓存返回；SqlSession 关闭或执行 insert/update/delete 后缓存清空。二级缓存：Mapper（namespace）级别，跨 SqlSession 共享，需配置开启（&lt;cache/&gt;或@CacheNamespace），实体类需实现 Serializable；多表关联查询时容易导致脏数据，生产环境建议改用 Redis 替代。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: MyBatis 如何处理一对多关联查询？</div>
+        <div class="interview-a">使用 &lt;resultMap&gt; + &lt;collection&gt; 实现：①嵌套查询（N+1问题，不推荐大数据量）：先查主表，再对每条记录查从表；②嵌套结果（推荐）：JOIN 查询一次返回所有数据，通过 &lt;collection property="items" ofType="OrderItem"&gt; 映射子对象列表。注意设置正确的 column 映射避免混淆。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: MyBatis 插件（Plugin）的实现原理？</div>
+        <div class="interview-a">MyBatis 通过动态代理实现插件机制，可拦截 Executor（执行器）、StatementHandler（语句处理）、ParameterHandler（参数处理）、ResultSetHandler（结果集处理）四大对象的方法。实现 Interceptor 接口并用 @Intercepts/@Signature 声明拦截点。常见应用：分页插件（PageHelper）、SQL 日志、慢 SQL 监控、数据权限过滤。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：N+1 查询问题</strong>
+          使用 &lt;association&gt; 或 &lt;collection&gt; 的嵌套查询模式（select 属性）会产生 N+1 问题：查 1 次主表 + N 次子表。大数据量下严重影响性能。改用嵌套结果（resultMap + JOIN）或 fetchType="lazy" 延迟加载 + 按需触发。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：批量操作 useGeneratedKeys 获取不到主键</strong>
+          批量插入时 useGeneratedKeys="true" keyProperty="id" 仅在 MySQL 下生效（返回第一条记录的主键），Oracle 需单独处理序列。批量更新时每条 SQL 以分号分隔，需在 JDBC URL 中开启 allowMultiQueries=true，否则抛出语法错误。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：二级缓存引发脏数据</strong>
+          多 Mapper 关联操作时（如 OrderMapper 和 OrderItemMapper 各有缓存），OrderMapper 的二级缓存不感知 OrderItemMapper 的更新，导致缓存数据过期。建议在多表复杂业务中关闭 MyBatis 二级缓存，改用 Spring Cache + Redis 统一管理。
+        </div>
       </div>
     </div>
   </section>
@@ -500,6 +627,7 @@ public SqlSessionTemplate sqlSessionTemplate(SqlSessionFactory factory) {
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }

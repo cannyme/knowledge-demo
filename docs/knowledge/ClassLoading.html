@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>类加载机制 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -44,7 +46,6 @@
   .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
   .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
   .code-btn:hover { border-color: var(--amber); color: var(--amber); }
-  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
   .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
   .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
   .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
@@ -57,6 +58,18 @@
   tr:nth-child(even) { background: rgba(255,255,255,0.02); }
   .tip { background: rgba(78, 205, 196, 0.1); border-left: 4px solid var(--cyan); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
   .warning { background: rgba(240, 180, 41, 0.1); border-left: 4px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .code-body pre { padding: 0; margin: 0; }
+  .code-body pre code.hljs { padding: 20px; border-radius: 0; font-family: var(--font-code); font-size: 13px; line-height: 1.8; }
+  .alert { border-radius: 10px; padding: 16px 20px; margin: 16px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .alert-info { background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.2); }
+  .alert-warn { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.2); }
+  .alert-tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.2); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .interview-q { padding: 16px 20px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); font-weight: 600; color: var(--amber); }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; }
+  .table-container { overflow-x: auto; margin: 16px 0; }
 </style>
 </head>
 <body>
@@ -64,7 +77,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>JVM</span></nav>
   <header class="hero">
-    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <div class="hero-badge">🏷️ JVM · 类加载机制</div>
     <h1 class="hero-title">类加载机制</h1>
     <p class="hero-desc">深入理解Java类加载全过程：加载、验证、准备、解析、初始化，以及双亲委派模型与类加载器层次结构</p>
   </header>
@@ -118,7 +131,7 @@
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>public static void showClassLoaders() {
+        <div class="code-body"><pre><code class="language-java">public static void showClassLoaders() {
     // 获取类加载器
     ClassLoader appClassLoader = ClassLoading.class.getClassLoader();
     System.out.println("应用类加载器: " + appClassLoader);
@@ -163,7 +176,7 @@
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 双亲委派模型核心代码示意
+        <div class="code-body"><pre><code class="language-java">// 双亲委派模型核心代码示意
 protected Class&lt;?&gt; loadClass(String name, boolean resolve) {
     // 1. 检查是否已加载
     Class&lt;?&gt; c = findLoadedClass(name);
@@ -183,14 +196,14 @@ protected Class&lt;?&gt; loadClass(String name, boolean resolve) {
 }</code></pre></div>
       </div>
 
-      <div class="tip">
-        <strong>💡 打破双亲委派的情况：</strong>
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body">
+        <strong>打破双亲委派的情况：</strong>
         <ul style="margin: 8px 0 0 20px;">
           <li>SPI机制（JDBC、JNDI等）：Bootstrap加载器需要加载用户类路径下的实现类</li>
           <li>OSGi模块化：实现模块间独立的类加载</li>
           <li>Tomcat类加载：Web应用隔离、热部署需求</li>
         </ul>
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -218,7 +231,7 @@ protected Class&lt;?&gt; loadClass(String name, boolean resolve) {
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 初始化示例
+        <div class="code-body"><pre><code class="language-java">// 初始化示例
 static class InitDemo {
     static {
         System.out.println("InitDemo 初始化");
@@ -241,7 +254,7 @@ static final int B = 20; // 准备阶段 B=20（编译期常量）</code></pre><
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>static class MyClassLoader extends ClassLoader {
+        <div class="code-body"><pre><code class="language-java">static class MyClassLoader extends ClassLoader {
     private final String classPath;
 
     public MyClassLoader(String classPath) {
@@ -269,9 +282,9 @@ static final int B = 20; // 准备阶段 B=20（编译期常量）</code></pre><
 }</code></pre></div>
       </div>
 
-      <div class="tip">
-        <strong>💡 应用场景：</strong>热部署、代码加密保护、从网络加载类、OSGi模块化等。
-      </div>
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body">
+        <strong>应用场景：</strong>热部署、代码加密保护、从网络加载类、OSGi模块化等。
+      </div></div>
     </div>
   </section>
 
@@ -288,7 +301,7 @@ static final int B = 20; // 准备阶段 B=20（编译期常量）</code></pre><
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>public static void stringPoolDemo() {
+        <div class="code-body"><pre><code class="language-java">public static void stringPoolDemo() {
     // intern示例
     String s3 = new String("b") + new String("c");
     s3.intern();
@@ -297,16 +310,188 @@ static final int B = 20; // 准备阶段 B=20（编译期常量）</code></pre><
 }</code></pre></div>
       </div>
 
-      <div class="warning">
-        <strong>⚠️ 注意：</strong>频繁使用intern()可能导致常量池溢出（JDK 6），JDK 7+后移至堆中，受最大堆内存限制。
+      <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body">
+        <strong>注意：</strong>频繁使用intern()可能导致常量池溢出（JDK 6），JDK 7+后移至堆中，受最大堆内存限制。
+      </div></div>
+    </div>
+  </section>
+
+  <!-- 自定义类加载器进阶 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔥</div><h2 class="section-title">Tomcat 类加载器架构</h2></div>
+    <div class="section-body">
+      <p>Tomcat 打破了双亲委派模型，实现了 Web 应用之间的类隔离。</p>
+      <div class="mermaid">flowchart TD
+    Boot[Bootstrap ClassLoader]
+    Ext[Extension ClassLoader]
+    App[Application ClassLoader]
+    Common[CommonClassLoader\n共享类库]
+    Catalina[CatalinaClassLoader\nTomcat内部类]
+    Shared[SharedClassLoader\nWeb应用共享类]
+    WebApp1[WebAppClassLoader\nWeb应用1]
+    WebApp2[WebAppClassLoader\nWeb应用2]
+
+    Boot --> Ext --> App --> Common
+    Common --> Catalina
+    Common --> Shared
+    Shared --> WebApp1
+    Shared --> WebApp2
+
+    style WebApp1 fill:#1a1a2e,stroke:#4ecdc4,color:#4ecdc4
+    style WebApp2 fill:#1a1a2e,stroke:#4ecdc4,color:#4ecdc4
+    style Common fill:#2a1a10,stroke:#f0b429,color:#f0b429</div>
+
+      <p style="margin-top: 16px;">WebAppClassLoader <strong>优先自己加载</strong>（打破双亲委派），只有加载失败才委派给父加载器，实现不同 Web 应用使用不同版本第三方库互不干扰。</p>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">Tomcat 热部署原理</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 热部署核心：销毁旧类加载器，创建新类加载器
+// 1. 监测到 class 文件变更
+// 2. 销毁旧的 WebAppClassLoader（及其加载的所有类）
+// 3. 创建新的 WebAppClassLoader
+// 4. 重新加载 Web 应用
+
+// 注意：类加载器本身是 GC Root，只有没有任何引用指向它才能被回收
+// 如果静态变量持有线程、连接等资源，可能导致内存泄漏（Permgen/Metaspace OOM）
+
+class HotDeployExample {
+    // ❌ 危险：静态变量持有线程，热部署时线程不会销毁
+    private static Thread backgroundThread = new Thread(() -> {
+        while (true) { /* 不断运行 */ }
+    });
+
+    // ✅ 正确：实现 Servlet 的 destroy() 方法，在 Web 应用卸载时清理资源
+    public void destroy() {
+        backgroundThread.interrupt();
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 面试高频考点 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: 双亲委派模型的工作流程？有哪些情况打破了它？</div>
+        <div class="interview-a">
+          <p><strong>流程：</strong>收到类加载请求 → 先检查是否已加载 → 委派给父加载器 → 父加载器不能加载才自己加载。</p>
+          <p><strong>打破双亲委派的三种情况：</strong></p>
+          <ul style="margin: 8px 0; padding-left: 24px; line-height: 2;">
+            <li><strong>JDK 1.2 之前</strong>：用户重写 loadClass() 实现自定义逻辑（现在推荐重写 findClass()）</li>
+            <li><strong>SPI 机制</strong>（JDBC、JNDI）：Bootstrap 加载的接口需要加载 classpath 下用户实现类，用线程上下文类加载器解决</li>
+            <li><strong>热部署 / OSGi / Tomcat</strong>：应用间类隔离、热替换需求，WebAppClassLoader 优先自己加载</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q2: 类初始化的时机？static 变量和 static 代码块的执行顺序？</div>
+        <div class="interview-a">
+          <p><strong>触发初始化（主动引用）：</strong>new 对象、访问静态变量/方法、反射 Class.forName()、初始化子类先初始化父类、JVM 主类。</p>
+          <p><strong>不触发初始化（被动引用）：</strong>子类引用父类静态变量、数组定义、引用编译期常量（static final）。</p>
+          <div class="code-container">
+            <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code class="language-java">class Parent {
+    static int A = 1;              // 准备阶段 A=0，初始化阶段 A=1
+    static final int B = 2;        // 准备阶段直接 B=2（编译期常量）
+    static { System.out.println("Parent static block"); }
+}
+
+class Child extends Parent {
+    static { System.out.println("Child static block"); }
+}
+
+// new Child() 输出：
+// Parent static block（先初始化父类）
+// Child static block</code></pre></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q3: 同一个类被两个不同的 ClassLoader 加载，是同一个类吗？</div>
+        <div class="interview-a">
+          <p><strong>不是</strong>。JVM 通过"类加载器 + 全限定类名"共同标识一个类。两个 ClassLoader 分别加载同一个 .class 文件，产生的是两个独立的 Class 对象，互相不兼容。</p>
+          <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body">这是 Tomcat 热部署内存泄漏的根本原因：旧类加载器加载的类对象，如果被新类加载器加载的类持有引用，旧类加载器永远无法被 GC 回收。</div></div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q4: 如何实现一个简单的热加载？</div>
+        <div class="interview-a">
+          <div class="code-container">
+            <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code class="language-java">// 每次加载都创建新的 ClassLoader，从而强制重新加载类
+class HotClassLoader extends ClassLoader {
+    private final String classDir;
+
+    public HotClassLoader(String classDir) {
+        // 注意：不传 parent，让它自己从文件加载，实现热替换
+        super(null);
+        this.classDir = classDir;
+    }
+
+    @Override
+    protected Class&lt;?&gt; findClass(String name) throws ClassNotFoundException {
+        String path = classDir + "/" + name.replace('.', '/') + ".class";
+        try {
+            byte[] bytes = Files.readAllBytes(Paths.get(path));
+            return defineClass(name, bytes, 0, bytes.length);
+        } catch (IOException e) {
+            throw new ClassNotFoundException(name, e);
+        }
+    }
+}
+
+// 使用：每次调用时创建新 ClassLoader，实现热加载
+public Object createFreshInstance(String className) throws Exception {
+    ClassLoader loader = new HotClassLoader("/path/to/classes");
+    Class&lt;?&gt; clazz = loader.loadClass(className);
+    return clazz.getDeclaredConstructor().newInstance();
+}</code></pre></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 实战陷阱 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱1：Class.forName() 和 ClassLoader.loadClass() 的区别</strong>
+          Class.forName() 会执行类初始化（运行 static 代码块）；ClassLoader.loadClass() 只加载，不执行初始化。JDBC 注册驱动必须用 Class.forName("com.mysql.jdbc.Driver")，因为驱动注册逻辑在 static 块中。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱2：static 变量初始化顺序导致的 NPE</strong>
+          static 变量按代码顺序初始化，如果 A 依赖 B 但 B 声明在 A 之后，初始化 A 时 B 还是 null/0，导致 NPE 或错误结果。避免 static 变量之间的循环依赖。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱3：Tomcat 热部署后 Metaspace OOM</strong>
+          每次热部署创建新的 WebAppClassLoader，旧的 ClassLoader 若未被回收（ThreadLocal、静态集合持有引用），其加载的所有类对象积压在 Metaspace，最终 OOM。需检查 Listener、Filter 等是否正确清理资源。
+        </div>
       </div>
     </div>
   </section>
 
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }

@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spring AOP - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -57,6 +59,19 @@
   .highlight { color: var(--amber); font-weight: 600; }
   .tip { background: rgba(78, 205, 196, 0.1); border-left: 3px solid var(--cyan); padding: 16px 20px; margin: 20px 0; border-radius: 0 8px 8px 0; }
   .warning { background: rgba(255, 123, 114, 0.1); border-left: 3px solid var(--red); padding: 16px 20px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
+  .table-container th, .table-container td { border-color: var(--border-card); }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
 </style>
 </head>
@@ -65,7 +80,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring生态</span></nav>
   <header class="hero">
-    <div class="hero-badge">🌱 SPRING</div>
+    <div class="hero-badge">🌱 SPRING · AOP面向切面</div>
     <h1 class="hero-title">Spring AOP</h1>
     <p class="hero-desc">面向切面编程，将横切关注点（日志、事务、权限等）从业务逻辑中分离出来的强大机制</p>
   </header>
@@ -125,9 +140,12 @@
         <tr><td>环绕通知</td><td>@Around</td><td>完全控制方法执行</td></tr>
       </table>
 
-      <div class="tip">
-        <strong>执行顺序（正常情况）：</strong><br>
-        Around(前置) → Before → 目标方法 → AfterReturning → After → Around(后置)
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>执行顺序（正常情况）：</strong>
+          Around(前置) → Before → 目标方法 → AfterReturning → After → Around(后置)
+        </div>
       </div>
     </div>
   </section>
@@ -139,13 +157,13 @@
       <p><span class="highlight">execution</span> 表达式语法：</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>execution(修饰符? 返回类型 包名.类名.方法名(参数) 异常?)</pre></div>
+        <div class="code-body"><pre><code class="language-java">execution(修饰符? 返回类型 包名.类名.方法名(参数) 异常?)</code></pre></div>
       </div>
 
       <p>常用示例：</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>// 匹配所有public方法
+        <div class="code-body"><pre><code class="language-java">// 匹配所有public方法
 execution(public * *(..))
 
 // 匹配UserService的所有方法
@@ -161,7 +179,7 @@ execution(* com.example.service..*.*(..))
 execution(* save*(..))
 
 // 匹配只有一个String参数的方法
-execution(* *(String))</pre></div>
+execution(* *(String))</code></pre></div>
       </div>
 
       <p>其他切点指示符：</p>
@@ -181,17 +199,17 @@ execution(* *(String))</pre></div>
       <p>1. 定义日志注解：</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>@Target(ElementType.METHOD)
+        <div class="code-body"><pre><code class="language-java">@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Log {
     String value() default "";
-}</pre></div>
+}</code></pre></div>
       </div>
 
       <p>2. 创建日志切面：</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>@Aspect
+        <div class="code-body"><pre><code class="language-java">@Aspect
 @Component
 public class LogAspect {
 
@@ -217,20 +235,20 @@ public class LogAspect {
             throw e;
         }
     }
-}</pre></div>
+}</code></pre></div>
       </div>
 
       <p>3. 使用切面：</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>@Service
+        <div class="code-body"><pre><code class="language-java">@Service
 public class UserService {
 
     @Log("保存用户")
     public void saveUser(User user) {
         // 业务逻辑
     }
-}</pre></div>
+}</code></pre></div>
       </div>
     </div>
   </section>
@@ -247,10 +265,13 @@ public class UserService {
         <tr><td>Spring默认</td><td>有接口时使用</td><td>无接口时使用</td></tr>
       </table>
 
-      <div class="tip">
-        <strong>配置方式：</strong><br>
-        <code>spring.aop.proxy-target-class=true</code> - 强制使用CGLIB<br>
-        <code>spring.aop.proxy-target-class=false</code> - 有接口用JDK，无接口用CGLIB
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>配置方式：</strong>
+          <code>spring.aop.proxy-target-class=true</code> - 强制使用CGLIB<br>
+          <code>spring.aop.proxy-target-class=false</code> - 有接口用JDK，无接口用CGLIB
+        </div>
       </div>
     </div>
   </section>
@@ -259,35 +280,152 @@ public class UserService {
   <section class="section">
     <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">常见坑点</h2></div>
     <div class="section-body">
-      <div class="warning">
-        <strong>1. 自调用问题</strong><br>
-        同一个类中，方法A调用方法B，B的切面不生效。原因：自调用走的是this，不是代理对象。<br>
-        <strong>解决：</strong>使用 <code>AopContext.currentProxy()</code> 获取代理对象
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>1. 自调用问题</strong>
+          同一个类中，方法A调用方法B，B的切面不生效。原因：自调用走的是this，不是代理对象。<br>
+          <strong>解决：</strong>使用 <code>AopContext.currentProxy()</code> 获取代理对象
+        </div>
       </div>
 
-      <div class="warning">
-        <strong>2. private方法</strong><br>
-        AOP无法代理private方法（CGLIB限制）<br>
-        <strong>解决：</strong>改为protected或public
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>2. private方法</strong>
+          AOP无法代理private方法（CGLIB限制）<br>
+          <strong>解决：</strong>改为protected或public
+        </div>
       </div>
 
-      <div class="warning">
-        <strong>3. final方法/类</strong><br>
-        CGLIB无法代理final，会静默忽略<br>
-        <strong>解决：</strong>去掉final修饰符，或使用接口+JDK代理
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>3. final方法/类</strong>
+          CGLIB无法代理final，会静默忽略<br>
+          <strong>解决：</strong>去掉final修饰符，或使用接口+JDK代理
+        </div>
       </div>
 
-      <div class="tip">
-        <strong>4. 循环依赖 + AOP</strong><br>
-        Spring通过三级缓存解决循环依赖问题。早期暴露的Bean可能已经是代理对象，确保AOP能正确应用。
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>4. 循环依赖 + AOP</strong>
+          Spring通过三级缓存解决循环依赖问题。早期暴露的Bean可能已经是代理对象，确保AOP能正确应用。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🚦</div><h2 class="section-title">@Around 实战：接口限流切面</h2></div>
+    <div class="section-body">
+      <p>使用 AOP + 自定义注解实现接口限流，是生产中的高频场景。</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 1. 限流注解
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface RateLimit {
+    int qps() default 100;          // 每秒允许请求数
+    String key() default "";        // 限流key（支持SpEL）
+}
+
+// 2. 限流切面
+@Aspect
+@Component
+public class RateLimitAspect {
+
+    private final Map&lt;String, RateLimiter&gt; limiters = new ConcurrentHashMap&lt;&gt;();
+
+    @Around("@annotation(rateLimit)")
+    public Object limit(ProceedingJoinPoint pjp, RateLimit rateLimit) throws Throwable {
+        String key = buildKey(pjp, rateLimit.key());
+        RateLimiter limiter = limiters.computeIfAbsent(
+            key, k -&gt; RateLimiter.create(rateLimit.qps())
+        );
+
+        if (!limiter.tryAcquire(50, TimeUnit.MILLISECONDS)) {
+            throw new RuntimeException("请求过于频繁，请稍后重试");
+        }
+        return pjp.proceed();
+    }
+
+    private String buildKey(ProceedingJoinPoint pjp, String keyExpr) {
+        // 解析SpEL表达式获取动态key
+        MethodSignature sig = (MethodSignature) pjp.getSignature();
+        return sig.getDeclaringTypeName() + "." + sig.getName() + ":" + keyExpr;
+    }
+}
+
+// 3. 使用
+@RestController
+public class OrderController {
+    @RateLimit(qps = 50, key = "#userId")
+    @GetMapping("/orders")
+    public List&lt;Order&gt; getOrders(String userId) {
+        return orderService.findByUser(userId);
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: JDK动态代理和CGLIB的区别？Spring Boot默认使用哪种？</div>
+        <div class="interview-a">JDK动态代理基于接口（java.lang.reflect.Proxy），目标类必须实现接口；CGLIB基于继承（生成子类字节码），不要求接口，但不能代理final类/方法。Spring Boot 2.x 默认使用 CGLIB（spring.aop.proxy-target-class=true），可通过配置切换。JDK 8+ 后两者性能差距已很小。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: AOP 通知的执行顺序是什么？多个切面如何控制顺序？</div>
+        <div class="interview-a">单切面正常：Around前置 → Before → 目标方法 → AfterReturning → After → Around后置；异常时：Around前置 → Before → 目标方法(异常) → AfterThrowing → After → Around异常传播。多切面通过 @Order 注解控制（值越小优先级越高），形成切面链（责任链模式）。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: AOP 自调用为什么会失效？如何解决？</div>
+        <div class="interview-a">AOP 通过代理实现，外部调用走代理对象；同类内部 this.method() 调用绕过代理直接调用目标对象，切面不生效。解决方案：①注入自身Bean（@Autowired private MyService self）②AopContext.currentProxy()获取代理③拆分为两个类④使用 AspectJ 编译时织入（无代理限制）。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: @Transactional 是如何通过 AOP 实现的？</div>
+        <div class="interview-a">@Transactional 底层是 TransactionInterceptor（实现了 MethodInterceptor），作为 Around 通知工作：方法前开启事务，正常返回则提交，抛出 RuntimeException 则回滚。因此 @Transactional 也受 AOP 自调用失效的影响，同类中调用标注事务的方法，事务不生效。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：@Transactional 标注在 private 方法上无效</strong>
+          CGLIB 代理无法重写 private 方法，事务切面不会拦截。Spring 5.x 会在启动时打印警告，但不报错。务必将需要事务的方法改为 public。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：ProceedingJoinPoint.proceed() 必须调用</strong>
+          @Around 通知中如果忘记调用 pjp.proceed()，目标方法不会执行。返回 null 时调用方还会得到 null 返回值，极难排查。务必确保调用 proceed() 并返回其结果。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：切点表达式匹配范围过宽导致性能问题</strong>
+          execution(* *.*(..)) 会匹配所有方法（包括 toString、hashCode 等），产生大量无谓的代理调用。应收窄匹配范围，使用 @annotation 精确匹配，或限定包路径 execution(* com.example.service.*.*(..))。
+        </div>
       </div>
     </div>
   </section>
 
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code') || btn.closest('.code-container').querySelector('pre'); const text = code.textContent; navigator.clipboard.writeText(text).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
 </script>

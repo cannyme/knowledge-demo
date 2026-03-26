@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Feign声明式HTTP客户端 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -58,6 +60,18 @@
   .highlight { color: var(--amber); font-weight: 600; }
   .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
 </style>
 </head>
 <body>
@@ -65,7 +79,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring Cloud / Feign</span></nav>
   <header class="hero">
-    <div class="hero-badge">🔗 OPENFEIGN</div>
+    <div class="hero-badge">☁️ SPRING CLOUD · Feign客户端</div>
     <h1 class="hero-title">Feign声明式HTTP客户端</h1>
     <p class="hero-desc">Feign是Netflix开源的声明式HTTP客户端，通过接口和注解的方式调用远程服务，让HTTP调用像调用本地方法一样简单，实现服务间的优雅通信。</p>
   </header>
@@ -99,8 +113,8 @@ flowchart LR
     <div class="section-body">
       <h3>1. 启用Feign</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@EnableFeignClients
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@EnableFeignClients
 @SpringBootApplication
 public class Application {
     public static void main(String[] args) {
@@ -111,8 +125,8 @@ public class Application {
 
       <h3>2. 定义Feign客户端</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@FeignClient(
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@FeignClient(
     name = "user-service",           // 服务名
     url = "http://localhost:8081",   // 指定URL（可选）
     fallback = UserServiceFallback.class,  // 降级处理
@@ -137,8 +151,8 @@ public interface UserFeignClient {
 
       <h3>3. 使用Feign客户端</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Service
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Service
 @RequiredArgsConstructor
 public class OrderService {
 
@@ -204,8 +218,8 @@ public class OrderService {
     <div class="section-body">
       <h3>Fallback实现</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Component
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Component
 public class UserServiceFallback implements UserFeignClient {
 
     @Override
@@ -231,8 +245,8 @@ public class UserServiceFallback implements UserFeignClient {
 
       <h3>FallbackFactory（可获取异常信息）</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Component
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Component
 public class UserServiceFallbackFactory implements FallbackFactory&lt;UserFeignClient&gt; {
 
     @Override
@@ -292,8 +306,8 @@ logging:
     <div class="section-body">
       <h3>自定义配置类</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Configuration
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Configuration
 public class FeignConfig {
 
     // 日志级别
@@ -331,8 +345,8 @@ public class FeignConfig {
 
       <h3>请求拦截器</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Component
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Component
 public class AuthFeignInterceptor implements RequestInterceptor {
 
     @Override
@@ -395,8 +409,12 @@ spring:
       transport:
         dashboard: localhost:8080</code></pre></div>
       </div>
-      <div class="tip">
-        <strong>💡 说明：</strong>开启Sentinel后，Feign调用会被Sentinel监控，可以配置限流、熔断规则。fallback机制仍然有效。
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>说明</strong>
+          开启Sentinel后，Feign调用会被Sentinel监控，可以配置限流、熔断规则。fallback机制仍然有效。
+        </div>
       </div>
     </div>
   </section>
@@ -430,11 +448,132 @@ flowchart TD
     </div>
   </section>
 
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔧</div><h2 class="section-title">Feign 高级特性：拦截器与日志</h2></div>
+    <div class="section-body">
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 1. 请求拦截器：自动传递 Token（透传认证信息）
+@Component
+public class FeignAuthInterceptor implements RequestInterceptor {
+    @Override
+    public void apply(RequestTemplate template) {
+        // 从 ThreadLocal 获取当前请求的 token 并透传
+        String token = TokenHolder.getToken();
+        if (token != null) {
+            template.header("Authorization", "Bearer " + token);
+        }
+        // 透传链路追踪 ID
+        String traceId = MDC.get("traceId");
+        if (traceId != null) {
+            template.header("X-Trace-Id", traceId);
+        }
+    }
+}
+
+// 2. 日志级别配置（开发环境用 FULL，生产用 BASIC 或 NONE）
+@Configuration
+public class FeignConfig {
+    @Bean
+    Logger.Level feignLoggerLevel() {
+        return Logger.Level.FULL;  // NONE/BASIC/HEADERS/FULL
+    }
+
+    // 自定义错误解码器
+    @Bean
+    public ErrorDecoder errorDecoder() {
+        return (methodKey, response) -> {
+            if (response.status() == 404) {
+                return new ResourceNotFoundException("远程资源不存在");
+            }
+            if (response.status() == 503) {
+                return new ServiceUnavailableException("远程服务不可用");
+            }
+            return new FeignException.InternalServerError(
+                methodKey, response.request(), null, null);
+        };
+    }
+}
+
+// 3. FeignClient 配置（局部配置优先于全局）
+@FeignClient(
+    name = "order-service",
+    fallbackFactory = OrderFallbackFactory.class,
+    configuration = OrderFeignConfig.class  // 局部配置
+)
+public interface OrderFeignClient {
+    @GetMapping("/orders/{id}")
+    OrderDTO getOrder(@PathVariable Long id);
+}
+
+// Fallback Factory（可获取异常原因）
+@Component
+public class OrderFallbackFactory implements FallbackFactory&lt;OrderFeignClient&gt; {
+    @Override
+    public OrderFeignClient create(Throwable cause) {
+        log.error("OrderFeignClient 调用失败: {}", cause.getMessage());
+        return id -&gt; OrderDTO.empty();  // 降级返回空对象
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: Feign 的底层原理是什么？</div>
+        <div class="interview-a">Feign 基于动态代理实现：①启动时扫描 @FeignClient 注解的接口，通过 JDK 动态代理生成代理类；②调用接口方法时，代理类将方法调用转化为 HTTP 请求（根据 @GetMapping 等注解构建 RequestTemplate）；③通过 FeignBlockingLoadBalancerClient 结合注册中心获取服务实例（负载均衡）；④最终由底层 HTTP 客户端（默认 HttpURLConnection，可替换为 OkHttp/Apache HttpClient）发送请求。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: Feign 与 RestTemplate 的区别？</div>
+        <div class="interview-a">RestTemplate 是命令式风格，需要手动拼接 URL 和处理响应，代码冗余；Feign 是声明式风格，通过接口+注解定义 HTTP 调用，由框架自动实现，代码更简洁、可读性更好、易于测试（可直接 Mock 接口）。Feign 内置了与 Ribbon/LoadBalancer、Hystrix/Resilience4j 的集成，适合微服务场景；RestTemplate 在 Spring 5 后逐渐被 WebClient 替代。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: Feign 超时配置和重试如何设置？</div>
+        <div class="interview-a">超时配置（feign.client.config.default.connectTimeout/readTimeout）；重试通过实现 Retryer 接口配置（默认 Retryer.NEVER_RETRY，即不重试）。注意：开启重试时接口必须是幂等的（GET、DELETE、幂等 PUT），非幂等接口（POST）不可开启重试，否则会产生重复数据。推荐结合 Resilience4j CircuitBreaker 做熔断，避免无限重试压垮下游。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: Feign 如何传递请求头（透传 Token）？</div>
+        <div class="interview-a">①实现 RequestInterceptor 接口，在 apply() 方法中向 RequestTemplate 添加 header（推荐，全局生效）；②在接口方法参数中使用 @RequestHeader 注解（仅对特定方法）；③使用 @Headers 注解在接口类或方法上声明固定 header。注意：异步调用（如 @Async）时 ThreadLocal 中的 Token 会丢失，需在传递前获取并显式传参。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：Feign 调用超时却无明确报错</strong>
+          Feign 默认连接超时 10s、读超时 60s，超时后抛出 SocketTimeoutException，但若被 fallback 吞掉，调用方看到的是降级结果而非超时错误，难以排查。应在 FallbackFactory 中记录 cause 的完整堆栈，并配置告警。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：@SpringQueryMap 遗漏导致 GET 请求参数丢失</strong>
+          Feign 接口用 GET 方法传递复杂对象时，若不加 @SpringQueryMap 注解（或 @QueryMap），参数不会被序列化为 Query String，服务端收不到参数。应对 GET 请求的复杂参数对象加 @SpringQueryMap，或改为一个个独立的 @RequestParam。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：Feign 日志级别设为 FULL 影响性能</strong>
+          Logger.Level.FULL 会打印完整的请求/响应报文（含 headers 和 body），在高并发场景下会产生大量日志 I/O 开销。生产环境应使用 BASIC（仅记录请求方法、URL、状态码、耗时）或 NONE，仅在排查问题时临时调整为 FULL。
+        </div>
+      </div>
+    </div>
+  </section>
+
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
 </div>
 
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', primaryTextColor: '#e8e6e3', primaryBorderColor: '#4ecdc4', lineColor: '#4ecdc4', background: '#0a0e17', mainBkg: '#0a0e17', secondBkg: '#101624', tertiaryBkg: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
 </script>

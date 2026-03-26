@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>API网关 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -53,8 +55,6 @@
   th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
   th { background: var(--amber-dim); color: var(--amber); font-weight: 600; }
   tr:hover { background: rgba(240, 180, 41, 0.03); }
-  .tip { background: var(--cyan-dim); border-left: 4px solid var(--cyan); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
-  .warning { background: rgba(255, 123, 114, 0.1); border-left: 4px solid var(--red); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
   .highlight { color: var(--amber); font-weight: 600; }
   .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
   .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
@@ -62,6 +62,18 @@
   .tab-content { display: none; } .tab-content.active { display: block; }
   .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
 </style>
 </head>
 <body>
@@ -69,7 +81,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring Cloud / API网关</span></nav>
   <header class="hero">
-    <div class="hero-badge">🌐 MICROSERVICE</div>
+    <div class="hero-badge">☁️ SPRING CLOUD · API网关</div>
     <h1 class="hero-title">API网关</h1>
     <p class="hero-desc">API网关是微服务架构的单一入口，负责请求路由、负载均衡、认证鉴权、限流熔断等核心功能，统一处理所有客户端请求并转发到后端服务。</p>
   </header>
@@ -151,7 +163,7 @@ flowchart LR
       <p>路由由三部分组成：ID、URI和Predicate（断言）：</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>spring:
+        <div class="code-body"><pre><code class="language-yaml">spring:
   cloud:
     gateway:
       routes:
@@ -194,7 +206,7 @@ flowchart LR
         <tr><td>AddRequestHeader</td><td>添加请求头</td><td>- AddRequestHeader=X-Request-Id, 123</td></tr>
         <tr><td>AddRequestParameter</td><td>添加请求参数</td><td>- AddRequestParameter=source, gateway</td></tr>
         <tr><td>StripPrefix</td><td>去除路径前缀</td><td>- StripPrefix=1 # /api/user/1 → /user/1</td></tr>
-        <tr><td>RewritePath</td><td>重写路径</td><td>- RewritePath=/api/(?&lt;segment&gt;.*), /$\{segment}</td></tr>
+        <tr><td>RewritePath</td><td>重写路径</td><td>- RewritePath=/api/(?&lt;segment&gt;.*), /${segment}</td></tr>
         <tr><td>RequestRateLimiter</td><td>限流</td><td>- name: RequestRateLimiter</td></tr>
         <tr><td>CircuitBreaker</td><td>熔断</td><td>- name: CircuitBreaker</td></tr>
       </table>
@@ -207,7 +219,7 @@ flowchart LR
       <p>基于Redis的令牌桶算法实现分布式限流：</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>spring:
+        <div class="code-body"><pre><code class="language-yaml">spring:
   cloud:
     gateway:
       routes:
@@ -225,7 +237,7 @@ flowchart LR
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Bean
+        <div class="code-body"><pre><code class="language-java">@Bean
 public KeyResolver ipKeyResolver() {
     // 基于IP限流
     return exchange -> Mono.just(
@@ -251,7 +263,7 @@ public KeyResolver userKeyResolver() {
       <p>所有请求都会经过全局过滤器，适合实现认证、日志等通用功能：</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Component
+        <div class="code-body"><pre><code class="language-java">@Component
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     @Override
@@ -291,7 +303,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
       <h3>局部过滤器（GatewayFilterFactory）</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Component
+        <div class="code-body"><pre><code class="language-java">@Component
 public class TimeLogGatewayFilterFactory
         extends AbstractGatewayFilterFactory&lt;Config&gt; {
 
@@ -337,8 +349,12 @@ public class TimeLogGatewayFilterFactory
         <tr><td>熔断支持</td><td>集成Hystrix</td><td>集成Resilience4j</td></tr>
         <tr><td>维护状态</td><td>停止维护</td><td>活跃维护</td></tr>
       </table>
-      <div class="tip">
-        <strong>💡 选型建议：</strong>新项目建议使用Spring Cloud Gateway，Zuul 1.x已停止维护，Zuul 2.x与Spring Cloud整合不完善。
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>选型建议</strong>
+          新项目建议使用Spring Cloud Gateway，Zuul 1.x已停止维护，Zuul 2.x与Spring Cloud整合不完善。
+        </div>
       </div>
     </div>
   </section>
@@ -387,8 +403,126 @@ graph TB
         <li><span class="highlight">动态扩缩容：</span>根据流量自动扩缩容网关实例</li>
       </ul>
 
-      <div class="warning">
-        <strong>⚠️ 注意事项：</strong>网关作为流量入口，需要做好自身的限流保护，避免成为系统瓶颈。建议单机QPS控制在1万以内。
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>注意事项</strong>
+          网关作为流量入口，需要做好自身的限流保护，避免成为系统瓶颈。建议单机QPS控制在1万以内。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔧</div><h2 class="section-title">全局过滤器实战：鉴权 + 限流</h2></div>
+    <div class="section-body">
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 全局鉴权过滤器
+@Component
+@Order(-100)
+public class AuthGlobalFilter implements GlobalFilter {
+
+    private static final List&lt;String&gt; WHITE_LIST =
+        List.of("/auth/login", "/auth/register", "/public/**");
+
+    @Override
+    public Mono&lt;Void&gt; filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        String path = exchange.getRequest().getPath().value();
+
+        // 白名单放行
+        if (WHITE_LIST.stream().anyMatch(p -> pathMatcher.match(p, path))) {
+            return chain.filter(exchange);
+        }
+
+        String token = exchange.getRequest().getHeaders()
+            .getFirst(HttpHeaders.AUTHORIZATION);
+
+        if (token == null || !token.startsWith("Bearer ")) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        try {
+            Claims claims = jwtUtil.parseToken(token.substring(7));
+            // 将用户信息透传到下游
+            ServerHttpRequest request = exchange.getRequest().mutate()
+                .header("X-User-Id", claims.getSubject())
+                .header("X-User-Role", claims.get("role", String.class))
+                .build();
+            return chain.filter(exchange.mutate().request(request).build());
+        } catch (JwtException e) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+    }
+}
+
+// application.yml 路由 + 限流配置
+// spring:
+//   cloud:
+//     gateway:
+//       routes:
+//         - id: order-service
+//           uri: lb://order-service
+//           predicates:
+//             - Path=/api/orders/**
+//           filters:
+//             - StripPrefix=1
+//             - name: RequestRateLimiter
+//               args:
+//                 redis-rate-limiter.replenishRate: 100
+//                 redis-rate-limiter.burstCapacity: 200
+//                 key-resolver: "#{@userKeyResolver}"</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: Spring Cloud Gateway 的核心组件和工作流程？</div>
+        <div class="interview-a">核心组件：Route（路由，包含 id/uri/predicates/filters）、Predicate（断言，匹配请求条件）、Filter（过滤器，处理请求/响应）。工作流程：客户端请求 → Gateway Handler Mapping（匹配 Route）→ Gateway Web Handler（组装过滤器链）→ Pre Filter 链 → 代理请求到下游 → Post Filter 链 → 响应客户端。基于 Spring WebFlux + Reactor Netty，全异步非阻塞。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: Gateway 过滤器的执行顺序？GlobalFilter vs GatewayFilter？</div>
+        <div class="interview-a">GlobalFilter 全局生效，通过 @Order 或实现 Ordered 接口控制顺序（值越小越先执行）；GatewayFilter 路由级别，在路由配置中按顺序执行。执行顺序：所有 Pre 阶段（GlobalFilter Pre + GatewayFilter Pre）→ 代理请求 → Post 阶段（逆序，GatewayFilter Post + GlobalFilter Post）。注意 Pre 和 Post 是同一 filter 方法中 chain.filter() 前后的代码。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: 网关如何实现限流？常见方案对比？</div>
+        <div class="interview-a">①内置 RequestRateLimiter（基于 Redis + Lua 令牌桶）：开箱即用，支持按用户/IP/路径限流，需 Redis 依赖；②Sentinel 整合（spring-cloud-alibaba-sentinel-gateway）：功能更强，支持热点参数限流、系统自适应保护、实时监控控制台；③自定义 GlobalFilter + Redis：灵活，可实现复杂策略（如滑动窗口、漏桶）。生产推荐 Sentinel，监控和动态配置能力更强。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: 网关和 Nginx 的职责分工？</div>
+        <div class="interview-a">Nginx：7 层/4 层代理，处理静态资源、SSL 卸载、负载均衡（到网关集群）、防 DDoS（连接数限制）；性能极高，适合边缘入口。Spring Cloud Gateway：微服务级路由、服务发现集成（lb://）、动态路由、鉴权、限流、熔断、链路追踪透传；能感知注册中心的服务变化。典型部署：外网 → Nginx（集群入口/SSL）→ Gateway（微服务路由）→ 各服务。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：修改请求体后 Content-Length 不一致</strong>
+          在 GlobalFilter 中修改请求体（如添加字段）后，若不同步更新 Content-Length header，下游服务会因长度不匹配解析失败。应使用 ModifyRequestBodyGatewayFilterFactory 处理请求体修改，它会自动重新计算长度。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：跨域配置与过滤器冲突</strong>
+          同时在 Gateway 配置 CORS 和下游服务也配置 CORS 时，响应头中会出现重复的 Access-Control-Allow-Origin，导致浏览器拦截。应统一在 Gateway 层处理跨域（spring.cloud.gateway.globalcors），下游服务去除 CORS 配置。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：StripPrefix 数量设置错误导致路径错误</strong>
+          路由配置 Path=/api/orders/** 时，若 StripPrefix=1 只去掉 /api，下游收到 /orders/...；若 StripPrefix=2 去掉 /api/orders，下游收到 /...。错误的 StripPrefix 值会导致下游找不到路由（404）。应仔细计算路径层级，并在测试环境验证路径转发结果。
+        </div>
       </div>
     </div>
   </section>
@@ -398,6 +532,7 @@ graph TB
 
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', primaryTextColor: '#e8e6e3', primaryBorderColor: '#4ecdc4', lineColor: '#4ecdc4', secondaryColor: '#0a0e17', tertiaryColor: '#0a0e17', background: '#0a0e17', mainBkg: '#0a0e17', secondBkg: '#101624', tertiaryBkg: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
 </script>

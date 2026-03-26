@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spring Security核心概念 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -80,6 +82,18 @@
   .tab-content { display: none; } .tab-content.active { display: block; }
   .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
 </style>
 </head>
 <body>
@@ -87,7 +101,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring生态</span></nav>
   <header class="hero">
-    <div class="hero-badge">🛡️ SPRING SECURITY</div>
+    <div class="hero-badge">🔒 SPRING SECURITY · 安全框架</div>
     <h1 class="hero-title">Spring Security核心概念</h1>
     <p class="hero-desc">Spring Security是一个功能强大且高度可定制的安全框架，为Java应用提供认证、授权和防护功能。本文详细解析其核心组件、认证流程、JWT实现、OAuth2.0以及最佳实践。</p>
   </header>
@@ -104,9 +118,12 @@
         <tr><td>防护（Protection）</td><td>防御常见Web攻击</td><td>CSRF防护、CORS配置、Session固定攻击防护</td></tr>
       </table>
 
-      <div class="tip-box">
-        <div class="tip-box-title">认证 vs 授权的区别</div>
-        <p><strong>认证</strong>解决的是"证明你是你"的问题，通常通过用户名密码、指纹、Token等方式验证身份。<strong>授权</strong>解决的是"你能做什么"的问题，在认证通过后决定用户可以访问哪些资源。</p>
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>认证 vs 授权的区别</strong>
+          <strong>认证</strong>解决的是"证明你是你"的问题，通常通过用户名密码、指纹、Token等方式验证身份。<strong>授权</strong>解决的是"你能做什么"的问题，在认证通过后决定用户可以访问哪些资源。
+        </div>
       </div>
     </div>
   </section>
@@ -157,13 +174,16 @@ sequenceDiagram
     Filter-->>User: 认证成功，进入系统
       </div>
 
-      <div class="tip-box">
-        <div class="tip-box-title">流程要点</div>
-        <ul>
-          <li><span class="highlight">UsernamePasswordAuthenticationToken</span>是未认证时的载体，包含用户提交的凭据</li>
-          <li><span class="highlight">ProviderManager</span>是AuthenticationManager的默认实现，管理多个Provider</li>
-          <li>认证成功后，Token会被标记为已认证，并存入SecurityContext</li>
-        </ul>
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>流程要点</strong>
+          <ul>
+            <li><span class="highlight">UsernamePasswordAuthenticationToken</span>是未认证时的载体，包含用户提交的凭据</li>
+            <li><span class="highlight">ProviderManager</span>是AuthenticationManager的默认实现，管理多个Provider</li>
+            <li>认证成功后，Token会被标记为已认证，并存入SecurityContext</li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
@@ -175,8 +195,8 @@ sequenceDiagram
       <p>Spring Security 6.x推荐使用<span class="highlight">SecurityFilterChain</span>进行配置：</p>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Configuration
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
@@ -261,8 +281,8 @@ public class SecurityConfig {
       <p><span class="highlight">UserDetailsService</span>是连接Spring Security与数据库的桥梁，负责根据用户名加载用户信息：</p>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Service
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Service
 public class CustomUserDetailsService implements UserDetailsService {
 
     @Autowired
@@ -301,13 +321,16 @@ public class CustomUserDetailsService implements UserDetailsService {
 }</code></pre></div>
       </div>
 
-      <div class="warning-box">
-        <div class="warning-box-title">实现注意事项</div>
-        <ul>
-          <li>用户不存在时应抛出<span class="highlight">UsernameNotFoundException</span>，不要返回null</li>
-          <li>角色名需要添加"ROLE_"前缀，权限名不需要</li>
-          <li>建议将账户状态（锁定、过期等）也持久化到数据库</li>
-        </ul>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>实现注意事项</strong>
+          <ul>
+            <li>用户不存在时应抛出<span class="highlight">UsernameNotFoundException</span>，不要返回null</li>
+            <li>角色名需要添加"ROLE_"前缀，权限名不需要</li>
+            <li>建议将账户状态（锁定、过期等）也持久化到数据库</li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
@@ -320,8 +343,8 @@ public class CustomUserDetailsService implements UserDetailsService {
 
       <h3 style="margin-top: 24px; margin-bottom: 12px; color: var(--amber);">1. JWT工具类</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Component
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Component
 public class JwtUtils {
 
     @Value("${jwt.secret}")
@@ -398,8 +421,8 @@ public class JwtUtils {
 
       <h3 style="margin-top: 24px; margin-bottom: 12px; color: var(--amber);">2. JWT过滤器</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Component
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
@@ -460,8 +483,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
       <h3 style="margin-top: 24px; margin-bottom: 12px; color: var(--amber);">3. 注册过滤器</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Bean
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Bean
 public SecurityFilterChain filterChain(HttpSecurity http,
                                        JwtAuthenticationFilter jwtFilter) throws Exception {
     http
@@ -490,8 +513,8 @@ public SecurityFilterChain filterChain(HttpSecurity http,
 
       <h3 style="margin-top: 20px; margin-bottom: 12px; color: var(--amber);">启用配置</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Configuration
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Configuration
 @EnableMethodSecurity(
     prePostEnabled = true,   // 启用@PreAuthorize, @PostAuthorize
     securedEnabled = true,   // 启用@Secured
@@ -513,8 +536,8 @@ public class MethodSecurityConfig {
 
       <h3 style="margin-top: 20px; margin-bottom: 12px; color: var(--amber);">使用示例</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Service
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Service
 public class OrderService {
 
     @Autowired
@@ -553,15 +576,18 @@ public class OrderService {
 }</code></pre></div>
       </div>
 
-      <div class="tip-box">
-        <div class="tip-box-title">SpEL表达式支持</div>
-        <p>注解中可以使用Spring Expression Language (SpEL)：</p>
-        <ul>
-          <li><span class="highlight">authentication</span> - 当前认证对象</li>
-          <li><span class="highlight">#paramName</span> - 方法参数（需要@Param或编译带参数名）</li>
-          <li><span class="highlight">returnObject</span> - 返回值（仅@PostAuthorize）</li>
-          <li><span class="highlight">filterObject</span> - 集合中的元素（仅@PreFilter/@PostFilter）</li>
-        </ul>
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>SpEL表达式支持</strong>
+          注解中可以使用Spring Expression Language (SpEL)：
+          <ul>
+            <li><span class="highlight">authentication</span> - 当前认证对象</li>
+            <li><span class="highlight">#paramName</span> - 方法参数（需要@Param或编译带参数名）</li>
+            <li><span class="highlight">returnObject</span> - 返回值（仅@PostAuthorize）</li>
+            <li><span class="highlight">filterObject</span> - 集合中的元素（仅@PreFilter/@PostFilter）</li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
@@ -605,8 +631,8 @@ sequenceDiagram
 
       <h3 style="margin-top: 20px; margin-bottom: 12px; color: var(--amber);">资源服务器配置</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Configuration
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Configuration
 public class OAuth2ResourceServerConfig {
 
     @Bean
@@ -690,8 +716,8 @@ sequenceDiagram
 
       <h3 style="margin-top: 20px; margin-bottom: 12px; color: var(--amber);">前后端分离的CSRF处理</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Bean
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Bean
 public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
         // API路径使用JWT，禁用CSRF
@@ -710,13 +736,16 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 }</code></pre></div>
       </div>
 
-      <div class="warning-box">
-        <div class="warning-box-title">重要提醒</div>
-        <ul>
-          <li>传统表单提交应用：<strong>必须开启CSRF防护</strong></li>
-          <li>前后端分离+JWT应用：可以禁用CSRF，因为JWT本身不依赖Cookie</li>
-          <li>混合应用：对API路径禁用，对表单路径保持开启</li>
-        </ul>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>重要提醒</strong>
+          <ul>
+            <li>传统表单提交应用：<strong>必须开启CSRF防护</strong></li>
+            <li>前后端分离+JWT应用：可以禁用CSRF，因为JWT本身不依赖Cookie</li>
+            <li>混合应用：对API路径禁用，对表单路径保持开启</li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
@@ -726,21 +755,21 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     <div class="section-header"><div class="section-icon">❓</div><h2 class="section-title">常见问题Q&A</h2></div>
     <div class="section-body">
 
-      <div class="qa-item">
-        <div class="qa-question">Q1: Session和JWT应该怎么选择？</div>
-        <div class="qa-answer">
+      <div class="interview-item">
+        <div class="interview-q">Q1: Session和JWT应该怎么选择？</div>
+        <div class="interview-a">
           <p><strong>选择Session：</strong>传统Web应用、服务端渲染、需要服务端控制会话（如强制下线）、小规模应用。</p>
           <p><strong>选择JWT：</strong>前后端分离、移动端API、微服务架构、需要水平扩展、无状态要求高的场景。</p>
         </div>
       </div>
 
-      <div class="qa-item">
-        <div class="qa-question">Q2: 如何实现"记住我"功能？</div>
-        <div class="qa-answer">
+      <div class="interview-item">
+        <div class="interview-q">Q2: 如何实现"记住我"功能？</div>
+        <div class="interview-a">
           <p>Spring Security提供Remember-Me功能，基于持久化Token或Cookie实现：</p>
           <div class="code-container">
-            <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-            <div class="code-body"><pre><code>.rememberMe(remember -> remember
+            <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code class="language-java">.rememberMe(remember -> remember
     .key("uniqueAndSecretKey")  // 加密密钥
     .tokenValiditySeconds(86400) // Token有效期（秒）
     .tokenRepository(persistentTokenRepository()) // 持久化存储
@@ -750,9 +779,9 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         </div>
       </div>
 
-      <div class="qa-item">
-        <div class="qa-question">Q3: 密码加密应该选择什么算法？</div>
-        <div class="qa-answer">
+      <div class="interview-item">
+        <div class="interview-q">Q3: 密码加密应该选择什么算法？</div>
+        <div class="interview-a">
           <p><strong>强烈推荐使用BCrypt</strong>，它是目前最安全的哈希算法之一：</p>
           <ul>
             <li>自动加盐，每个密码的盐值不同</li>
@@ -763,13 +792,13 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         </div>
       </div>
 
-      <div class="qa-item">
-        <div class="qa-question">Q4: 如何动态加载权限？</div>
-        <div class="qa-answer">
+      <div class="interview-item">
+        <div class="interview-q">Q4: 如何动态加载权限？</div>
+        <div class="interview-a">
           <p>默认权限在启动时加载，动态权限需要自定义<span class="highlight">FilterInvocationSecurityMetadataSource</span>：</p>
           <div class="code-container">
-            <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-            <div class="code-body"><pre><code>@Component
+            <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code class="language-java">@Component
 public class DynamicSecurityMetadataSource implements FilterInvocationSecurityMetadataSource {
 
     @Autowired
@@ -787,12 +816,12 @@ public class DynamicSecurityMetadataSource implements FilterInvocationSecurityMe
         </div>
       </div>
 
-      <div class="qa-item">
-        <div class="qa-question">Q5: 如何处理跨域（CORS）？</div>
-        <div class="qa-answer">
+      <div class="interview-item">
+        <div class="interview-q">Q5: 如何处理跨域（CORS）？</div>
+        <div class="interview-a">
           <div class="code-container">
-            <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-            <div class="code-body"><pre><code>@Bean
+            <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code class="language-java">@Bean
 public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -816,6 +845,115 @@ public CorsConfigurationSource corsConfigurationSource() {
         </div>
       </div>
 
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎫</div><h2 class="section-title">JWT + Spring Security 实战配置</h2></div>
+    <div class="section-body">
+      <p>JWT（JSON Web Token）与 Spring Security 结合是现代无状态认证的主流方案：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// SecurityConfig - Spring Security 6.x 配置风格
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity   // 启用方法级权限控制 @PreAuthorize
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        return http
+            .csrf(AbstractHttpConfigurer::disable)          // 无状态API禁用CSRF
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/auth/**", "/public/**").permitAll()
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(jwtAuthEntryPoint)  // 未认证401
+                .accessDeniedHandler(jwtAccessDeniedHandler)  // 无权限403
+            )
+            .build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();  // 密码加密器
+    }
+}
+
+// JWT 过滤器
+@Component
+public class JwtAuthFilter extends OncePerRequestFilter {
+    @Override
+    protected void doFilterInternal(HttpServletRequest req,
+                                    HttpServletResponse res,
+                                    FilterChain chain) throws IOException, ServletException {
+        String token = extractToken(req);
+        if (token != null && jwtUtil.validateToken(token)) {
+            UsernamePasswordAuthenticationToken auth =
+                new UsernamePasswordAuthenticationToken(
+                    jwtUtil.getUsername(token), null,
+                    jwtUtil.getAuthorities(token)
+                );
+            SecurityContextHolder.getContext().setAuthentication(auth);
+        }
+        chain.doFilter(req, res);
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: Spring Security 的过滤器链是如何工作的？</div>
+        <div class="interview-a">Spring Security 基于 Servlet Filter 链实现，核心是 DelegatingFilterProxy 将请求委托给 FilterChainProxy，后者管理多条 SecurityFilterChain。常见过滤器执行顺序：SecurityContextPersistenceFilter → UsernamePasswordAuthenticationFilter → BasicAuthenticationFilter → ExceptionTranslationFilter → FilterSecurityInterceptor。每个过滤器处理特定职责，可通过配置增删过滤器。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: Authentication 和 Authorization 的区别？Spring Security 如何实现？</div>
+        <div class="interview-a">Authentication（认证）：验证你是谁（用户名密码、JWT、OAuth2）；Authorization（授权）：验证你能做什么（角色权限）。Spring Security 通过 AuthenticationManager 完成认证，将结果存入 SecurityContextHolder；通过 AccessDecisionManager（或 Spring 6.x 的 AuthorizationManager）完成授权，支持 @PreAuthorize、@Secured、URL 规则等方式。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: Session 和 JWT 的优缺点对比？</div>
+        <div class="interview-a">Session：服务端存储，状态管理方便，但多节点部署需共享 Session（Redis），扩展性差。JWT：无状态，自包含用户信息，天然支持分布式，但 Token 无法主动失效（需维护黑名单），payload 过大增加网络开销。实际项目中可结合使用：JWT 携带基本信息，敏感权限变更时加 Redis 黑名单短期记录。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: @PreAuthorize 和 @Secured 的区别？</div>
+        <div class="interview-a">@Secured 是 Spring Security 原生注解，只能做简单的角色判断（如 @Secured("ROLE_ADMIN")）；@PreAuthorize 支持 SpEL 表达式，功能更强大（如 @PreAuthorize("hasRole('ADMIN') and #id == authentication.principal.id")），可做细粒度的方法级权限控制。需开启 @EnableMethodSecurity 才能使用。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：CSRF 与前后端分离接口冲突</strong>
+          Spring Security 默认开启 CSRF 保护（适合服务端渲染场景）。前后端分离 + JWT 无状态方案必须禁用 CSRF（http.csrf(AbstractHttpConfigurer::disable)），否则所有 POST/PUT/DELETE 请求会返回 403 Forbidden，且错误信息不明显。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：@PreAuthorize 在同类方法调用时失效</strong>
+          与 @Transactional 一样，@PreAuthorize 基于 AOP 代理实现，同类内部 this.method() 调用会绕过权限检查。确保安全方法从外部调用，或使用 @EnableMethodSecurity(proxyTargetClass=true)。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：密码明文存储</strong>
+          不使用 PasswordEncoder 导致密码明文存储是严重安全漏洞。必须使用 BCryptPasswordEncoder（推荐），其强度参数 strength 默认为 10（2^10 次哈希），可根据服务器性能调整（12-14 更安全）。绝不可在生产环境使用 NoOpPasswordEncoder。
+        </div>
+      </div>
     </div>
   </section>
 
@@ -859,6 +997,8 @@ mermaid.initialize({
     bottomMarginAdj: 10
   }
 });
+
+hljs.highlightAll();
 
 document.getElementById('themeToggle').addEventListener('click', () => {
   const html = document.documentElement;

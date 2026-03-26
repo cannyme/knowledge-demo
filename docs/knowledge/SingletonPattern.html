@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>单例模式 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -15,7 +17,7 @@
   }
   [data-theme="light"] {
     --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
-    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e; --text-secondary: #555;
   }
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
@@ -25,12 +27,12 @@
   .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
   .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
   .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
-  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; backdrop-filter: blur(12px); }
   .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
   .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
   .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
   .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
-  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; backdrop-filter: blur(12px); }
   .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
   .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
   .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
@@ -44,12 +46,13 @@
   .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
   .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
   .code-btn:hover { border-color: var(--amber); color: var(--amber); }
-  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body pre { margin: 0 !important; border-radius: 0 !important; background: transparent !important; }
+  .code-body pre code { font-family: var(--font-code) !important; font-size: 13px !important; line-height: 1.8 !important; padding: 20px !important; }
   .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
-  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
   .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
-  .tab-content { display: none; } .tab-content.active { display: block; }
-  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .tab-content { display: none; padding: 24px 28px; } .tab-content.active { display: block; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-secondary); }
   .table-container { overflow-x: auto; margin: 20px 0; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
@@ -60,6 +63,14 @@
   .tag-success { background: rgba(126, 231, 135, 0.15); color: var(--green); }
   .tag-danger { background: rgba(255, 123, 114, 0.15); color: var(--red); }
   .tag-warning { background: rgba(240, 180, 41, 0.15); color: var(--amber); }
+  .alert { border-radius: 10px; padding: 16px 20px; margin: 16px 0; border-left: 3px solid; }
+  .alert-warning { background: rgba(240, 180, 41, 0.08); border-color: var(--amber); }
+  .alert-danger { background: rgba(255, 123, 114, 0.08); border-color: var(--red); }
+  .alert-info { background: rgba(78, 205, 196, 0.08); border-color: var(--cyan); }
+  .alert-title { font-weight: 700; margin-bottom: 8px; }
+  .interview-item { background: rgba(240, 180, 41, 0.04); border: 1px solid rgba(240, 180, 41, 0.15); border-radius: 10px; padding: 16px 20px; margin: 12px 0; }
+  .interview-q { color: var(--amber); font-weight: 600; margin-bottom: 8px; }
+  .interview-a { color: var(--text-secondary); line-height: 1.8; }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
 </style>
 </head>
@@ -68,28 +79,30 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>设计模式</span></nav>
   <header class="hero">
-    <div class="hero-badge">🏷️ SINGLETON</div>
+    <div class="hero-badge">🏷️ SINGLETON · 创建型模式</div>
     <h1 class="hero-title">单例模式</h1>
-    <p class="hero-desc">确保一个类只有一个实例，并提供一个全局访问点。单例模式是创建型设计模式中最常用的一种，广泛应用于配置管理、数据库连接池、日志记录等场景。</p>
+    <p class="hero-desc">确保一个类只有一个实例，并提供一个全局访问点。广泛应用于配置管理、数据库连接池、日志记录等场景，是面试必考的高频知识点。</p>
   </header>
 
-  <!-- 模式定义与意图 -->
+  <!-- 模式定义 -->
   <section class="section">
     <div class="section-header"><div class="section-icon">📖</div><h2 class="section-title">模式定义与意图</h2></div>
     <div class="section-body">
-      <p><strong class="highlight">定义：</strong>单例模式（Singleton Pattern）是一种创建型设计模式，它确保一个类只有一个实例存在，并提供一个全局访问点来获取该实例。</p>
-      <p><strong class="highlight">核心思想：</strong>通过私有化构造方法，控制实例的创建过程，保证整个应用程序中只存在一个实例对象。</p>
+      <p><strong class="highlight">定义：</strong>单例模式（Singleton Pattern）是一种创建型设计模式，确保一个类只有一个实例，并提供全局访问点。</p>
+      <p><strong class="highlight">核心思想：</strong>私有化构造方法，控制实例创建过程。</p>
       <div class="mermaid">classDiagram
     class Singleton {
-        -static Singleton instance
+        -instance: Singleton$
         -Singleton()
-        +static Singleton getInstance()
-    }</div>
-      <p><strong class="highlight">关键要素：</strong></p>
+        +getInstance()$ Singleton
+        +doSomething() void
+    }
+    note for Singleton "私有构造器\n静态实例引用\n全局访问点"</div>
+      <p><strong class="highlight">三个关键要素：</strong></p>
       <ul>
-        <li><strong>私有化构造器：</strong>防止外部通过new关键字创建实例</li>
-        <li><strong>静态实例引用：</strong>持有唯一的实例引用</li>
-        <li><strong>全局访问点：</strong>提供公共静态方法获取实例</li>
+        <li><strong>私有化构造器：</strong>防止外部通过 new 创建实例</li>
+        <li><strong>静态实例引用：</strong>持有唯一实例的静态字段</li>
+        <li><strong>全局访问点：</strong>公共静态方法 getInstance()</li>
       </ul>
     </div>
   </section>
@@ -98,57 +111,64 @@
   <section class="section">
     <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">适用场景</h2></div>
     <div class="section-body">
-      <p>以下场景适合使用单例模式：</p>
       <ul>
         <li><strong>配置管理器：</strong>应用配置信息只需加载一次，全局共享</li>
-        <li><strong>数据库连接池：</strong>管理有限的数据库连接资源</li>
+        <li><strong>数据库连接池：</strong>管理有限的数据库连接资源（HikariCP、Druid）</li>
         <li><strong>日志记录器：</strong>统一处理日志输出，避免重复创建</li>
         <li><strong>缓存管理器：</strong>全局缓存数据的统一管理</li>
-        <li><strong>线程池：</strong>管理系统线程资源的池化对象</li>
+        <li><strong>线程池：</strong>Executors 工厂方法返回的线程池通常全局唯一</li>
+        <li><strong>Spring Bean：</strong>默认 scope="singleton"，容器内全局唯一</li>
       </ul>
     </div>
   </section>
 
   <!-- 代码实现 -->
   <section class="section">
-    <div class="section-header"><div class="section-icon">💻</div><h2 class="section-title">代码实现</h2></div>
-    <div class="section-body">
-      <div class="tabs">
-        <button class="tab active" data-tab="eager">饿汉式</button>
-        <button class="tab" data-tab="lazy">懒汉式</button>
-        <button class="tab" data-tab="dcl">双重检查锁</button>
-        <button class="tab" data-tab="static-inner">静态内部类</button>
-        <button class="tab" data-tab="enum">枚举</button>
-      </div>
+    <div class="section-header"><div class="section-icon">💻</div><h2 class="section-title">五种实现方式</h2></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="eager">饿汉式</button>
+      <button class="tab" data-tab="lazy">懒汉式</button>
+      <button class="tab" data-tab="dcl">双重检查锁</button>
+      <button class="tab" data-tab="static-inner">静态内部类</button>
+      <button class="tab" data-tab="enum">枚举</button>
+    </div>
 
-      <div id="eager" class="tab-content active">
-        <p><strong class="highlight">饿汉式（Eager Initialization）</strong> - 类加载时就创建实例，线程安全但不支持懒加载</p>
-        <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>public class EagerSingleton {
-    // 类加载时就创建实例
+    <div id="eager" class="tab-content active">
+      <p><strong class="highlight">饿汉式（Eager Initialization）</strong> — 类加载时创建，线程安全，不支持懒加载</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">public class EagerSingleton {
+    // 类加载时立即初始化，JVM 保证线程安全
     private static final EagerSingleton INSTANCE = new EagerSingleton();
 
-    // 私有构造方法，防止外部实例化
+    // 私有构造器，防止外部实例化
     private EagerSingleton() {}
 
     public static EagerSingleton getInstance() {
         return INSTANCE;
     }
-}</code></pre></div>
-        </div>
-      </div>
 
-      <div id="lazy" class="tab-content">
-        <p><strong class="highlight">懒汉式（Lazy Initialization）</strong> - 支持懒加载但线程不安全（不推荐单独使用）</p>
-        <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>public class LazySingleton {
+    public void doSomething() {
+        System.out.println("单例方法执行");
+    }
+}</code></pre></div>
+      </div>
+      <div class="alert alert-warning">
+        <div class="alert-title">⚠️ 注意</div>
+        不管是否用到，类加载时就创建实例。如果实例初始化代价很大且可能不被使用，会浪费资源。
+      </div>
+    </div>
+
+    <div id="lazy" class="tab-content">
+      <p><strong class="highlight">懒汉式（Lazy Initialization）</strong> — 支持懒加载，但线程不安全（不推荐单独使用）</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">public class LazySingleton {
     private static LazySingleton instance;
 
     private LazySingleton() {}
 
-    // 线程不安全：多线程可能同时进入if判断
+    // ❌ 线程不安全：多线程可能同时进入 if 判断，创建多个实例
     public static LazySingleton getInstance() {
         if (instance == null) {
             instance = new LazySingleton();
@@ -156,7 +176,7 @@
         return instance;
     }
 
-    // 线程安全版本（同步方法）- 性能较差
+    // ✅ 线程安全版（同步方法）— 但每次调用都加锁，性能差
     public static synchronized LazySingleton getInstanceSafe() {
         if (instance == null) {
             instance = new LazySingleton();
@@ -164,210 +184,275 @@
         return instance;
     }
 }</code></pre></div>
-        </div>
       </div>
+    </div>
 
-      <div id="dcl" class="tab-content">
-        <p><strong class="highlight">双重检查锁（Double Checked Locking）</strong> - 线程安全 + 懒加载 + 高性能</p>
-        <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>public class DCLSingleton {
-    // volatile 禁止指令重排序
+    <div id="dcl" class="tab-content">
+      <p><strong class="highlight">双重检查锁（Double Checked Locking）</strong> — 线程安全 + 懒加载 + 高性能，<span class="tag tag-warning">推荐</span></p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">public class DCLSingleton {
+    // volatile 关键字：禁止指令重排序 + 保证可见性
     private static volatile DCLSingleton instance;
 
     private DCLSingleton() {}
 
     public static DCLSingleton getInstance() {
-        // 第一次检查：避免不必要的同步
+        // 第一次检查：instance 已存在则直接返回，无需加锁（性能优化）
         if (instance == null) {
             synchronized (DCLSingleton.class) {
-                // 第二次检查：确保只有一个实例被创建
+                // 第二次检查：防止多线程同时通过第一次检查
                 if (instance == null) {
-                    instance = new DCLSingleton();
+                    instance = new DCLSingleton(); // 非原子操作！
                 }
             }
         }
         return instance;
     }
 }</code></pre></div>
-        </div>
-        <p><strong class="highlight">为什么需要volatile？</strong></p>
-        <ul>
-          <li>保证可见性：一个线程修改后，其他线程立即可见</li>
-          <li>禁止指令重排序：防止 instance = new DCLSingleton() 被重排序</li>
-          <li>new操作分为三步：分配内存、初始化对象、引用指向内存地址</li>
-        </ul>
       </div>
+      <p><strong class="highlight">为什么 volatile 必不可少？</strong></p>
+      <p><code>instance = new DCLSingleton()</code> 在字节码层面分为三步：</p>
+      <ol style="padding-left:24px;margin:12px 0;">
+        <li><code>memory = allocate()</code> — 分配内存空间</li>
+        <li><code>initObject(memory)</code> — 初始化对象</li>
+        <li><code>instance = memory</code> — 引用指向内存地址</li>
+      </ol>
+      <p>JIT 编译器可能将步骤 2 和 3 <strong>重排序</strong>，导致另一个线程拿到未初始化完成的对象（instance 非 null 但对象字段未初始化）。volatile 禁止这种重排序。</p>
+    </div>
 
-      <div id="static-inner" class="tab-content">
-        <p><strong class="highlight">静态内部类（Static Inner Class）</strong> - 最推荐的实现方式之一</p>
-        <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>public class StaticInnerSingleton {
+    <div id="static-inner" class="tab-content">
+      <p><strong class="highlight">静态内部类（Static Inner Class）</strong> — 最推荐的实现方式，优雅且高效 <span class="tag tag-success">强烈推荐</span></p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">public class StaticInnerSingleton {
     private StaticInnerSingleton() {}
 
-    // 静态内部类持有外部类的实例
+    // 静态内部类：只有在被引用时才会被 JVM 加载（懒加载）
     private static class Holder {
+        // JVM 保证类初始化是线程安全的（CLInitLock）
         private static final StaticInnerSingleton INSTANCE = new StaticInnerSingleton();
     }
 
     public static StaticInnerSingleton getInstance() {
-        return Holder.INSTANCE;
+        return Holder.INSTANCE; // 触发 Holder 类加载，仅此一次
     }
-}</code></pre></div>
-        </div>
-        <p><strong class="highlight">实现原理：</strong></p>
-        <ul>
-          <li>外部类加载时，静态内部类不会立即加载</li>
-          <li>只有调用getInstance()时，JVM才加载Holder类</li>
-          <li>JVM保证类初始化时的线程安全性</li>
-          <li>不需要synchronized关键字，性能最优</li>
-        </ul>
-      </div>
+}
 
-      <div id="enum" class="tab-content">
-        <p><strong class="highlight">枚举（Enum）</strong> - 最安全的实现方式，Effective Java推荐</p>
-        <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>public enum EnumSingleton {
+// 使用示例
+StaticInnerSingleton s1 = StaticInnerSingleton.getInstance();
+StaticInnerSingleton s2 = StaticInnerSingleton.getInstance();
+System.out.println(s1 == s2); // true</code></pre></div>
+      </div>
+      <p><strong class="highlight">实现原理：</strong>利用 JVM 类初始化机制（Class Loading）保证线程安全，外部类加载时 Holder 不会被加载，只有首次调用 getInstance() 才触发 Holder 加载，且 JVM 用锁保证只初始化一次。</p>
+    </div>
+
+    <div id="enum" class="tab-content">
+      <p><strong class="highlight">枚举（Enum）</strong> — 最安全的实现，Effective Java 第三版推荐 <span class="tag tag-success">最安全</span></p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">public enum EnumSingleton {
     INSTANCE;
 
-    // 可以添加业务方法
+    // 可以添加状态和方法
+    private int count = 0;
+
     public void doSomething() {
-        System.out.println("单例方法执行");
+        count++;
+        System.out.println("单例执行第 " + count + " 次");
+    }
+
+    public int getCount() {
+        return count;
     }
 }
 
 // 使用
-EnumSingleton instance = EnumSingleton.INSTANCE;
-instance.doSomething();</code></pre></div>
-        </div>
-        <p><strong class="highlight">枚举单例的优势：</strong></p>
-        <ul>
-          <li>线程安全：枚举类型由JVM保证线程安全</li>
-          <li>防止反射攻击：枚举构造器私有且无法通过反射调用</li>
-          <li>防止序列化破坏：枚举自带序列化机制，readResolve自动处理</li>
-          <li>代码简洁，实现简单</li>
-        </ul>
+EnumSingleton.INSTANCE.doSomething();
+EnumSingleton.INSTANCE.doSomething();
+System.out.println(EnumSingleton.INSTANCE.getCount()); // 2</code></pre></div>
       </div>
+      <p><strong class="highlight">枚举的三大优势：</strong></p>
+      <ul>
+        <li><strong>防反射攻击：</strong>枚举构造器私有且 JVM 禁止通过反射调用枚举构造器，抛出 IllegalArgumentException</li>
+        <li><strong>防序列化破坏：</strong>枚举序列化时只写入枚举名称，反序列化时通过 Enum.valueOf() 返回已有实例</li>
+        <li><strong>线程安全：</strong>枚举常量在类加载时初始化，JVM 保证线程安全</li>
+      </ul>
+    </div>
 
-      <h3 style="margin-top: 32px;">实现方式对比</h3>
+    <div style="padding: 0 28px 28px;">
+      <h3 style="margin: 24px 0 16px; color: var(--text-primary);">五种方式对比</h3>
       <div class="table-container">
         <table>
-          <tr>
-            <th>实现方式</th>
-            <th>线程安全</th>
-            <th>懒加载</th>
-            <th>性能</th>
-            <th>推荐程度</th>
-          </tr>
-          <tr>
-            <td>饿汉式</td>
-            <td><span class="tag tag-success">是</span></td>
-            <td><span class="tag tag-danger">否</span></td>
-            <td>高</td>
-            <td>⭐⭐⭐</td>
-          </tr>
-          <tr>
-            <td>懒汉式(非同步)</td>
-            <td><span class="tag tag-danger">否</span></td>
-            <td><span class="tag tag-success">是</span></td>
-            <td>高</td>
-            <td><span class="tag tag-danger">不推荐</span></td>
-          </tr>
-          <tr>
-            <td>懒汉式(同步方法)</td>
-            <td><span class="tag tag-success">是</span></td>
-            <td><span class="tag tag-success">是</span></td>
-            <td>低</td>
-            <td>⭐</td>
-          </tr>
-          <tr>
-            <td>双重检查锁</td>
-            <td><span class="tag tag-success">是</span></td>
-            <td><span class="tag tag-success">是</span></td>
-            <td>高</td>
-            <td>⭐⭐⭐⭐</td>
-          </tr>
-          <tr>
-            <td>静态内部类</td>
-            <td><span class="tag tag-success">是</span></td>
-            <td><span class="tag tag-success">是</span></td>
-            <td>高</td>
-            <td>⭐⭐⭐⭐⭐</td>
-          </tr>
-          <tr>
-            <td>枚举</td>
-            <td><span class="tag tag-success">是</span></td>
-            <td><span class="tag tag-danger">否</span></td>
-            <td>高</td>
-            <td>⭐⭐⭐⭐⭐</td>
-          </tr>
+          <tr><th>实现方式</th><th>线程安全</th><th>懒加载</th><th>防反射</th><th>防序列化</th><th>性能</th><th>推荐度</th></tr>
+          <tr><td>饿汉式</td><td><span class="tag tag-success">✓</span></td><td><span class="tag tag-danger">✗</span></td><td><span class="tag tag-danger">✗</span></td><td><span class="tag tag-danger">✗</span></td><td>高</td><td>⭐⭐⭐</td></tr>
+          <tr><td>懒汉式(非同步)</td><td><span class="tag tag-danger">✗</span></td><td><span class="tag tag-success">✓</span></td><td><span class="tag tag-danger">✗</span></td><td><span class="tag tag-danger">✗</span></td><td>高</td><td><span class="tag tag-danger">不推荐</span></td></tr>
+          <tr><td>懒汉式(同步)</td><td><span class="tag tag-success">✓</span></td><td><span class="tag tag-success">✓</span></td><td><span class="tag tag-danger">✗</span></td><td><span class="tag tag-danger">✗</span></td><td>低</td><td>⭐</td></tr>
+          <tr><td>双重检查锁</td><td><span class="tag tag-success">✓</span></td><td><span class="tag tag-success">✓</span></td><td><span class="tag tag-danger">✗</span></td><td><span class="tag tag-danger">✗</span></td><td>高</td><td>⭐⭐⭐⭐</td></tr>
+          <tr><td>静态内部类</td><td><span class="tag tag-success">✓</span></td><td><span class="tag tag-success">✓</span></td><td><span class="tag tag-danger">✗</span></td><td><span class="tag tag-danger">✗</span></td><td>最高</td><td>⭐⭐⭐⭐⭐</td></tr>
+          <tr><td>枚举</td><td><span class="tag tag-success">✓</span></td><td><span class="tag tag-danger">✗</span></td><td><span class="tag tag-success">✓</span></td><td><span class="tag tag-success">✓</span></td><td>高</td><td>⭐⭐⭐⭐⭐</td></tr>
         </table>
       </div>
     </div>
   </section>
 
-  <!-- 优缺点分析 -->
+  <!-- 面试高频考点 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎤</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1：DCL 中 volatile 为什么必须加？不加会有什么问题？</div>
+        <div class="interview-a">
+          <code>new</code> 操作分三步：①分配内存 ②初始化对象 ③引用赋值。JIT 可能将②③重排序为①③②。线程A刚执行③（引用非null但对象未初始化），线程B通过第一次 null 检查，直接使用了一个"半成品"对象，导致 NPE 或数据异常。<code>volatile</code> 通过内存屏障禁止这种重排序。
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q2：序列化会破坏单例吗？如何解决？</div>
+        <div class="interview-a">
+          会破坏。对象序列化后再反序列化，会通过 ObjectInputStream 创建新实例，不走构造器。<br><br>
+          解决方案：在单例类中添加 <code>readResolve()</code> 方法：
+          <div class="code-container" style="margin-top:12px;">
+            <div class="code-header"><span class="code-lang">Java</span></div>
+            <div class="code-body"><pre><code class="language-java">// 反序列化时 JVM 会调用此方法，返回值替代新建的对象
+protected Object readResolve() throws ObjectStreamException {
+    return getInstance(); // 返回现有单例
+}</code></pre></div>
+          </div>
+          枚举天然防止序列化破坏，无需额外处理。
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q3：反射能破坏单例吗？如何防止？</div>
+        <div class="interview-a">
+          能。通过反射可以绕过私有构造器：<code>Constructor.setAccessible(true)</code>。<br><br>
+          防御方案：在构造器中检查实例是否已存在：
+          <div class="code-container" style="margin-top:12px;">
+            <div class="code-header"><span class="code-lang">Java</span></div>
+            <div class="code-body"><pre><code class="language-java">private SafeSingleton() {
+    // 防止反射攻击
+    if (instance != null) {
+        throw new RuntimeException("禁止通过反射创建单例实例");
+    }
+}</code></pre></div>
+          </div>
+          枚举是最彻底的防御：JVM 源码层面禁止反射调用枚举构造器。
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q4：单例模式 vs Spring @Scope("singleton") 的区别？</div>
+        <div class="interview-a">
+          <table style="margin-top:8px;">
+            <tr><th>对比维度</th><th>传统单例模式</th><th>Spring Singleton</th></tr>
+            <tr><td>作用范围</td><td>JVM 进程级唯一</td><td>Spring 容器（ApplicationContext）内唯一</td></tr>
+            <tr><td>实现方式</td><td>私有构造器 + 静态变量</td><td>IoC 容器管理，BeanDefinition 记录</td></tr>
+            <tr><td>依赖注入</td><td>不支持</td><td>完整的 DI 支持</td></tr>
+            <tr><td>AOP 支持</td><td>不支持</td><td>自动代理</td></tr>
+            <tr><td>多容器</td><td>N/A</td><td>每个容器各一个实例</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 实战陷阱 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-danger">
+        <div class="alert-title">陷阱1：多 ClassLoader 环境导致单例失效</div>
+        在 Web 容器（Tomcat）、OSGi、热部署等场景下，同一个类可能被不同 ClassLoader 加载多次，产生多个"单例"。<br>
+        <strong>解决：</strong>使用同一个 ClassLoader 加载，或通过父类委派机制（Bootstrap ClassLoader）。
+      </div>
+      <div class="alert alert-danger">
+        <div class="alert-title">陷阱2：集群/分布式环境下单例无效</div>
+        单例只在单个 JVM 进程内唯一。多台服务器部署时，每台机器各有一个实例，不是全局唯一。<br>
+        <strong>解决：</strong>使用分布式锁（Redis、Zookeeper）+ 共享存储实现分布式单例。
+      </div>
+      <div class="alert alert-warning">
+        <div class="alert-title">陷阱3：单例持有有状态对象的线程安全问题</div>
+        单例本身是全局共享的，如果单例内部持有可变状态（如 HashMap），多线程并发访问时需要加锁，否则会有线程安全问题。
+        <div class="code-container" style="margin-top:12px;">
+          <div class="code-header"><span class="code-lang">Java</span></div>
+          <div class="code-body"><pre><code class="language-java">// ❌ 危险：单例内部的 HashMap 是共享可变状态
+public class CacheManager {
+    private static final CacheManager INSTANCE = new CacheManager();
+    private Map&lt;String, Object&gt; cache = new HashMap&lt;&gt;(); // 线程不安全！
+
+    // ✅ 正确：使用线程安全的 ConcurrentHashMap
+    private Map&lt;String, Object&gt; safeCache = new ConcurrentHashMap&lt;&gt;();
+}</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 优缺点 -->
   <section class="section">
     <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">优缺点分析</h2></div>
     <div class="section-body">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
         <div>
-          <h4 style="color: var(--green); margin-bottom: 12px;">优点</h4>
+          <h4 style="color: var(--green); margin-bottom: 12px;">✅ 优点</h4>
           <ul>
-            <li><strong>全局唯一：</strong>确保只有一个实例存在，避免资源重复创建</li>
-            <li><strong>全局访问：</strong>提供统一的访问点，方便使用</li>
-            <li><strong>延迟加载：</strong>部分实现方式支持懒加载，节省资源</li>
-            <li><strong>线程安全：</strong>多种实现方式保证多线程环境下的安全性</li>
+            <li><strong>全局唯一：</strong>避免重复创建，节省资源</li>
+            <li><strong>统一访问：</strong>全局访问点，方便管理</li>
+            <li><strong>懒加载：</strong>静态内部类等方式按需创建</li>
+            <li><strong>全局状态：</strong>可以维护跨请求的全局状态</li>
           </ul>
         </div>
         <div>
-          <h4 style="color: var(--red); margin-bottom: 12px;">缺点</h4>
+          <h4 style="color: var(--red); margin-bottom: 12px;">❌ 缺点</h4>
           <ul>
-            <li><strong>违反单一职责：</strong>单例类既要管理实例又要执行业务逻辑</li>
-            <li><strong>隐藏依赖：</strong>通过全局访问点使用，依赖关系不明显</li>
-            <li><strong>测试困难：</strong>全局状态可能影响单元测试的隔离性</li>
-            <li><strong>扩展困难：</strong>继承和扩展相对复杂</li>
+            <li><strong>违反 SRP：</strong>既管理实例又执行业务</li>
+            <li><strong>隐藏依赖：</strong>全局访问使依赖关系不透明</li>
+            <li><strong>难以测试：</strong>全局状态污染单元测试</li>
+            <li><strong>并发隐患：</strong>有状态单例需要额外同步</li>
           </ul>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 与其他模式的关系 -->
+  <!-- 与其他模式关系 -->
   <section class="section">
     <div class="section-header"><div class="section-icon">🔗</div><h2 class="section-title">与其他模式的关系</h2></div>
     <div class="section-body">
       <table>
-        <tr>
-          <th>相关模式</th>
-          <th>关系说明</th>
-        </tr>
-        <tr>
-          <td><strong class="highlight">工厂模式</strong></td>
-          <td>工厂模式可以封装单例的创建逻辑，使客户端无需关心单例的具体实现</td>
-        </tr>
-        <tr>
-          <td><strong class="highlight">建造者模式</strong></td>
-          <td>当单例需要复杂初始化时，可使用建造者模式构建实例</td>
-        </tr>
-        <tr>
-          <td><strong class="highlight">依赖注入</strong></td>
-          <td>Spring等框架通过IoC容器管理单例Bean，替代传统单例模式</td>
-        </tr>
+        <tr><th>相关模式</th><th>关系说明</th></tr>
+        <tr><td><strong class="highlight">工厂模式</strong></td><td>工厂类通常实现为单例，工厂可以封装单例的创建逻辑</td></tr>
+        <tr><td><strong class="highlight">享元模式</strong></td><td>享元池通常用单例管理，共享对象的存储容器</td></tr>
+        <tr><td><strong class="highlight">Spring IoC</strong></td><td>通过容器管理单例 Bean，比传统单例更灵活（支持 DI、AOP）</td></tr>
+        <tr><td><strong class="highlight">建造者模式</strong></td><td>复杂初始化的单例可用 Builder 构建后赋值给 instance</td></tr>
       </table>
-      <p style="margin-top: 16px;"><strong class="highlight">Spring中的单例：</strong>Spring容器默认将Bean作为单例管理，比传统单例模式更灵活，支持依赖注入和AOP代理。</p>
     </div>
   </section>
 
-  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+  <footer class="footer">Java Knowledge Review Demo — 设计模式系列<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
-document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
-document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
-function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+hljs.highlightAll();
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const html = document.documentElement;
+  if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; }
+  else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; }
+});
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const parent = tab.closest('.section');
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
+  });
+});
+function copyCode(btn) {
+  const code = btn.closest('.code-container').querySelector('code').textContent;
+  navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); });
+}
 </script>
 </body>
 </html>

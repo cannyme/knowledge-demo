@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spring IoC（控制反转）和 DI - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -58,6 +60,19 @@
   .warning { background: rgba(240, 180, 41, 0.1); border-left: 4px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
   .highlight { color: var(--amber); font-weight: 600; }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
+  .table-container th, .table-container td { border-color: var(--border-card); }
 </style>
 </head>
 <body>
@@ -65,7 +80,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring生态</span></nav>
   <header class="hero">
-    <div class="hero-badge">🌱 SPRING</div>
+    <div class="hero-badge">🌱 SPRING · IoC与DI</div>
     <h1 class="hero-title">Spring IoC与DI</h1>
     <p class="hero-desc">控制反转(IoC)是Spring框架的核心，依赖注入(DI)是IoC的具体实现方式，实现对象解耦和生命周期管理</p>
   </header>
@@ -94,7 +109,7 @@
       <h3 style="color: var(--amber); margin: 20px 0 12px;">方式1：@Component 及其衍生注解</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Component      // 通用组件
+        <div class="code-body"><pre><code class="language-java">@Component      // 通用组件
 @Repository     // 数据访问层
 @Service        // 业务层
 @Controller     // 控制层
@@ -105,7 +120,7 @@
       <p>适用于第三方库的类、需要复杂初始化逻辑的场景。</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Configuration
+        <div class="code-body"><pre><code class="language-java">@Configuration
 public class AppConfig {
     @Bean(initMethod = "init", destroyMethod = "destroy")
     public UserService userService() {
@@ -118,7 +133,7 @@ public class AppConfig {
       <p>快速导入配置类或组件。</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Import({AppConfig.class, UserService.class})
+        <div class="code-body"><pre><code class="language-java">@Import({AppConfig.class, UserService.class})
 public class MainConfig {
 }</code></pre></div>
       </div>
@@ -129,12 +144,15 @@ public class MainConfig {
     <div class="section-header"><div class="section-icon">💉</div><h2 class="section-title">依赖注入方式对比</h2></div>
     <div class="section-body">
       <h3 style="color: var(--amber); margin: 20px 0 12px;">构造器注入（推荐）✅</h3>
-      <div class="tip">
-        <strong>优点：</strong>依赖明确、不可变（final）、便于单元测试、确保对象完整、循环依赖启动时报错
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>优点：</strong>依赖明确、不可变（final）、便于单元测试、确保对象完整、循环依赖启动时报错
+        </div>
       </div>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Service
+        <div class="code-body"><pre><code class="language-java">@Service
 public class UserService {
     private final UserRepository userRepository;
 
@@ -148,7 +166,7 @@ public class UserService {
       <h3 style="color: var(--amber); margin: 20px 0 12px;">Setter注入</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Service
+        <div class="code-body"><pre><code class="language-java">@Service
 public class UserService {
     private UserRepository userRepository;
 
@@ -160,8 +178,11 @@ public class UserService {
       </div>
 
       <h3 style="color: var(--amber); margin: 20px 0 12px;">字段注入（不推荐）❌</h3>
-      <div class="warning">
-        <strong>缺点：</strong>无法设置final、单元测试困难、依赖不透明、容易隐藏循环依赖
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>缺点：</strong>无法设置final、单元测试困难、依赖不透明、容易隐藏循环依赖
+        </div>
       </div>
     </div>
   </section>
@@ -222,7 +243,7 @@ public class UserService {
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Service
+        <div class="code-body"><pre><code class="language-java">@Service
 public class ServiceA {
     public ServiceA(@Lazy ServiceB serviceB) {
         // 使用@Lazy延迟注入
@@ -230,13 +251,16 @@ public class ServiceA {
 }</code></pre></div>
       </div>
 
-      <div class="tip">
-        <strong>三级缓存原理：</strong>
-        <ul style="margin: 8px 0 0 20px;">
-          <li>singletonObjects：完整的Bean</li>
-          <li>earlySingletonObjects：提前暴露的Bean（未完成属性注入）</li>
-          <li>singletonFactories：Bean工厂，用于生成代理对象</li>
-        </ul>
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>三级缓存原理：</strong>
+          <ul style="margin: 8px 0 0 20px;">
+            <li>singletonObjects：完整的Bean</li>
+            <li>earlySingletonObjects：提前暴露的Bean（未完成属性注入）</li>
+            <li>singletonFactories：Bean工厂，用于生成代理对象</li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
@@ -254,7 +278,7 @@ public class ServiceA {
       <h3 style="color: var(--amber); margin: 20px 0 12px;">解决多实现类问题</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 方式1：@Primary 设置默认实现
+        <div class="code-body"><pre><code class="language-java">// 方式1：@Primary 设置默认实现
 @Service
 @Primary
 public class AlipayService implements PaymentService {}
@@ -267,10 +291,108 @@ public PaymentController(List&lt;PaymentService&gt; services) {}</code></pre></d
       </div>
     </div>
   </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔧</div><h2 class="section-title">BeanDefinition与BeanPostProcessor</h2></div>
+    <div class="section-body">
+      <p><span class="highlight">BeanDefinition</span> 是 Spring 中描述 Bean 元数据的核心接口，包含 class、scope、lazyInit、initMethod、dependsOn 等信息。</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 自定义BeanPostProcessor示例（Spring AOP底层原理）
+@Component
+public class MyBeanPostProcessor implements BeanPostProcessor {
+
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) {
+        // Bean初始化前：可修改或替换Bean
+        return bean;
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) {
+        // Bean初始化后：AOP代理在此生成
+        if (bean instanceof UserService) {
+            return Proxy.newProxyInstance(...); // 返回代理对象
+        }
+        return bean;
+    }
+}
+
+// ApplicationContext事件监听
+@Component
+public class AppStartListener implements ApplicationListener&lt;ContextRefreshedEvent&gt; {
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        System.out.println("Spring容器启动完成，Bean总数: " +
+            event.getApplicationContext().getBeanDefinitionCount());
+    }
+}</code></pre></div>
+      </div>
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>BeanFactoryPostProcessor vs BeanPostProcessor</strong>
+          BeanFactoryPostProcessor 在 BeanDefinition 注册后、Bean 实例化前执行（修改元数据）；BeanPostProcessor 在 Bean 实例化后、初始化前后执行（修改实例）。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: IoC 和 DI 的区别是什么？Spring 如何实现 IoC？</div>
+        <div class="interview-a">IoC（控制反转）是设计思想，将对象创建和依赖管理的控制权从应用代码转移到容器；DI（依赖注入）是 IoC 的具体实现方式，容器在运行时将依赖对象注入到目标对象。Spring 通过 BeanFactory/ApplicationContext 容器实现 IoC，底层基于反射机制创建对象并注入依赖。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: @Autowired 和 @Resource 的区别？</div>
+        <div class="interview-a">@Autowired 是 Spring 注解，先按类型匹配，有多个时按名称匹配，可配合 @Qualifier 指定 Bean 名称；@Resource 是 Java 标准注解（JSR-250），先按名称匹配，找不到再按类型匹配。推荐使用 @Autowired + @Qualifier 组合，语义更清晰。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: Spring 三级缓存如何解决循环依赖？</div>
+        <div class="interview-a">三级缓存：①singletonObjects（完整Bean）②earlySingletonObjects（早期暴露Bean，未完成属性注入）③singletonFactories（Bean工厂，生成早期引用）。A依赖B时：A实例化→放入三级缓存→注入B→B实例化→从三级缓存获取A的早期引用→B初始化完成→A完成注入→A初始化完成。注意：构造器注入无法解决循环依赖。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: singleton 单例 Bean 是线程安全的吗？</div>
+        <div class="interview-a">不一定安全。singleton 只保证容器中只有一个实例，若 Bean 中有成员变量（状态），多线程并发修改会有线程安全问题。解决方案：①无状态设计（推荐）②使用 ThreadLocal 保存线程状态③改用 prototype 作用域④使用同步机制。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：prototype Bean 注入到 singleton Bean 失效</strong>
+          singleton Bean 只初始化一次，其中注入的 prototype Bean 也只创建一次，不会每次请求都创建新实例。解决方案：注入 ApplicationContext，每次调用 getBean()；或使用 @Lookup 方法注入；或使用 ObjectProvider&lt;PrototypeBean&gt;。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：@Autowired 字段注入导致 NPE</strong>
+          使用字段注入时，若在构造函数中使用注入的字段，会得到 null（Spring 先调用构造函数，再注入字段）。改用构造器注入可彻底避免此问题。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：@PostConstruct 中调用事务方法无效</strong>
+          @PostConstruct 在 BeanPostProcessor 之前执行，此时事务代理尚未生成，直接调用会绕过事务。应将初始化逻辑移至 ApplicationListener&lt;ContextRefreshedEvent&gt; 中，此时代理已生成。
+        </div>
+      </div>
+    </div>
+  </section>
+
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('pre'); const text = code ? code.textContent : ''; navigator.clipboard.writeText(text).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }

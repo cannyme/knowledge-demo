@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>负载均衡策略 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -45,6 +47,7 @@
   .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
   .code-btn:hover { border-color: var(--amber); color: var(--amber); }
   .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body pre code.hljs { background: transparent; padding: 0; font-size: 13px; line-height: 1.8; }
   .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
   .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
   .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
@@ -65,6 +68,18 @@
   .algo-title { font-weight: 700; font-size: 16px; color: var(--amber); margin-bottom: 12px; }
   .algo-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
   .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } .param-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -73,7 +88,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
   <header class="hero">
-    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <div class="hero-badge">☁️ SPRING CLOUD · 负载均衡</div>
     <h1 class="hero-title">负载均衡策略</h1>
     <p class="hero-desc">负载均衡是将请求分发到多个服务实例的技术，用于提高系统吞吐量和可用性。本文详解各类负载均衡算法及Spring Cloud中的实现方案。</p>
   </header>
@@ -159,9 +174,12 @@ flowchart LR
     end
       </div>
 
-      <div class="tip">
-        <span class="tip-icon">💡</span> <strong>选型建议</strong><br>
-        外部流量入口使用Nginx/硬件LB，微服务间调用使用客户端负载均衡（Ribbon/LoadBalancer），实现双层负载均衡架构。
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>选型建议</strong>
+          外部流量入口使用Nginx/硬件LB，微服务间调用使用客户端负载均衡（Ribbon/LoadBalancer），实现双层负载均衡架构。
+        </div>
       </div>
     </div>
   </section>
@@ -177,8 +195,8 @@ flowchart LR
         <div class="algo-title">1. 轮询（Round Robin）</div>
         <div class="algo-desc">按顺序依次将请求分发到每个实例，循环往复。实现简单，适用于服务器性能相近的场景。</div>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>/**
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">/**
  * 轮询负载均衡算法
  * 按顺序依次分发请求
  */
@@ -204,8 +222,8 @@ public class RoundRobinLoadBalancer {
         <div class="algo-title">2. 加权轮询（Weighted Round Robin）</div>
         <div class="algo-desc">根据服务器权重比例分配请求，权重高的服务器获得更多请求。适用于服务器性能差异较大的场景。</div>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>/**
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">/**
  * 加权轮询负载均衡
  * 按权重比例分发请求
  */
@@ -244,8 +262,8 @@ public class WeightedRoundRobinLoadBalancer {
         <div class="algo-title">3. 平滑加权轮询（Smooth Weighted Round Robin）</div>
         <div class="algo-desc">Nginx默认算法，解决加权轮询请求分布不均的问题。通过动态调整当前权重，使请求分布更加平滑均匀。</div>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>/**
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">/**
  * 平滑加权轮询 - Nginx默认算法
  * 原理：currentWeight += weight，选最大者，然后减去totalWeight
  */
@@ -292,8 +310,8 @@ public class SmoothWeightedRoundRobinLoadBalancer {
         <div class="algo-title">4. 随机（Random）</div>
         <div class="algo-desc">随机选择一个服务实例。实现简单，在大量请求下分布均匀，适用于服务器性能相近的场景。</div>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>/**
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">/**
  * 随机负载均衡算法
  */
 public class RandomLoadBalancer {
@@ -318,8 +336,8 @@ public class RandomLoadBalancer {
         <div class="algo-title">5. 加权随机（Weighted Random）</div>
         <div class="algo-desc">根据权重随机选择实例，权重高的实例被选中的概率更大。适用于服务器性能不均的场景。</div>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>/**
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">/**
  * 加权随机负载均衡
  */
 public class WeightedRandomLoadBalancer {
@@ -359,8 +377,8 @@ public class WeightedRandomLoadBalancer {
         <div class="algo-title">6. 最少连接（Least Connections）</div>
         <div class="algo-desc">选择当前连接数最少的服务器。适合长连接场景（如WebSocket），能够动态感知服务器负载。</div>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>/**
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">/**
  * 最少连接数负载均衡
  * 适合长连接场景
  */
@@ -398,8 +416,8 @@ public class LeastConnectionsLoadBalancer {
         <div class="algo-title">7. IP哈希（IP Hash）</div>
         <div class="algo-desc">根据客户端IP地址计算哈希值，选择对应服务器。同一IP的请求总是路由到同一服务器，适合需要会话保持的场景。</div>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>/**
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">/**
  * IP Hash负载均衡
  * 相同IP总是路由到同一服务器
  */
@@ -426,8 +444,8 @@ public class IpHashLoadBalancer {
         <div class="algo-title">8. 一致性哈希（Consistent Hash）</div>
         <div class="algo-desc">使用一致性哈希环，相同请求Key总是路由到同一服务器。当服务器增减时，只有少量请求需要重新路由。适合缓存等有状态场景。</div>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>/**
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">/**
  * 一致性哈希负载均衡
  * 适合有状态场景（缓存、会话）
  */
@@ -527,9 +545,12 @@ public class ConsistentHashLoadBalancer {
   <section class="section">
     <div class="section-header"><div class="section-icon">🎀</div><h2 class="section-title">Ribbon负载均衡（Spring Cloud Netflix）</h2></div>
     <div class="section-body">
-      <div class="warning">
-        <span class="warning-icon">⚠️</span> <strong>维护模式提示</strong><br>
-        Ribbon 已进入维护模式，Spring Cloud 2020+ 版本建议使用 Spring Cloud LoadBalancer 替代。
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>维护模式提示</strong>
+          Ribbon 已进入维护模式，Spring Cloud 2020+ 版本建议使用 Spring Cloud LoadBalancer 替代。
+        </div>
       </div>
 
       <p>Ribbon 是 Netflix 开源的客户端负载均衡器，与 Eureka、Feign 集成，实现服务间调用的负载均衡。</p>
@@ -579,8 +600,8 @@ flowchart LR
       </table>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code># Ribbon配置示例
+        <div class="code-header"><span class="code-lang">yaml</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-yaml"># Ribbon配置示例
 user-service:
   ribbon:
     # 负载均衡策略
@@ -604,8 +625,8 @@ user-service:
       <p>Spring Cloud 官方推出的负载均衡方案，作为 Ribbon 的替代，支持响应式编程，更好的与 Spring Cloud 生态集成。</p>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code># 禁用Ribbon，启用Spring Cloud LoadBalancer
+        <div class="code-header"><span class="code-lang">yaml</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-yaml"># 禁用Ribbon，启用Spring Cloud LoadBalancer
 spring:
   cloud:
     loadbalancer:
@@ -627,9 +648,12 @@ spring:
         <li><strong>RandomLoadBalancer：</strong>随机</li>
       </ul>
 
-      <div class="tip">
-        <span class="tip-icon">💡</span> <strong>特性对比</strong><br>
-        Spring Cloud LoadBalancer 支持响应式（WebFlux），与 Spring Cloud Gateway 集成更好，是 Spring Cloud 2020+ 的推荐方案。
+      <div class="alert alert-tip">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>特性对比</strong>
+          Spring Cloud LoadBalancer 支持响应式（WebFlux），与 Spring Cloud Gateway 集成更好，是 Spring Cloud 2020+ 的推荐方案。
+        </div>
       </div>
     </div>
   </section>
@@ -646,8 +670,8 @@ spring:
       <div id="ribbon-custom" class="tab-content active">
         <p>通过继承 AbstractLoadBalancerRule 实现自定义 Ribbon 负载均衡策略：</p>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>/**
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">/**
  * 自定义Ribbon负载均衡策略
  * 基于版本号的灰度路由
  */
@@ -686,8 +710,8 @@ public class VersionAwareRule extends AbstractLoadBalancerRule {
         </div>
 
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>/**
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">/**
  * Ribbon配置类
  * 注意：此类不能放在主启动类同包或子包下
  * 避免被@ComponentScan扫描到全局生效
@@ -707,8 +731,8 @@ public class RibbonConfig {
       <div id="sc-loadbalancer-custom" class="tab-content">
         <p>实现 ReactorServiceInstanceLoadBalancer 接口自定义 Spring Cloud LoadBalancer 策略：</p>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>/**
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">/**
  * 自定义Spring Cloud LoadBalancer
  * 基于权重的随机选择
  */
@@ -766,8 +790,8 @@ public class WeightedRandomLoadBalancer
       <div id="gray-release" class="tab-content">
         <p>完整的灰度发布负载均衡实现，支持基于用户ID、Header等多种路由策略：</p>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>/**
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">/**
  * 灰度发布负载均衡策略
  * 支持：Header版本号、用户ID白名单、百分比流量
  */
@@ -861,9 +885,125 @@ public class GrayReleaseLoadBalancer
         </div>
       </div>
 
-      <div class="tip">
-        <span class="tip-icon">💡</span> <strong>生产环境建议</strong><br>
-        外部网关使用 Nginx（轮询/权重），微服务间调用使用 Spring Cloud LoadBalancer（推荐）或 Ribbon，配合熔断器实现完整的服务治理方案。
+      <div class="alert alert-tip">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>生产环境建议</strong>
+          外部网关使用 Nginx（轮询/权重），微服务间调用使用 Spring Cloud LoadBalancer（推荐）或 Ribbon，配合熔断器实现完整的服务治理方案。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎛️</div><h2 class="section-title">自定义负载均衡策略</h2></div>
+    <div class="section-body">
+      <p>Spring Cloud LoadBalancer 支持通过实现 ReactorServiceInstanceLoadBalancer 接口自定义策略：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 自定义策略：优先选择同机房实例（就近路由）
+public class ZoneAwareLoadBalancer implements ReactorServiceInstanceLoadBalancer {
+
+    private final String localZone;
+    private final ObjectProvider&lt;ServiceInstanceListSupplier&gt; serviceInstanceListSupplierProvider;
+
+    public ZoneAwareLoadBalancer(String localZone,
+            ObjectProvider&lt;ServiceInstanceListSupplier&gt; provider) {
+        this.localZone = localZone;
+        this.serviceInstanceListSupplierProvider = provider;
+    }
+
+    @Override
+    public Mono&lt;Response&lt;ServiceInstance&gt;&gt; choose(Request request) {
+        ServiceInstanceListSupplier supplier =
+            serviceInstanceListSupplierProvider.getIfAvailable();
+        return supplier.get(request).next().map(this::selectInstance);
+    }
+
+    private Response&lt;ServiceInstance&gt; selectInstance(
+            List&lt;ServiceInstance&gt; instances) {
+        if (instances.isEmpty()) {
+            return new EmptyResponse();
+        }
+        // 优先选择同 zone 的实例
+        List&lt;ServiceInstance&gt; sameZone = instances.stream()
+            .filter(i -> localZone.equals(i.getMetadata().get("zone")))
+            .collect(Collectors.toList());
+
+        List&lt;ServiceInstance&gt; candidates =
+            sameZone.isEmpty() ? instances : sameZone;
+        // 轮询
+        int idx = ThreadLocalRandom.current().nextInt(candidates.size());
+        return new DefaultResponse(candidates.get(idx));
+    }
+}
+
+// 注册自定义策略
+@Configuration
+@LoadBalancerClient(name = "order-service",
+                    configuration = OrderLoadBalancerConfig.class)
+public class LoadBalancerConfig {}
+
+@Configuration
+public class OrderLoadBalancerConfig {
+    @Bean
+    public ReactorServiceInstanceLoadBalancer loadBalancer(
+            Environment env,
+            LoadBalancerClientFactory factory) {
+        String name = env.getProperty(LoadBalancerClientFactory.PROPERTY_NAME);
+        return new ZoneAwareLoadBalancer("zone-a",
+            factory.getLazyProvider(name, ServiceInstanceListSupplier.class));
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: 客户端负载均衡和服务端负载均衡的区别？</div>
+        <div class="interview-a">服务端负载均衡（如 Nginx）：客户端请求统一打到负载均衡器，由其转发到后端实例，客户端不感知后端列表；单点风险，但配置集中管理。客户端负载均衡（如 Spring Cloud LoadBalancer）：客户端从注册中心获取服务列表，本地执行负载均衡算法选择实例直接调用；去中心化，无单点，但需要客户端逻辑；每个实例更新本地缓存可能有延迟。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: 常见的负载均衡算法有哪些？各适合什么场景？</div>
+        <div class="interview-a">轮询（Round Robin）：顺序分发，适合性能均匀的实例。加权轮询（Weighted RR）：按权重分配，适合高低配实例混用。随机（Random）：随机选取，并发低时可能不均，适合无状态简单场景。最小连接数（Least Connections）：选当前连接最少的实例，适合长连接、请求耗时差异大的场景。IP Hash：同一 IP 打到同一实例，适合需要会话粘性的场景（但实例扩缩容时 hash 环变化）。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: Ribbon 和 Spring Cloud LoadBalancer 的区别？</div>
+        <div class="interview-a">Ribbon 是 Netflix 开源的客户端负载均衡组件，功能丰富（多种策略、重试、Ping 检测），但已停止维护（2021）。Spring Cloud LoadBalancer 是 Spring 官方替代品，基于响应式编程，更轻量，与 Spring Cloud 生态深度集成，默认提供轮询和随机两种策略，支持扩展。Spring Cloud 2020+ 默认使用 Spring Cloud LoadBalancer，建议新项目迁移。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: 如何实现灰度发布？负载均衡如何配合？</div>
+        <div class="interview-a">灰度发布实现：①服务注册时在元数据中标记版本（如 version=v2、group=gray）；②自定义 LoadBalancer 策略，根据请求头（如 X-Gray-User: true）路由到对应版本实例；③通过 Nacos 权重配置流量比例（新版本 10%，稳定版 90%）；④结合 Spring Cloud Gateway 的路由谓词实现入口层分流，确保整个调用链都路由到同一版本实例（链路染色）。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：Feign + LoadBalancer 的 @LoadBalancerClient 配置污染</strong>
+          @LoadBalancerClient 的 configuration 类不能被 @ComponentScan 扫描到（会成为全局配置），必须放在主包扫描范围之外，或不加 @Configuration 注解，仅作为配置工厂类传入。否则自定义策略会覆盖所有服务的负载均衡，而非仅指定服务。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：实例上下线后本地缓存不及时刷新</strong>
+          Spring Cloud LoadBalancer 默认缓存服务列表 35 秒，实例下线后最长 35 秒内仍被调用。可通过 spring.cloud.loadbalancer.cache.ttl=10s 缩短，或配合健康检查 + Retry（失败时重选实例）兜底，避免单次调用因命中下线实例而失败。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：会话粘性与扩容冲突</strong>
+          使用 IP Hash 等会话粘性策略时，新增实例会导致哈希重分配，原本路由到旧实例的请求可能跳转到新实例，丢失本地缓存/会话。建议使用一致性哈希（Consistent Hash）减小扩容影响，或将会话数据外置到 Redis，完全去除对粘性路由的依赖。
+        </div>
       </div>
     </div>
   </section>
@@ -872,6 +1012,7 @@ public class GrayReleaseLoadBalancer
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; mermaid.initialize({ theme: 'dark' }); } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; mermaid.initialize({ theme: 'default' }); } location.reload(); });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }

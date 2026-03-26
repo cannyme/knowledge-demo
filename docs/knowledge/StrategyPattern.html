@@ -5,61 +5,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>策略模式 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
-  :root {
-    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
-    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
-    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
-    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
-  }
-  [data-theme="light"] {
-    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
-    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
-  }
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
-  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
-  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
-  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
-  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
-  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
-  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
-  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
-  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
-  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
-  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
-  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
-  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
-  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
-  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
-  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
-  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
-  .section-body p { margin-bottom: 12px; }
-  .section-body ul { margin: 12px 0; padding-left: 24px; }
-  .section-body li { margin-bottom: 8px; }
-  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
-  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
-  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
-  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
-  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
-  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
-  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
-  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
-  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
-  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
-  .tab-content { display: none; } .tab-content.active { display: block; }
-  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
-  .table-container { overflow-x: auto; margin: 20px 0; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
-  th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
-  tr:hover { background: rgba(240, 180, 41, 0.03); }
-  .highlight { color: var(--amber); font-weight: 600; }
-  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-family: var(--font-code); }
-  .tag-success { background: rgba(126, 231, 135, 0.15); color: var(--green); }
-  .tag-danger { background: rgba(255, 123, 114, 0.15); color: var(--red); }
-  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  :root{--bg-deep:#0a0e17;--bg-card:rgba(16,22,36,0.7);--bg-code:rgba(10,14,23,0.9);--border-card:rgba(240,180,41,0.12);--amber:#f0b429;--cyan:#4ecdc4;--green:#7ee787;--red:#ff7b72;--text-primary:#e8e6e3;--text-secondary:#8a8f98;--font-code:'JetBrains Mono',monospace;--font-heading:'Outfit',sans-serif}
+  [data-theme="light"]{--bg-deep:#f8f6f1;--bg-card:rgba(255,255,255,0.85);--bg-code:rgba(245,243,238,0.95);--border-card:rgba(160,120,20,0.18);--amber:#b8860b;--text-primary:#1a1a2e;--text-secondary:#555}
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-heading);min-height:100vh}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(240,180,41,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(240,180,41,0.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+  .container{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:40px 24px 80px}
+  .theme-toggle{position:fixed;top:20px;right:20px;z-index:999;width:44px;height:44px;border-radius:50%;border:1px solid var(--border-card);background:var(--bg-card);backdrop-filter:blur(12px);cursor:pointer;font-size:20px;transition:all 0.3s}
+  .theme-toggle:hover{border-color:var(--amber);transform:scale(1.1)}
+  .breadcrumb{display:flex;gap:8px;margin-bottom:24px;font-family:var(--font-code);font-size:13px;color:var(--text-secondary)}
+  .breadcrumb a{color:var(--cyan);text-decoration:none}.breadcrumb a:hover{color:var(--amber)}
+  .hero{background:var(--bg-card);border:1px solid var(--border-card);border-radius:20px;padding:48px;margin-bottom:32px;position:relative;overflow:hidden;backdrop-filter:blur(12px)}
+  .hero::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--amber),var(--cyan),var(--amber))}
+  .hero-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-code);font-size:12px;font-weight:600;color:var(--cyan);background:rgba(78,205,196,0.15);border:1px solid rgba(78,205,196,0.2);border-radius:20px;padding:6px 16px;margin-bottom:20px}
+  .hero-title{font-weight:800;font-size:clamp(32px,5vw,48px);background:linear-gradient(135deg,var(--amber),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px}
+  .hero-desc{font-size:18px;color:var(--text-secondary);line-height:1.8;max-width:700px}
+  .section{background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;margin-bottom:24px;overflow:hidden;backdrop-filter:blur(12px)}
+  .section-header{padding:24px 28px;border-bottom:1px solid var(--border-card);display:flex;align-items:center;gap:12px}
+  .section-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,rgba(240,180,41,0.08),rgba(78,205,196,0.15));display:flex;align-items:center;justify-content:center;font-size:18px}
+  .section-title{font-weight:700;font-size:20px;color:var(--text-primary)}
+  .section-body{padding:28px;color:var(--text-secondary);line-height:1.8}
+  .section-body p{margin-bottom:12px}
+  .section-body ul,.section-body ol{margin:12px 0;padding-left:24px}
+  .section-body li{margin-bottom:8px}
+  .mermaid{display:flex;justify-content:center;padding:20px;background:var(--bg-code);border-radius:12px;margin:20px 0}
+  .code-container{background:var(--bg-code);border:1px solid var(--border-card);border-radius:12px;overflow:hidden;margin:20px 0}
+  .code-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(240,180,41,0.05);border-bottom:1px solid var(--border-card)}
+  .code-lang{font-family:var(--font-code);font-size:11px;color:var(--amber);font-weight:600}
+  .code-btn{font-family:var(--font-code);font-size:11px;padding:6px 12px;background:transparent;border:1px solid var(--border-card);border-radius:6px;color:var(--text-secondary);cursor:pointer}
+  .code-btn:hover{border-color:var(--amber);color:var(--amber)}
+  .code-body pre{margin:0!important;border-radius:0!important;background:transparent!important}
+  .code-body pre code{font-family:var(--font-code)!important;font-size:13px!important;line-height:1.8!important;padding:20px!important}
+  .footer{text-align:center;margin-top:60px;padding-top:32px;border-top:1px solid var(--border-card);font-family:var(--font-code);font-size:12px;color:var(--text-secondary)}
+  .table-container{overflow-x:auto;margin:20px 0}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--border-card)}
+  th{background:rgba(240,180,41,0.08);color:var(--amber);font-weight:600}
+  tr:hover{background:rgba(240,180,41,0.03)}
+  .highlight{color:var(--amber);font-weight:600}
+  .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-family:var(--font-code)}
+  .tag-success{background:rgba(126,231,135,0.15);color:var(--green)}
+  .tag-danger{background:rgba(255,123,114,0.15);color:var(--red)}
+  .tag-warning{background:rgba(240,180,41,0.15);color:var(--amber)}
+  .alert{border-radius:10px;padding:16px 20px;margin:16px 0;border-left:3px solid}
+  .alert-warning{background:rgba(240,180,41,0.08);border-color:var(--amber)}
+  .alert-info{background:rgba(78,205,196,0.08);border-color:var(--cyan)}
+  .interview-item{background:rgba(240,180,41,0.04);border:1px solid rgba(240,180,41,0.15);border-radius:10px;padding:16px 20px;margin:12px 0}
+  .interview-q{color:var(--amber);font-weight:600;margin-bottom:8px}
+  .interview-a{color:var(--text-secondary);line-height:1.8}
+  @media(max-width:768px){.container{padding:20px 16px}.hero{padding:28px}}
 </style>
 </head>
 <body>
@@ -67,70 +65,47 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>设计模式</span></nav>
   <header class="hero">
-    <div class="hero-badge">🎯 STRATEGY</div>
+    <div class="hero-badge">🏷️ STRATEGY · 行为型模式</div>
     <h1 class="hero-title">策略模式</h1>
-    <p class="hero-desc">定义一系列算法，把它们封装起来，并使它们可以相互替换。策略模式让算法独立于使用它的客户端而变化，避免大量的if-else条件判断。</p>
+    <p class="hero-desc">定义一系列算法，将其封装并使之可相互替换。策略模式让算法独立于使用它的客户端变化，是消灭 if-else 的利器，与 Spring 依赖注入结合使用极为优雅。</p>
   </header>
 
-  <!-- 模式定义与意图 -->
   <section class="section">
-    <div class="section-header"><div class="section-icon">📖</div><h2 class="section-title">模式定义与意图</h2></div>
+    <div class="section-header"><div class="section-icon">📖</div><h2 class="section-title">模式结构</h2></div>
     <div class="section-body">
-      <p><strong class="highlight">定义：</strong>策略模式（Strategy Pattern）是一种行为型设计模式，它定义了算法族，分别封装起来，让它们之间可以互相替换，此模式让算法的变化独立于使用算法的客户。</p>
-      <p><strong class="highlight">核心思想：</strong>将不同的算法或行为封装成独立的策略类，上下文类通过组合的方式使用策略，而不是通过继承或大量的if-else判断。</p>
       <div class="mermaid">classDiagram
-    class Strategy { <<interface>> +execute() }
-    class ConcreteStrategyA
-    class ConcreteStrategyB
     class Context {
         -strategy: Strategy
         +setStrategy(Strategy)
-        +executeStrategy()
+        +execute()
     }
+    class Strategy {
+        &lt;&lt;interface&gt;&gt;
+        +execute()
+    }
+    class ConcreteStrategyA { +execute() }
+    class ConcreteStrategyB { +execute() }
+    class ConcreteStrategyC { +execute() }
+    Context o--> Strategy
     Strategy <|.. ConcreteStrategyA
     Strategy <|.. ConcreteStrategyB
-    Context o-- Strategy</div>
-      <p><strong class="highlight">角色说明：</strong></p>
+    Strategy <|.. ConcreteStrategyC</div>
+      <p><strong class="highlight">三个角色：</strong></p>
       <ul>
-        <li><strong>Strategy（策略接口）：</strong>定义所有支持的算法的公共接口</li>
-        <li><strong>ConcreteStrategy（具体策略）：</strong>实现具体的算法</li>
-        <li><strong>Context（上下文）：</strong>维护一个Strategy的引用，用于调用具体策略</li>
+        <li><strong>Strategy（策略接口）：</strong>定义算法的公共接口</li>
+        <li><strong>ConcreteStrategy（具体策略）：</strong>实现具体算法</li>
+        <li><strong>Context（上下文）：</strong>持有策略引用，委托策略执行算法</li>
       </ul>
     </div>
   </section>
 
-  <!-- 适用场景 -->
-  <section class="section">
-    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">适用场景</h2></div>
-    <div class="section-body">
-      <p>以下场景适合使用策略模式：</p>
-      <ul>
-        <li><strong>支付方式选择：</strong>支付宝、微信支付、银行卡支付等不同支付方式</li>
-        <li><strong>排序算法选择：</strong>快速排序、冒泡排序、归并排序等不同排序策略</li>
-        <li><strong>打折策略：</strong>满减、折扣、会员价等不同的促销策略</li>
-        <li><strong>路线规划：</strong>步行、驾车、公交等不同出行策略</li>
-        <li><strong>数据加密：</strong>MD5、SHA、AES等不同加密算法选择</li>
-        <li><strong>消息推送：</strong>短信、邮件、App推送等不同推送渠道</li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- 代码实现 -->
   <section class="section">
     <div class="section-header"><div class="section-icon">💻</div><h2 class="section-title">代码实现</h2></div>
     <div class="section-body">
-      <div class="tabs">
-        <button class="tab active" data-tab="payment">支付策略</button>
-        <button class="tab" data-tab="sort">排序策略</button>
-        <button class="tab" data-tab="factory">工厂优化</button>
-        <button class="tab" data-tab="spring">Spring应用</button>
-      </div>
-
-      <div id="payment" class="tab-content active">
-        <p><strong class="highlight">场景：支付策略</strong> - 不同支付方式使用不同策略</p>
-        <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>// 策略接口
+      <p><strong class="highlight">支付策略示例</strong></p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 策略接口
 interface PaymentStrategy {
     void pay(double amount);
     String getName();
@@ -138,44 +113,21 @@ interface PaymentStrategy {
 
 // 具体策略：支付宝
 class AlipayStrategy implements PaymentStrategy {
-    @Override
-    public void pay(double amount) {
+    @Override public void pay(double amount) {
         System.out.println("支付宝支付：" + amount + "元");
     }
-
-    @Override
-    public String getName() {
-        return "支付宝";
-    }
+    @Override public String getName() { return "支付宝"; }
 }
 
 // 具体策略：微信
 class WechatStrategy implements PaymentStrategy {
-    @Override
-    public void pay(double amount) {
+    @Override public void pay(double amount) {
         System.out.println("微信支付：" + amount + "元");
     }
-
-    @Override
-    public String getName() {
-        return "微信";
-    }
+    @Override public String getName() { return "微信"; }
 }
 
-// 具体策略：银行卡
-class BankCardStrategy implements PaymentStrategy {
-    @Override
-    public void pay(double amount) {
-        System.out.println("银行卡支付：" + amount + "元");
-    }
-
-    @Override
-    public String getName() {
-        return "银行卡";
-    }
-}
-
-// 上下文类：支付处理器
+// 上下文：持有策略，委托执行
 class PaymentContext {
     private PaymentStrategy strategy;
 
@@ -184,218 +136,293 @@ class PaymentContext {
     }
 
     public void executePayment(double amount) {
-        if (strategy == null) {
-            throw new IllegalStateException("未设置支付方式");
-        }
+        if (strategy == null) throw new IllegalStateException("未设置支付方式");
         System.out.println("使用" + strategy.getName() + "支付");
         strategy.pay(amount);
     }
 }
 
-// 使用
-PaymentContext context = new PaymentContext();
-context.setStrategy(new AlipayStrategy());
-context.executePayment(100.0);
+// 使用：运行时动态切换策略
+PaymentContext ctx = new PaymentContext();
+ctx.setStrategy(new AlipayStrategy());
+ctx.executePayment(100.0);
 
-context.setStrategy(new WechatStrategy());
-context.executePayment(200.0);</code></pre></div>
-        </div>
+ctx.setStrategy(new WechatStrategy()); // 策略切换，无需改Context
+ctx.executePayment(200.0);</code></pre></div>
       </div>
 
-      <div id="sort" class="tab-content">
-        <p><strong class="highlight">场景：排序策略</strong> - 不同排序算法作为不同策略</p>
-        <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>// 排序策略接口
+      <p><strong class="highlight">枚举策略 — 避免策略类过多</strong></p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 使用枚举实现策略，减少类数量
+enum PaymentType implements PaymentStrategy {
+    ALIPAY {
+        @Override public void pay(double amount) { System.out.println("支付宝：" + amount); }
+        @Override public String getName() { return "支付宝"; }
+    },
+    WECHAT {
+        @Override public void pay(double amount) { System.out.println("微信：" + amount); }
+        @Override public String getName() { return "微信"; }
+    },
+    BANK_CARD {
+        @Override public void pay(double amount) { System.out.println("银行卡：" + amount); }
+        @Override public String getName() { return "银行卡"; }
+    };
+}
+
+// 使用
+PaymentType.ALIPAY.pay(300.0);</code></pre></div>
+      </div>
+
+      <p><strong class="highlight">Lambda 策略 — 函数式接口简化</strong></p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 策略接口是函数式接口时，可直接用 Lambda 替代策略类
+@FunctionalInterface
 interface SortStrategy {
-    &lt;T extends Comparable&lt;T&gt;&gt; void sort(T[] arr);
+    void sort(int[] arr);
+}
+
+// 无需创建策略类，直接 Lambda
+SortStrategy bubbleSort = arr -> {
+    for (int i = 0; i &lt; arr.length - 1; i++)
+        for (int j = 0; j &lt; arr.length - 1 - i; j++)
+            if (arr[j] > arr[j+1]) { int t=arr[j]; arr[j]=arr[j+1]; arr[j+1]=t; }
+};
+
+SortStrategy quickSort = arr -> Arrays.sort(arr); // 简单起见
+
+// Map 存储策略
+Map&lt;String, SortStrategy&gt; strategies = new HashMap&lt;&gt;();
+strategies.put("bubble", bubbleSort);
+strategies.put("quick",  quickSort);
+
+// 使用
+int[] data = {5, 2, 8, 1};
+strategies.get("quick").sort(data);</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎤</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1：策略模式 vs if-else 的本质区别？</div>
+        <div class="interview-a">
+          if-else 是<strong>过程式思维</strong>，把所有逻辑集中在一处，新增分支必须修改代码（违反开闭原则）。策略模式是<strong>对象式思维</strong>，每种策略封装为独立类，新增策略只需新增类，Context 无需修改。代码从"一大块判断"变成"多个小而内聚的类"。
+        </div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2：策略模式 vs 状态模式的区别？</div>
+        <div class="interview-a">
+          两者结构几乎相同（都持有接口引用），意图不同：
+          <ul style="margin-top:8px;">
+            <li><strong>策略模式：</strong>策略由<strong>客户端主动选择</strong>，算法之间平等可替换，Context 本身无状态变化</li>
+            <li><strong>状态模式：</strong>状态由<strong>对象内部自动切换</strong>，不同状态下行为不同，状态切换是核心（如订单状态机：待付款→已付款→已发货）</li>
+          </ul>
+        </div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3：Spring 中如何优雅地使用策略模式？</div>
+        <div class="interview-a">
+          <div class="code-container" style="margin-top:8px;">
+            <div class="code-header"><span class="code-lang">Java</span></div>
+            <div class="code-body"><pre><code class="language-java">// 各策略实现类注册为 Spring Bean，beanName 作为 key
+@Component("alipay")
+public class AlipayStrategy implements PaymentStrategy { ... }
+
+@Component("wechat")
+public class WechatStrategy implements PaymentStrategy { ... }
+
+// Spring 自动将所有 PaymentStrategy Bean 注入 Map（key=beanName）
+@Service
+public class PaymentService {
+    @Autowired
+    private Map&lt;String, PaymentStrategy&gt; strategyMap;
+    // strategyMap = {"alipay": AlipayStrategy, "wechat": WechatStrategy}
+
+    public void pay(String type, double amount) {
+        strategyMap.get(type).pay(amount); // 零 if-else
+    }
+}
+// 新增支付方式：只加一个 @Component 类，Service 代码不动</code></pre></div>
+          </div>
+        </div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4：开闭原则体现在哪里？</div>
+        <div class="interview-a">
+          对<strong>扩展开放</strong>：新增策略只需创建新类实现 Strategy 接口；对<strong>修改关闭</strong>：Context 类和现有策略类完全不需要修改。满足了"软件实体（类、模块、函数）应对扩展开放，对修改关闭"的原则。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">优缺点 &amp; 适用场景</h2></div>
+    <div class="section-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--green);margin-bottom:12px;">✅ 优点</h4>
+          <ul>
+            <li>符合开闭原则，易于扩展</li>
+            <li>消灭 if-else，逻辑清晰</li>
+            <li>算法可独立测试和复用</li>
+            <li>可运行时动态切换策略</li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="color:var(--red);margin-bottom:12px;">❌ 缺点</h4>
+          <ul>
+            <li>策略类数量可能增多</li>
+            <li>客户端需了解所有策略差异</li>
+            <li>策略间不能共享状态</li>
+          </ul>
+        </div>
+      </div>
+      <h4 style="margin-top:20px;color:var(--text-primary);">适用场景</h4>
+      <ul>
+        <li>支付方式选择（支付宝、微信、银行卡）</li>
+        <li>打折策略（满减、折扣、会员价、无折扣）</li>
+        <li>排序算法选择（根据数据规模选快排/归并/插入）</li>
+        <li>路线规划（步行、驾车、公交）</li>
+        <li>数据压缩/加密方式选择</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 实战：折扣策略系统 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔥</div><h2 class="section-title">实战：电商折扣策略系统</h2></div>
+    <div class="section-body">
+      <p>策略模式最经典的实战场景之一：电商平台的多种折扣规则，用策略模式 + Spring 注入彻底消灭 if-else。</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java - 折扣策略完整实现</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// Step 1：折扣策略接口
+public interface DiscountStrategy {
+    /** 计算折扣后价格 */
+    BigDecimal calculate(BigDecimal originalPrice, Object context);
+    /** 策略名称（用作 Spring beanName 和业务 key）*/
     String getName();
 }
 
-// 快速排序策略
-class QuickSortStrategy implements SortStrategy {
+// Step 2：具体策略实现
+
+// 无折扣
+@Component("NO_DISCOUNT")
+public class NoDiscountStrategy implements DiscountStrategy {
     @Override
-    public &lt;T extends Comparable&lt;T&gt;&gt; void sort(T[] arr) {
-        quickSort(arr, 0, arr.length - 1);
-    }
-
-    private &lt;T extends Comparable&lt;T&gt;&gt; void quickSort(T[] arr, int low, int high) {
-        if (low < high) {
-            int pivot = partition(arr, low, high);
-            quickSort(arr, low, pivot - 1);
-            quickSort(arr, pivot + 1, high);
-        }
-    }
-
-    private &lt;T extends Comparable&lt;T&gt;&gt; int partition(T[] arr, int low, int high) {
-        T pivot = arr[high];
-        int i = low - 1;
-        for (int j = low; j < high; j++) {
-            if (arr[j].compareTo(pivot) <= 0) {
-                i++;
-                T temp = arr[i];
-                arr[i] = arr[j];
-                arr[j] = temp;
-            }
-        }
-        T temp = arr[i + 1];
-        arr[i + 1] = arr[high];
-        arr[high] = temp;
-        return i + 1;
-    }
-
-    @Override
-    public String getName() {
-        return "快速排序";
-    }
+    public BigDecimal calculate(BigDecimal price, Object ctx) { return price; }
+    @Override public String getName() { return "NO_DISCOUNT"; }
 }
 
-// 冒泡排序策略
-class BubbleSortStrategy implements SortStrategy {
+// 固定折扣（如 8折）
+@Component("PERCENTAGE")
+public class PercentageDiscountStrategy implements DiscountStrategy {
     @Override
-    public &lt;T extends Comparable&lt;T&gt;&gt; void sort(T[] arr) {
-        for (int i = 0; i < arr.length - 1; i++) {
-            for (int j = 0; j < arr.length - 1 - i; j++) {
-                if (arr[j].compareTo(arr[j + 1]) > 0) {
-                    T temp = arr[j];
-                    arr[j] = arr[j + 1];
-                    arr[j + 1] = temp;
-                }
-            }
+    public BigDecimal calculate(BigDecimal price, Object ctx) {
+        double rate = (double) ctx; // ctx 传入折扣率，如 0.8
+        return price.multiply(BigDecimal.valueOf(rate)).setScale(2, RoundingMode.HALF_UP);
+    }
+    @Override public String getName() { return "PERCENTAGE"; }
+}
+
+// 满减（满100减20）
+@Component("FULL_REDUCTION")
+public class FullReductionStrategy implements DiscountStrategy {
+    @Override
+    public BigDecimal calculate(BigDecimal price, Object ctx) {
+        // ctx: Map{threshold:100, reduction:20}
+        Map<String, BigDecimal> rule = (Map<String, BigDecimal>) ctx;
+        BigDecimal threshold = rule.get("threshold");
+        BigDecimal reduction = rule.get("reduction");
+        if (price.compareTo(threshold) >= 0) {
+            return price.subtract(reduction);
         }
+        return price;
     }
+    @Override public String getName() { return "FULL_REDUCTION"; }
+}
 
+// 会员折扣（根据会员等级）
+@Component("MEMBER")
+public class MemberDiscountStrategy implements DiscountStrategy {
+    private static final Map<String, Double> RATES = Map.of(
+        "SILVER", 0.95, "GOLD", 0.90, "PLATINUM", 0.85
+    );
     @Override
-    public String getName() {
-        return "冒泡排序";
+    public BigDecimal calculate(BigDecimal price, Object ctx) {
+        String level = (String) ctx;
+        double rate = RATES.getOrDefault(level, 1.0);
+        return price.multiply(BigDecimal.valueOf(rate)).setScale(2, RoundingMode.HALF_UP);
     }
+    @Override public String getName() { return "MEMBER"; }
 }
 
-// 使用
-Integer[] arr = {5, 2, 8, 1, 9};
-SortStrategy sortStrategy = new QuickSortStrategy();
-sortStrategy.sort(arr);
-System.out.println("排序结果：" + Arrays.toString(arr));</code></pre></div>
-        </div>
-      </div>
-
-      <div id="factory" class="tab-content">
-        <p><strong class="highlight">优化：策略 + 工厂模式</strong> - 使用工厂获取策略，避免直接创建策略对象</p>
-        <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>// 策略工厂
-class PaymentStrategyFactory {
-    private static final Map&lt;String, PaymentStrategy&gt; STRATEGIES = new HashMap&lt;&gt;();
-
-    static {
-        STRATEGIES.put("alipay", new AlipayStrategy());
-        STRATEGIES.put("wechat", new WechatStrategy());
-        STRATEGIES.put("bank", new BankCardStrategy());
-    }
-
-    public static PaymentStrategy getStrategy(String type) {
-        PaymentStrategy strategy = STRATEGIES.get(type);
-        if (strategy == null) {
-            throw new IllegalArgumentException("不支持的支付方式：" + type);
-        }
-        return strategy;
-    }
-}
-
-// 使用枚举简化策略（避免创建过多策略类）
-enum PaymentType implements PaymentStrategy {
-    ALIPAY {
-        @Override
-        public void pay(double amount) {
-            System.out.println("支付宝支付：" + amount + "元");
-        }
-        @Override
-        public String getName() { return "支付宝"; }
-    },
-    WECHAT {
-        @Override
-        public void pay(double amount) {
-            System.out.println("微信支付：" + amount + "元");
-        }
-        @Override
-        public String getName() { return "微信"; }
-    },
-    BANK_CARD {
-        @Override
-        public void pay(double amount) {
-            System.out.println("银行卡支付：" + amount + "元");
-        }
-        @Override
-        public String getName() { return "银行卡"; }
-    }
-}
-
-// 使用
-PaymentStrategy strategy = PaymentStrategyFactory.getStrategy("wechat");
-strategy.pay(200.0);
-
-// 使用枚举策略
-PaymentType.ALIPAY.pay(300.0);</code></pre></div>
-        </div>
-      </div>
-
-      <div id="spring" class="tab-content">
-        <p><strong class="highlight">Spring中的策略模式</strong> - 利用Spring IoC容器管理策略</p>
-        <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>// 策略接口
-public interface PaymentStrategy {
-    void pay(double amount);
-    String getType();
-}
-
-// 具体策略
-@Component
-public class AlipayStrategy implements PaymentStrategy {
-    @Override
-    public void pay(double amount) {
-        System.out.println("支付宝支付：" + amount);
-    }
-
-    @Override
-    public String getType() {
-        return "alipay";
-    }
-}
-
-@Component
-public class WechatStrategy implements PaymentStrategy {
-    @Override
-    public void pay(double amount) {
-        System.out.println("微信支付：" + amount);
-    }
-
-    @Override
-    public String getType() {
-        return "wechat";
-    }
-}
-
-// 服务类：自动注入所有策略
+// Step 3：策略上下文（Context）
 @Service
-public class PaymentService {
-    // Spring自动注入所有PaymentStrategy实现
-    private final Map&lt;String, PaymentStrategy&gt; strategyMap;
+public class PriceCalculationService {
+    @Autowired
+    private Map<String, DiscountStrategy> strategyMap;
+    // Spring 自动填充：{"NO_DISCOUNT": NoDiscountStrategy, "PERCENTAGE": ...}
 
-    public PaymentService(List&lt;PaymentStrategy&gt; strategies) {
-        this.strategyMap = strategies.stream()
-            .collect(Collectors.toMap(
-                PaymentStrategy::getType,
-                strategy -> strategy
-            ));
-    }
-
-    public void pay(String type, double amount) {
-        PaymentStrategy strategy = strategyMap.get(type);
+    public BigDecimal calculatePrice(String strategyName,
+                                     BigDecimal originalPrice,
+                                     Object context) {
+        DiscountStrategy strategy = strategyMap.get(strategyName);
         if (strategy == null) {
-            throw new IllegalArgumentException("不支持的支付方式");
+            throw new IllegalArgumentException("未知折扣策略：" + strategyName);
         }
-        strategy.pay(amount);
+        BigDecimal result = strategy.calculate(originalPrice, context);
+        // 保证折扣价不低于0
+        return result.max(BigDecimal.ZERO);
+    }
+}
+
+// 使用示例
+BigDecimal price = new BigDecimal("199.00");
+// 8折
+BigDecimal discounted = priceService.calculatePrice("PERCENTAGE", price, 0.8);
+// 满100减20
+Map<String, BigDecimal> rule = Map.of("threshold", new BigDecimal("100"),
+                                       "reduction", new BigDecimal("20"));
+BigDecimal fullReduced = priceService.calculatePrice("FULL_REDUCTION", price, rule);</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 实战陷阱 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warning">
+        <div style="font-weight:700;margin-bottom:8px;">陷阱1：策略模式不能完全消灭所有 if-else</div>
+        "选择哪个策略"本身可能还需要判断逻辑。策略模式消灭的是<strong>算法内部</strong>的 if-else，而非"如何选择策略"的 if-else。可以结合工厂模式（或 Spring Map 注入）来消灭策略选择处的 if-else。
+      </div>
+      <div class="alert alert-warning">
+        <div style="font-weight:700;margin-bottom:8px;">陷阱2：策略对象有状态导致并发问题</div>
+        <div class="code-container" style="margin-top:8px;">
+          <div class="code-header"><span class="code-lang">Java</span></div>
+          <div class="code-body"><pre><code class="language-java">// ❌ 危险：策略类有可变状态，Spring 单例 Bean 下多线程并发修改
+@Component("statefulStrategy")
+public class StatefulDiscountStrategy implements DiscountStrategy {
+    private int callCount = 0; // 可变状态！Spring 单例，多线程共享，竞态条件
+
+    @Override
+    public BigDecimal calculate(BigDecimal price, Object ctx) {
+        callCount++; // ❌ 线程不安全
+        return price.multiply(BigDecimal.valueOf(0.9));
+    }
+}
+
+// ✅ 正确：策略类应该是无状态的（Stateless）
+@Component("safeStrategy")
+public class SafeDiscountStrategy implements DiscountStrategy {
+    // 无实例变量，纯函数式，天然线程安全
+    @Override
+    public BigDecimal calculate(BigDecimal price, Object ctx) {
+        return price.multiply(BigDecimal.valueOf(0.9));
     }
 }</code></pre></div>
         </div>
@@ -403,71 +430,27 @@ public class PaymentService {
     </div>
   </section>
 
-  <!-- 优缺点分析 -->
-  <section class="section">
-    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">优缺点分析</h2></div>
-    <div class="section-body">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-        <div>
-          <h4 style="color: var(--green); margin-bottom: 12px;">优点</h4>
-          <ul>
-            <li><strong>开闭原则：</strong>新增算法只需新增策略类，无需修改原有代码</li>
-            <li><strong>避免if-else：</strong>消除复杂的条件判断语句，代码更清晰</li>
-            <li><strong>算法复用：</strong>策略可被多个上下文复用</li>
-            <li><strong>算法独立：</strong>算法变化不影响使用算法的客户端</li>
-            <li><strong>运行时切换：</strong>可以在运行时动态切换策略</li>
-          </ul>
-        </div>
-        <div>
-          <h4 style="color: var(--red); margin-bottom: 12px;">缺点</h4>
-          <ul>
-            <li><strong>客户端需了解策略：</strong>客户端必须知道所有策略类，选择合适的策略</li>
-            <li><strong>类数量增加：</strong>每个策略对应一个类，增加系统复杂度</li>
-            <li><strong>通信开销：</strong>策略与上下文之间可能存在数据传递开销</li>
-            <li><strong>过度设计：</strong>策略较少时，使用简单if-else可能更直观</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 与其他模式的关系 -->
+  <!-- 与其他模式关系 -->
   <section class="section">
     <div class="section-header"><div class="section-icon">🔗</div><h2 class="section-title">与其他模式的关系</h2></div>
     <div class="section-body">
-      <table>
-        <tr>
-          <th>相关模式</th>
-          <th>关系说明</th>
-        </tr>
-        <tr>
-          <td><strong class="highlight">工厂模式</strong></td>
-          <td>工厂模式用于创建策略对象，策略模式用于切换算法</td>
-        </tr>
-        <tr>
-          <td><strong class="highlight">状态模式</strong></td>
-          <td>状态模式是策略模式的变体，策略由状态决定而非客户端</td>
-        </tr>
-        <tr>
-          <td><strong class="highlight">桥接模式</strong></td>
-          <td>两者都使用组合替代继承，但关注点不同</td>
-        </tr>
-        <tr>
-          <td><strong class="highlight">模板方法</strong></td>
-          <td>模板方法在基类中定义算法骨架，策略模式将整个算法封装</td>
-        </tr>
-      </table>
-      <p style="margin-top: 16px;"><strong class="highlight">策略模式 vs 状态模式：</strong>两者结构相似，但意图不同。策略模式由客户端选择策略，状态模式的状态转换由上下文自动管理。</p>
+      <div class="table-container"><table>
+        <tr><th>相关模式</th><th>关系说明</th></tr>
+        <tr><td><strong class="highlight">工厂模式</strong></td><td>工厂创建策略对象；两者常配合使用（工厂负责实例化，策略负责算法）</td></tr>
+        <tr><td><strong class="highlight">状态模式</strong></td><td>结构几乎相同，但意图不同：策略由客户端选择，状态由对象内部自动切换</td></tr>
+        <tr><td><strong class="highlight">模板方法</strong></td><td>模板方法通过继承改变算法部分；策略通过组合整体替换算法</td></tr>
+        <tr><td><strong class="highlight">命令模式</strong></td><td>命令封装请求为对象，策略封装算法为对象；命令可撤销，策略通常不能</td></tr>
+      </table></div>
     </div>
   </section>
 
-  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+  <footer class="footer">Java Knowledge Review Demo — 设计模式系列<br><a href="../knowledge-map.html" style="color:var(--cyan);">← 返回知识地图</a></footer>
 </div>
 <script>
-mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
-document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
-document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
-function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
+mermaid.initialize({startOnLoad:true,theme:'dark',themeVariables:{primaryColor:'#f0b429',lineColor:'#4ecdc4',background:'#0a0e17'}});
+hljs.highlightAll();
+document.getElementById('themeToggle').addEventListener('click',()=>{const h=document.documentElement;if(h.getAttribute('data-theme')==='light'){h.removeAttribute('data-theme');document.getElementById('themeToggle').textContent='🌙';}else{h.setAttribute('data-theme','light');document.getElementById('themeToggle').textContent='☀️';}});
+function copyCode(btn){const code=btn.closest('.code-container').querySelector('code').textContent;navigator.clipboard.writeText(code).then(()=>{btn.textContent='✓ 已复制';btn.style.color='#4ecdc4';setTimeout(()=>{btn.textContent='📋 复制';btn.style.color='';},2000);});}
 </script>
 </body>
 </html>

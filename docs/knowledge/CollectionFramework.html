@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Java集合框架 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -44,7 +46,22 @@
   .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
   .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
   .code-btn:hover { border-color: var(--amber); color: var(--amber); }
-  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body pre { padding: 0; margin: 0; }
+  .code-body pre code.hljs { padding: 20px; border-radius: 0; font-family: var(--font-code); font-size: 13px; line-height: 1.8; }
+  .alert { border-radius: 10px; padding: 16px 20px; margin: 16px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .alert-info { background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.2); }
+  .alert-warn { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.2); }
+  .alert-tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.2); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .interview-q { padding: 16px 20px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); font-weight: 600; color: var(--amber); }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; }
+  .table-container { overflow-x: auto; margin: 16px 0; }
+  .section-body table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  .section-body th, .section-body td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  .section-body th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  .section-body tr:hover { background: rgba(240, 180, 41, 0.03); }
   .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
   .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
   .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
@@ -58,7 +75,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Java基础</span></nav>
   <header class="hero">
-    <div class="hero-badge">📦 COLLECTIONS</div>
+    <div class="hero-badge">🏷️ COLLECTIONS · 集合框架</div>
     <h1 class="hero-title">Java集合框架</h1>
     <p class="hero-desc">Java集合框架的详细解析和最佳实践</p>
   </header>
@@ -70,27 +87,49 @@
         <li><strong>Collection（单值集合）</strong>：存储单个元素的集合</li>
         <li><strong>Map（键值对）</strong>：存储键值对的映射关系</li>
       </ul>
-      <div class="mermaid">classDiagram
-    class Iterable { <<interface>> }
-    class Collection { <<interface>> }
-    class List { <<interface>> }
-    class Set { <<interface>> }
-    class Queue { <<interface>> }
-    class Map { <<interface>> }
-    Iterable <|-- Collection
-    Collection <|-- List
-    Collection <|-- Set
-    Collection <|-- Queue
-    List <|.. ArrayList
-    List <|.. LinkedList
-    Set <|.. HashSet
-    Set <|.. LinkedHashSet
-    Set <|.. TreeSet
-    Queue <|.. PriorityQueue
-    Map <|.. HashMap
-    Map <|.. LinkedHashMap
-    Map <|.. TreeMap
-    Map <|.. ConcurrentHashMap</div>
+      <div class="mermaid">flowchart TD
+    Iterable["Iterable&lt;E&gt;\n〔interface〕"]
+    Collection["Collection&lt;E&gt;\n〔interface〕"]
+    List["List&lt;E&gt;\n〔interface〕"]
+    Set["Set&lt;E&gt;\n〔interface〕"]
+    Queue["Queue&lt;E&gt;\n〔interface〕"]
+    Map["Map&lt;K,V&gt;\n〔interface〕"]
+
+    Iterable --> Collection
+    Collection --> List
+    Collection --> Set
+    Collection --> Queue
+
+    List --> ArrayList
+    List --> LinkedList
+
+    Set --> HashSet
+    Set --> LinkedHashSet
+    Set --> TreeSet
+
+    Queue --> PriorityQueue
+
+    Map --> HashMap
+    Map --> LinkedHashMap
+    Map --> TreeMap
+    Map --> ConcurrentHashMap
+
+    style Iterable fill:#1a2a1a,stroke:#7ee787,color:#7ee787
+    style Collection fill:#1a2a1a,stroke:#7ee787,color:#7ee787
+    style List fill:#1a1a2e,stroke:#4ecdc4,color:#4ecdc4
+    style Set fill:#1a1a2e,stroke:#4ecdc4,color:#4ecdc4
+    style Queue fill:#1a1a2e,stroke:#4ecdc4,color:#4ecdc4
+    style Map fill:#2a1a10,stroke:#f0b429,color:#f0b429
+    style ArrayList fill:#0a0e17,stroke:#8a8f98,color:#e8e6e3
+    style LinkedList fill:#0a0e17,stroke:#8a8f98,color:#e8e6e3
+    style HashSet fill:#0a0e17,stroke:#8a8f98,color:#e8e6e3
+    style LinkedHashSet fill:#0a0e17,stroke:#8a8f98,color:#e8e6e3
+    style TreeSet fill:#0a0e17,stroke:#8a8f98,color:#e8e6e3
+    style PriorityQueue fill:#0a0e17,stroke:#8a8f98,color:#e8e6e3
+    style HashMap fill:#0a0e17,stroke:#8a8f98,color:#e8e6e3
+    style LinkedHashMap fill:#0a0e17,stroke:#8a8f98,color:#e8e6e3
+    style TreeMap fill:#0a0e17,stroke:#8a8f98,color:#e8e6e3
+    style ConcurrentHashMap fill:#0a0e17,stroke:#8a8f98,color:#e8e6e3</div>
     </div>
   </section>
 
@@ -106,7 +145,7 @@
       </ul>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 指定初始容量，避免频繁扩容
+        <div class="code-body"><pre><code class="language-java">// 指定初始容量，避免频繁扩容
 List&lt;Integer&gt; list = new ArrayList&lt;&gt;(100);
 
 // 批量添加
@@ -150,7 +189,7 @@ list.forEach(System.out::println);</code></pre></div>
       </ul>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>LinkedList&lt;Integer&gt; list = new LinkedList&lt;&gt;();
+        <div class="code-body"><pre><code class="language-java">LinkedList&lt;Integer&gt; list = new LinkedList&lt;&gt;();
 
 // 作为队列使用（FIFO）
 list.offer(1);      // 入队
@@ -185,7 +224,7 @@ list.removeLast();</code></pre></div>
       </div>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>Map&lt;String, Integer&gt; map = new HashMap&lt;&gt;();
+        <div class="code-body"><pre><code class="language-java">Map&lt;String, Integer&gt; map = new HashMap&lt;&gt;();
 
 map.put("a", 1);
 map.putIfAbsent("b", 2);              // 不存在才放入
@@ -206,7 +245,7 @@ map.forEach((k, v) -&gt; System.out.println(k + "=" + v));</code></pre></div>
       <p><strong>应用场景：</strong>LRU 缓存、需要保持顺序的 Map</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 访问顺序模式（accessOrder = true）
+        <div class="code-body"><pre><code class="language-java">// 访问顺序模式（accessOrder = true）
 LinkedHashMap&lt;String, Integer&gt; map = new LinkedHashMap&lt;&gt;(16, 0.75f, true);
 map.put("a", 1);
 map.put("b", 2);
@@ -237,7 +276,7 @@ LinkedHashMap&lt;String, Integer&gt; lru = new LinkedHashMap&lt;String, Integer&
       </ul>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>TreeMap&lt;Integer, String&gt; map = new TreeMap&lt;&gt;();
+        <div class="code-body"><pre><code class="language-java">TreeMap&lt;Integer, String&gt; map = new TreeMap&lt;&gt;();
 
 map.put(3, "c");
 map.put(1, "a");
@@ -277,7 +316,7 @@ map.higherKey(2);      // 3（大于 2 的最小 key）</code></pre></div>
         </ul>
         <div class="code-container">
           <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>Set&lt;String&gt; set = new HashSet&lt;&gt;();
+          <div class="code-body"><pre><code class="language-java">Set&lt;String&gt; set = new HashSet&lt;&gt;();
 set.add("a");
 set.add("b");
 set.contains("a");  // O(1)
@@ -297,7 +336,7 @@ Set&lt;Integer&gt; unique = new HashSet&lt;&gt;(list);  // [1, 2, 3]</code></pre
         </ul>
         <div class="code-container">
           <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>TreeSet&lt;Integer&gt; set = new TreeSet&lt;&gt;();
+          <div class="code-body"><pre><code class="language-java">TreeSet&lt;Integer&gt; set = new TreeSet&lt;&gt;();
 set.add(3);
 set.add(1);
 set.add(2);
@@ -325,7 +364,7 @@ set.subSet(1, 3);      // [1, 2]</code></pre></div>
       </ul>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 默认最小堆
+        <div class="code-body"><pre><code class="language-java">// 默认最小堆
 PriorityQueue&lt;Integer&gt; minHeap = new PriorityQueue&lt;&gt;();
 minHeap.offer(3);
 minHeap.offer(1);
@@ -363,7 +402,7 @@ for (int num : arr) {
       </ul>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>ConcurrentHashMap&lt;String, Integer&gt; map = new ConcurrentHashMap&lt;&gt;();
+        <div class="code-body"><pre><code class="language-java">ConcurrentHashMap&lt;String, Integer&gt; map = new ConcurrentHashMap&lt;&gt;();
 
 // 原子操作
 map.putIfAbsent("a", 1);
@@ -392,7 +431,7 @@ map.reduceValues(1, Integer::sum);</code></pre></div>
       <p><strong>适用场景：</strong>读多写少的并发场景，遍历操作远多于修改操作</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">JAVA</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>CopyOnWriteArrayList&lt;Integer&gt; list = new CopyOnWriteArrayList&lt;&gt;();
+        <div class="code-body"><pre><code class="language-java">CopyOnWriteArrayList&lt;Integer&gt; list = new CopyOnWriteArrayList&lt;&gt;();
 list.add(1);
 
 // 遍历时可以修改，不会抛出 ConcurrentModificationException
@@ -462,10 +501,124 @@ for (Integer i : list) {
     </div>
   </section>
 
+  <!-- 面试高频考点 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: ArrayList 和 LinkedList 如何选择？</div>
+        <div class="interview-a">
+          <div class="table-container"><table>
+            <tr><th>操作</th><th>ArrayList</th><th>LinkedList</th><th>说明</th></tr>
+            <tr><td>随机访问 get(i)</td><td>O(1)</td><td>O(n)</td><td>ArrayList 基于数组下标直接访问</td></tr>
+            <tr><td>头部插入/删除</td><td>O(n)</td><td>O(1)</td><td>ArrayList 需要移动后续所有元素</td></tr>
+            <tr><td>尾部插入</td><td>O(1) 均摊</td><td>O(1)</td><td>ArrayList 扩容时 O(n)</td></tr>
+            <tr><td>内存占用</td><td>连续内存</td><td>每节点额外两个指针</td><td>LinkedList 内存开销更大</td></tr>
+          </table></div>
+          <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body">实际上 LinkedList 由于节点分散、CPU缓存命中率低，大多数场景性能不如 ArrayList。优先选 ArrayList，只在频繁头部操作时考虑 LinkedList（或用 ArrayDeque）。</div></div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q2: HashMap 的扩容机制？为什么加载因子是 0.75？</div>
+        <div class="interview-a">
+          <p><strong>扩容时机：</strong>当 size &gt; capacity × loadFactor（默认 16 × 0.75 = 12）时触发，新容量变为原来的 2 倍。</p>
+          <p><strong>JDK 8 扩容优化：</strong>元素新位置只有两种可能——原位置或原位置+原容量，通过判断 hash &amp; oldCap 是否为 0 决定，无需重新计算 hash。</p>
+          <div class="alert alert-info"><div class="alert-icon">ℹ️</div><div class="alert-body">加载因子 0.75 是空间和时间的折中：太大（如1.0）冲突多，查询退化；太小（如0.5）频繁扩容，空间浪费。0.75 在泊松分布下冲突概率最优（链表长度达到8的概率约千万分之一）。</div></div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q3: ConcurrentHashMap 在 JDK 7 和 JDK 8 的实现有何不同？</div>
+        <div class="interview-a">
+          <div class="table-container"><table>
+            <tr><th>特性</th><th>JDK 7（Segment分段锁）</th><th>JDK 8（CAS + synchronized）</th></tr>
+            <tr><td>锁粒度</td><td>Segment（默认16个）</td><td>单个桶（Node）</td></tr>
+            <tr><td>并发度</td><td>固定为 Segment 数量</td><td>等于桶的数量（最细粒度）</td></tr>
+            <tr><td>数据结构</td><td>Segment[] + HashEntry[]</td><td>Node[] + 链表/红黑树</td></tr>
+            <tr><td>size() 方法</td><td>多次尝试无锁统计</td><td>LongAdder 分段累加</td></tr>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q4: HashMap 遍历时删除元素会有什么问题？如何正确操作？</div>
+        <div class="interview-a">
+          <p>直接在 for-each 中调用 map.remove() 会抛出 <strong>ConcurrentModificationException</strong>（modCount 被修改，迭代器检测到并发修改）。</p>
+          <div class="code-container">
+            <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code class="language-java">Map&lt;String, Integer&gt; map = new HashMap&lt;&gt;();
+
+// ❌ 错误：ConcurrentModificationException
+for (String key : map.keySet()) {
+    if (someCondition) map.remove(key);
+}
+
+// ✅ 方案1：使用迭代器
+Iterator&lt;Map.Entry&lt;String, Integer&gt;&gt; it = map.entrySet().iterator();
+while (it.hasNext()) {
+    Map.Entry&lt;String, Integer&gt; entry = it.next();
+    if (someCondition) it.remove(); // 调用迭代器的remove
+}
+
+// ✅ 方案2：JDK 8 removeIf（推荐）
+map.entrySet().removeIf(e -&gt; someCondition);</code></pre></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 实战陷阱 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱1：Arrays.asList() 返回的 List 不支持增删</strong>
+          Arrays.asList() 返回的是固定大小的 List（Arrays$ArrayList），调用 add/remove 会抛出 UnsupportedOperationException。需要真正可变的 List 应使用 new ArrayList&lt;&gt;(Arrays.asList(...))。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱2：HashMap 的 key 使用可变对象</strong>
+          如果 key 对象在 put 之后修改了影响 hashCode 的字段，get 时会找不到（hash值变了，定位到不同的桶）。key 应使用不可变对象（String、Integer等）。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱3：subList 的修改会影响原 List</strong>
+          ArrayList.subList() 返回的是原列表的视图，对 subList 的增删改会直接影响原列表，反之亦然。同时对原列表结构性修改后再操作 subList 会抛出 ConcurrentModificationException。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 优缺点对比 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">核心集合性能对比</h2></div>
+    <div class="section-body">
+      <div class="table-container"><table>
+        <tr><th>集合类</th><th>底层结构</th><th>查询</th><th>插入</th><th>删除</th><th>是否有序</th><th>线程安全</th></tr>
+        <tr><td>ArrayList</td><td>动态数组</td><td>O(1)</td><td>O(n)/O(1)尾</td><td>O(n)</td><td>插入顺序</td><td>❌</td></tr>
+        <tr><td>LinkedList</td><td>双向链表</td><td>O(n)</td><td>O(1)</td><td>O(1)</td><td>插入顺序</td><td>❌</td></tr>
+        <tr><td>HashMap</td><td>数组+链表/红黑树</td><td>O(1)</td><td>O(1)</td><td>O(1)</td><td>❌</td><td>❌</td></tr>
+        <tr><td>LinkedHashMap</td><td>HashMap+双向链表</td><td>O(1)</td><td>O(1)</td><td>O(1)</td><td>插入/访问顺序</td><td>❌</td></tr>
+        <tr><td>TreeMap</td><td>红黑树</td><td>O(log n)</td><td>O(log n)</td><td>O(log n)</td><td>键排序</td><td>❌</td></tr>
+        <tr><td>ConcurrentHashMap</td><td>数组+链表/红黑树</td><td>O(1)</td><td>O(1)</td><td>O(1)</td><td>❌</td><td>✅</td></tr>
+        <tr><td>PriorityQueue</td><td>堆（数组）</td><td>O(n)</td><td>O(log n)</td><td>O(log n)</td><td>优先级</td><td>❌</td></tr>
+      </table></div>
+    </div>
+  </section>
+
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }

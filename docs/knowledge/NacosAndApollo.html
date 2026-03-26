@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nacos与Apollo配置中心 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -58,6 +60,18 @@
   .highlight { color: var(--amber); font-weight: 600; }
   .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
 </style>
 </head>
 <body>
@@ -65,7 +79,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring Cloud / 配置中心</span></nav>
   <header class="hero">
-    <div class="hero-badge">⚙️ CONFIG CENTER</div>
+    <div class="hero-badge">☁️ SPRING CLOUD · 配置中心</div>
     <h1 class="hero-title">Nacos与Apollo配置中心</h1>
     <p class="hero-desc">Nacos和Apollo是微服务架构中主流的注册中心和配置中心解决方案，提供服务发现、动态配置管理、服务治理等核心能力。</p>
   </header>
@@ -181,8 +195,8 @@ graph TB
 
       <h3>Nacos配置示例</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>spring:
+        <div class="code-header"><span class="code-lang">yaml</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-yaml">spring:
   application:
     name: order-service
   cloud:
@@ -213,8 +227,8 @@ graph TB
 
       <h3>动态配置刷新</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@RefreshScope  // 支持配置动态刷新
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@RefreshScope  // 支持配置动态刷新
 @Service
 public class ConfigService {
 
@@ -280,8 +294,8 @@ graph TB
 
       <h3>Apollo配置示例</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Properties</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code># Apollo应用ID
+        <div class="code-header"><span class="code-lang">yaml</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-yaml"># Apollo应用ID
 app.id=order-service
 # Apollo Meta Server地址
 apollo.meta=http://127.0.0.1:8080
@@ -294,8 +308,8 @@ apollo.cluster=default</code></pre></div>
 
       <h3>配置变更监听</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Component
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Component
 public class ApolloConfigChangeListener {
 
     @ApolloConfigChangeListener
@@ -341,12 +355,12 @@ flowchart LR
         <tr><td>社区活跃度</td><td>高（阿里维护）</td><td>中（携程维护）</td></tr>
       </table>
 
-      <div class="tip">
-        <strong>💡 选型建议：</strong><br>
-        - 需要同时使用注册中心和配置中心 → 选择Nacos<br>
-        - 已有Eureka/Nacos做注册中心，需要专业配置中心 → 选择Apollo<br>
-        - 需要灰度发布能力 → 选择Apollo<br>
-        - 追求部署简单、运维成本低 → 选择Nacos
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>选型建议</strong>
+          需要同时使用注册中心和配置中心 → 选择Nacos；已有Eureka/Nacos做注册中心，需要专业配置中心 → 选择Apollo；需要灰度发布能力 → 选择Apollo；追求部署简单、运维成本低 → 选择Nacos。
+        </div>
       </div>
     </div>
   </section>
@@ -378,11 +392,122 @@ flowchart LR
     </div>
   </section>
 
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">Nacos 动态配置刷新实战</h2></div>
+    <div class="section-body">
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 方式1：@RefreshScope + @Value（自动刷新）
+@RestController
+@RefreshScope  // 配置变更时重新创建 Bean
+public class RateLimitController {
+
+    @Value("${rate.limit.qps:100}")
+    private int qps;
+
+    @GetMapping("/qps")
+    public int getQps() {
+        return qps;  // 返回最新值，无需重启
+    }
+}
+
+// 方式2：@ConfigurationProperties（推荐，不需要 @RefreshScope）
+@Component
+@ConfigurationProperties(prefix = "app.feature")
+@RefreshScope
+public class FeatureProperties {
+    private boolean darkMode = false;
+    private int maxRetry = 3;
+    private List&lt;String&gt; allowedIps = new ArrayList&lt;&gt;();
+    // getters/setters
+}
+
+// 方式3：监听配置变更事件
+@Component
+public class ConfigChangeListener {
+
+    @NacosConfigListener(dataId = "app-config.yaml", groupId = "DEFAULT_GROUP")
+    public void onConfigChange(String newConfig) {
+        log.info("配置已更新: {}", newConfig);
+        // 手动解析并更新本地状态
+    }
+}
+
+// 方式4：编程式获取配置（适合非 Spring Bean 场景）
+@Autowired
+private NacosConfigManager nacosConfigManager;
+
+public String getConfig(String dataId) throws NacosException {
+    return nacosConfigManager.getConfigService()
+        .getConfig(dataId, "DEFAULT_GROUP", 3000);
+}</code></pre></div>
+      </div>
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>@RefreshScope 的刷新原理</strong>
+          @RefreshScope 创建的 Bean 存入独立的 scope 缓存。配置变更时，/actuator/refresh 端点（或 Nacos 推送）清空该缓存，下次访问 Bean 时重新创建并注入新配置值。注意：刷新会销毁并重建 Bean，若 Bean 中有资源（连接、线程）需在 @PreDestroy 中妥善清理。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: Nacos 配置中心的推送机制是什么？</div>
+        <div class="interview-a">Nacos 采用长轮询（Long Polling）机制：客户端发起请求到服务端，服务端挂起请求（默认 29.5 秒），若配置在此期间发生变更，立即响应返回变更数据；若超时未变更则返回空，客户端立即发起下一次长轮询。相比短轮询减少无效请求，相比 WebSocket 实现更简单，实时性接近推送（延迟约 1 秒内）。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: Nacos 和 Apollo 的区别？如何选型？</div>
+        <div class="interview-a">Nacos：阿里开源，配置中心 + 注册中心二合一，部署简单，与 Spring Cloud Alibaba 深度集成，支持多格式（properties/yaml/json/xml/text），推荐新项目使用。Apollo：携程开源，纯配置中心，功能更完善（配置审计、灰度发布、权限管理、版本对比、发布历史），有完整的管理 UI，适合对配置管理要求极高的企业场景。二者都支持热更新，Apollo 的权限管控更强。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: 配置变更如何保证安全性？</div>
+        <div class="interview-a">①权限控制：Nacos 支持命名空间隔离（开发/测试/生产），配置访问需 Token 认证；Apollo 有完善的角色权限系统（读/编辑/发布）。②灰度发布：Apollo 支持先发布到部分实例验证效果，再全量推送；Nacos 可通过 beta 标签实现。③配置加密：敏感配置（密码/Key）应加密存储，推荐使用 Jasypt 或自定义加密插件，配置中心仅存储密文。④变更审计：所有配置修改记录操作人和时间，支持回滚。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: 多环境配置如何管理（开发/测试/生产）？</div>
+        <div class="interview-a">Nacos：通过 Namespace 隔离（每个环境一个 Namespace），DataId 和 Group 可保持一致，通过 spring.cloud.nacos.config.namespace 切换。Apollo：通过 Environment（DEV/FAT/UAT/PRO）隔离，每套环境独立部署 Apollo 服务，apollo.meta 配置对应环境地址。最佳实践：公共配置放 shared namespace（基础配置），应用私有配置放独立 namespace（覆盖公共值），实现配置继承与覆盖。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：@Value 不配合 @RefreshScope 导致无法热更新</strong>
+          单独使用 @Value 注入的属性在配置变更后不会自动刷新，因为 Bean 已经实例化。必须在 Bean 类上加 @RefreshScope 才能在配置变更时重建 Bean。使用 @ConfigurationProperties 的 Bean 也需要 @RefreshScope 才能刷新（Spring Boot 2.4+ 中已改善）。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：配置刷新导致 Bean 重建引发并发问题</strong>
+          @RefreshScope Bean 刷新瞬间，旧 Bean 销毁、新 Bean 创建，期间可能有请求获取到 null 或半初始化的 Bean。对于数据库连接池、线程池等重资源 Bean，应避免使用 @RefreshScope，改用配置监听器手动更新参数（如 HikariPool 的 setMaximumPoolSize）。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：bootstrap.yml 与 application.yml 加载顺序混淆</strong>
+          Nacos/Apollo 配置需在 bootstrap.yml（Spring Cloud 早期加载）中配置 nacos.config.server-addr 等信息，否则应用启动时无法连接配置中心。Spring Boot 2.4+ 默认禁用 bootstrap context，需添加 spring-cloud-starter-bootstrap 依赖或设置 spring.cloud.bootstrap.enabled=true。
+        </div>
+      </div>
+    </div>
+  </section>
+
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+
 </div>
 
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', primaryTextColor: '#e8e6e3', primaryBorderColor: '#4ecdc4', lineColor: '#4ecdc4', background: '#0a0e17', mainBkg: '#0a0e17', secondBkg: '#101624', tertiaryBkg: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
 </script>

@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spring Boot 自动装配原理 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -72,6 +74,19 @@
   .faq-answer { color: var(--text-secondary); font-size: 14px; line-height: 1.8; }
 
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } .styled-table { font-size: 12px; } .styled-table th, .styled-table td { padding: 10px 12px; } }
+
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
 </style>
 </head>
 <body>
@@ -79,7 +94,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
   <header class="hero">
-    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <div class="hero-badge">🚀 SPRING BOOT · 自动装配</div>
     <h1 class="hero-title">Spring Boot 自动装配原理</h1>
     <p class="hero-desc">Spring Boot 自动装配原理的详细解析和最佳实践。通过约定优于配置的方式，自动将所需的Bean装配到容器中，开发者只需引入starter依赖，无需手动配置。</p>
   </header>
@@ -109,7 +124,7 @@
       <p><code style="color: var(--cyan);">@SpringBootApplication</code> 是一个组合注解，包含三个核心注解：</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@SpringBootApplication = @SpringBootConfiguration
+        <div class="code-body"><pre><code class="language-java">@SpringBootApplication = @SpringBootConfiguration
                       + @EnableAutoConfiguration
                       + @ComponentScan</code></pre></div>
       </div>
@@ -172,10 +187,7 @@ flowchart TD
         <tr><td>@ConditionalOnJava</td><td>Java 版本匹配</td></tr>
         <tr><td>@ConditionalOnSingleCandidate</td><td>容器中只有一个指定 Bean 或一个 @Primary</td></tr>
       </table>
-      <div class="tip-box">
-        <strong>使用技巧</strong>
-        @ConditionalOnMissingBean 是实现"用户优先"原则的关键。自动配置类中的 Bean 通常添加此注解，如果用户已自定义了该 Bean，自动配置就不会创建。
-      </div>
+      <div class="alert alert-info"><span class="alert-icon">💡</span><div class="alert-body"><strong>使用技巧</strong>@ConditionalOnMissingBean 是实现"用户优先"原则的关键。自动配置类中的 Bean 通常添加此注解，如果用户已自定义了该 Bean，自动配置就不会创建。</div></div>
     </div>
   </section>
 
@@ -191,7 +203,7 @@ flowchart TD
         <p>以 RedisAutoConfiguration 为例（简化版）：</p>
         <div class="code-container">
           <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>@Configuration(proxyBeanMethods = false)
+          <div class="code-body"><pre><code class="language-java">@Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(RedisOperations.class)  // 类路径有Redis依赖
 @EnableConfigurationProperties(RedisProperties.class)  // 启用配置属性
 @Import({ LettuceConnectionConfiguration.class,
@@ -221,7 +233,7 @@ public class RedisAutoConfiguration {
         <p>数据源自动配置示例：</p>
         <div class="code-container">
           <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>@Configuration(proxyBeanMethods = false)
+          <div class="code-body"><pre><code class="language-java">@Configuration(proxyBeanMethods = false)
 @ConditionalOnClass({ DataSource.class,
                       EmbeddedDatabaseType.class })
 @ConditionalOnMissingBean(type =
@@ -257,7 +269,7 @@ public class DataSourceAutoConfiguration {
       <p><code style="color: var(--cyan);">@ConfigurationProperties</code> 将配置文件绑定到 Bean 属性：</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code># application.yml
+        <div class="code-body"><pre><code class="language-yaml"># application.yml
 my:
   service:
     enabled: true
@@ -268,7 +280,7 @@ my:
       </div>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Component
+        <div class="code-body"><pre><code class="language-java">@Component
 @ConfigurationProperties(prefix = "my.service")
 public class MyServiceProperties {
     private boolean enabled = true;
@@ -310,7 +322,7 @@ public class MyServiceAutoConfiguration {
       </ol>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">项目结构</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>my-spring-boot-starter/
+        <div class="code-body"><pre><code class="language-plaintext">my-spring-boot-starter/
 ├── pom.xml
 └── src/main/
     ├── java/com/example/
@@ -325,7 +337,7 @@ public class MyServiceAutoConfiguration {
       </div>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">imports文件内容</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code># META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+        <div class="code-body"><pre><code class="language-plaintext"># META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
 com.example.MyServiceAutoConfiguration</code></pre></div>
       </div>
     </div>
@@ -343,7 +355,7 @@ com.example.MyServiceAutoConfiguration</code></pre></div>
       <div id="exclude-1" class="tab-content active">
         <div class="code-container">
           <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>@SpringBootApplication(exclude = {
+          <div class="code-body"><pre><code class="language-java">@SpringBootApplication(exclude = {
     DataSourceAutoConfiguration.class,
     RedisAutoConfiguration.class
 })
@@ -357,14 +369,14 @@ public class Application {
       <div id="exclude-2" class="tab-content">
         <div class="code-container">
           <div class="code-header"><span class="code-lang">Properties</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code># application.properties
+          <div class="code-body"><pre><code class="language-properties"># application.properties
 spring.autoconfigure.exclude=\
   org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,\
   org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration</code></pre></div>
         </div>
         <div class="code-container">
           <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code># application.yml
+          <div class="code-body"><pre><code class="language-yaml"># application.yml
 spring:
   autoconfigure:
     exclude:
@@ -375,7 +387,7 @@ spring:
       <div id="exclude-3" class="tab-content">
         <div class="code-container">
           <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>@Configuration
+          <div class="code-body"><pre><code class="language-java">@Configuration
 @EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 @ComponentScan
 public class Application {
@@ -395,21 +407,18 @@ public class Application {
       <p>启动时打印自动配置报告，查看哪些配置生效、哪些未生效：</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">命令行</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>java -jar app.jar --debug</code></pre></div>
+        <div class="code-body"><pre><code class="language-plaintext">java -jar app.jar --debug</code></pre></div>
       </div>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">YAML配置</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code># application.yml
+        <div class="code-body"><pre><code class="language-yaml"># application.yml
 debug: true</code></pre></div>
       </div>
-      <div class="tip-box">
-        <strong>调试报告内容</strong>
-        CONDITIONS EVALUATION REPORT 包含：Positive matches（匹配成功的配置）、Negative matches（未匹配的配置）、Exclusions（被排除的配置）
-      </div>
+      <div class="alert alert-info"><span class="alert-icon">💡</span><div class="alert-body"><strong>调试报告内容</strong>CONDITIONS EVALUATION REPORT 包含：Positive matches（匹配成功的配置）、Negative matches（未匹配的配置）、Exclusions（被排除的配置）</div></div>
       <p>使用 Actuator 端点查看自动配置详情：</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Properties</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code># 添加 actuator 依赖后访问以下端点
+        <div class="code-body"><pre><code class="language-plaintext"># 添加 actuator 依赖后访问以下端点
 /actuator/conditions    # 条件评估报告
 /actuator/beans         # 所有Bean信息
 /actuator/configprops   # 配置属性绑定详情</code></pre></div>
@@ -439,27 +448,146 @@ debug: true</code></pre></div>
 
   <!-- 面试高频问题 -->
   <section class="section">
-    <div class="section-header"><div class="section-icon">💡</div><h2 class="section-title">面试高频问题</h2></div>
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频问题</h2></div>
     <div class="section-body">
-      <div class="faq-item">
-        <div class="faq-question">Q1: Spring Boot 自动装配原理是什么？</div>
-        <div class="faq-answer">启动时通过 @EnableAutoConfiguration 导入 AutoConfigurationImportSelector，该类读取 spring.factories 或 imports 文件，获取所有候选配置类，再根据条件注解（@ConditionalOnClass、@ConditionalOnBean等）筛选，最后将符合条件的 Bean 注册到 Spring 容器。</div>
+      <div class="interview-item">
+        <div class="interview-q">Q1: Spring Boot 自动装配原理是什么？</div>
+        <div class="interview-a">启动时通过 @EnableAutoConfiguration 导入 AutoConfigurationImportSelector，该类读取 spring.factories 或 imports 文件，获取所有候选配置类，再根据条件注解（@ConditionalOnClass、@ConditionalOnBean等）筛选，最后将符合条件的 Bean 注册到 Spring 容器。</div>
       </div>
-      <div class="faq-item">
-        <div class="faq-question">Q2: @ConditionalOnMissingBean 为什么能防止重复？</div>
-        <div class="faq-answer">自动配置类中的 Bean 通常添加 @ConditionalOnMissingBean 注解，如果用户已自定义了该 Bean，自动配置就不会创建，实现了"用户优先"原则。这使得开发者可以方便地覆盖默认配置。</div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: @ConditionalOnMissingBean 为什么能防止重复？</div>
+        <div class="interview-a">自动配置类中的 Bean 通常添加 @ConditionalOnMissingBean 注解，如果用户已自定义了该 Bean，自动配置就不会创建，实现了"用户优先"原则。这使得开发者可以方便地覆盖默认配置。</div>
       </div>
-      <div class="faq-item">
-        <div class="faq-question">Q3: 如何自定义 Starter？</div>
-        <div class="faq-answer">1) 创建自动配置类并使用条件注解<br>2) 创建配置属性类绑定 application.yml<br>3) 在 META-INF/spring/...imports 文件中注册自动配置类<br>4) 打包发布</div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: 如何自定义 Starter？</div>
+        <div class="interview-a">1) 创建自动配置类并使用条件注解<br>2) 创建配置属性类绑定 application.yml<br>3) 在 META-INF/spring/...imports 文件中注册自动配置类<br>4) 打包发布</div>
       </div>
-      <div class="faq-item">
-        <div class="faq-question">Q4: 为什么 Starter 能自动生效？</div>
-        <div class="faq-answer">因为 Starter 的 jar 包中包含了 spring.factories 或 imports 文件，Spring Boot 启动时会扫描 classpath 下所有 jar 包中的这些文件，加载其中定义的自动配置类。</div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: 为什么 Starter 能自动生效？</div>
+        <div class="interview-a">因为 Starter 的 jar 包中包含了 spring.factories 或 imports 文件，Spring Boot 启动时会扫描 classpath 下所有 jar 包中的这些文件，加载其中定义的自动配置类。</div>
       </div>
-      <div class="faq-item">
-        <div class="faq-question">Q5: Spring Boot 2.7+ 自动配置加载文件有什么变化？</div>
-        <div class="faq-answer">Spring Boot 2.7+ 推荐使用新的配置文件格式：META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports，每行一个配置类全限定名，替代了原有的 spring.factories 格式。</div>
+      <div class="interview-item">
+        <div class="interview-q">Q5: Spring Boot 2.7+ 自动配置加载文件有什么变化？</div>
+        <div class="interview-a">Spring Boot 2.7+ 推荐使用新的配置文件格式：META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports，每行一个配置类全限定名，替代了原有的 spring.factories 格式。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔢</div><h2 class="section-title">自动装配顺序控制</h2></div>
+    <div class="section-body">
+      <p>当多个自动配置类之间有依赖关系时，需要控制装配顺序：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 控制自动配置顺序
+@AutoConfiguration(after = DataSourceAutoConfiguration.class)
+public class MyBatisAutoConfiguration {
+    // 在数据源配置完成后才配置 MyBatis
+}
+
+// 或通过 @AutoConfigureBefore/@AutoConfigureAfter（旧方式）
+@Configuration
+@AutoConfigureAfter(RedisAutoConfiguration.class)
+public class CacheAutoConfiguration {
+    // ...
+}
+
+// 自定义自动配置类（Spring Boot 2.7+ 推荐方式）
+@AutoConfiguration
+@ConditionalOnClass(MyService.class)
+@ConditionalOnMissingBean(MyService.class)
+@EnableConfigurationProperties(MyProperties.class)
+public class MyServiceAutoConfiguration {
+
+    @Bean
+    public MyService myService(MyProperties properties) {
+        return new MyService(properties.getEndpoint(), properties.getTimeout());
+    }
+}
+
+// 对应的配置属性类
+@ConfigurationProperties(prefix = "my.service")
+public class MyProperties {
+    private String endpoint = "http://localhost:8080";
+    private int timeout = 3000;
+    // getters/setters
+}</code></pre></div>
+      </div>
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>spring.factories vs .imports 文件</strong>
+          Spring Boot 2.7 引入新格式 META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports（每行一个类名），并在 3.0 中废弃 spring.factories 中的 EnableAutoConfiguration 配置项。新项目建议直接使用 .imports 文件格式。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔧</div><h2 class="section-title">实战案例：覆盖默认自动配置</h2></div>
+    <div class="section-body">
+      <p>利用 @ConditionalOnMissingBean 机制覆盖 Spring Boot 默认配置：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 场景1：自定义 Jackson ObjectMapper
+@Configuration
+public class JacksonConfig {
+    @Bean
+    @Primary  // 或通过 @ConditionalOnMissingBean 的 name 属性，Spring Boot 会跳过自动配置
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper()
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .registerModule(new JavaTimeModule());
+    }
+}
+
+// 场景2：自定义 RedisTemplate（替换默认 JDK 序列化）
+@Configuration
+public class RedisConfig {
+    @Bean
+    public RedisTemplate&lt;String, Object&gt; redisTemplate(RedisConnectionFactory factory) {
+        RedisTemplate&lt;String, Object&gt; template = new RedisTemplate&lt;&gt;();
+        template.setConnectionFactory(factory);
+        // 使用 Jackson 序列化 value
+        Jackson2JsonRedisSerializer&lt;Object&gt; serializer =
+            new Jackson2JsonRedisSerializer&lt;&gt;(Object.class);
+        template.setValueSerializer(serializer);
+        template.setHashValueSerializer(serializer);
+        // 使用 String 序列化 key
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.afterPropertiesSet();
+        return template;
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：自定义 Bean 未能覆盖自动配置</strong>
+          自定义 Bean 定义的类名与自动配置中 @ConditionalOnMissingBean 的 name/type 不匹配，导致自动配置的 Bean 和自定义 Bean 同时存在。应排查 @Bean 方法名和类型，确保与自动配置中的条件对齐，或使用 @Primary 明确指定优先级。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：@ComponentScan 范围过宽导致扫描第三方库内部类</strong>
+          如果 basePackages 设置不当（如扫描根包），会扫描到第三方库的 @Component 注解类（不常见但确实发生），产生意外 Bean 或 Bean 重复定义异常。应将 @ComponentScan 限定在自己的包路径。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：Starter 升级后条件注解变化导致 Bean 消失</strong>
+          升级 Spring Boot 版本后，某些自动配置类的条件注解改变（如判断 classpath 中某个类），导致之前自动创建的 Bean 不再创建。遇到 NoSuchBeanDefinitionException 时，运行 --debug 模式查看 CONDITIONS EVALUATION REPORT，找出哪个条件未满足。
+        </div>
       </div>
     </div>
   </section>
@@ -468,6 +596,7 @@ debug: true</code></pre></div>
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => {
   const html = document.documentElement;
   if (html.getAttribute('data-theme') === 'light') {

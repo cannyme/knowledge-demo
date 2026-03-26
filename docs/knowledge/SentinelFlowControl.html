@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sentinel流量控制与熔断降级 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -58,6 +60,18 @@
   .highlight { color: var(--amber); font-weight: 600; }
   .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
 </style>
 </head>
 <body>
@@ -65,7 +79,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Spring Cloud / Sentinel</span></nav>
   <header class="hero">
-    <div class="hero-badge">🛡️ CIRCUIT BREAKER</div>
+    <div class="hero-badge">🛡️ SENTINEL · 流量控制</div>
     <h1 class="hero-title">Sentinel流量控制与熔断降级</h1>
     <p class="hero-desc">Sentinel是阿里巴巴开源的流量控制组件，提供流量控制、熔断降级、系统负载保护、热点参数限流等功能，保障微服务的稳定性。</p>
   </header>
@@ -123,8 +137,8 @@ graph LR
 
       <h3>限流代码示例</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@RestController
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@RestController
 public class UserController {
 
     // 方式1：使用@SentinelResource注解
@@ -198,8 +212,8 @@ stateDiagram-v2
 
       <h3>熔断代码示例</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>private void initDegradeRules() {
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">private void initDegradeRules() {
     List&lt;DegradeRule&gt; rules = new ArrayList&lt;&gt;();
 
     DegradeRule rule = new DegradeRule();
@@ -232,8 +246,8 @@ stateDiagram-v2
       </table>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>private void initSystemRules() {
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">private void initSystemRules() {
     List&lt;SystemRule&gt; rules = new ArrayList&lt;&gt;();
 
     SystemRule rule = new SystemRule();
@@ -255,8 +269,8 @@ stateDiagram-v2
     <div class="section-body">
       <p>针对请求中的热点参数进行限流，如热门商品ID、特定用户ID等。</p>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@GetMapping("/product/{id}")
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@GetMapping("/product/{id}")
 @SentinelResource(value = "getProduct", blockHandler = "getProductBlock")
 public Product getProduct(
     @PathVariable @SentinelParam("productId") String productId) {
@@ -293,8 +307,8 @@ private void initParamFlowRules() {
     <div class="section-body">
       <p>根据调用来源限制资源的访问，实现黑白名单控制。</p>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 实现RequestOriginParser接口
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 实现RequestOriginParser接口
 @Component
 public class RequestOriginParserDefinition implements RequestOriginParser {
 
@@ -327,8 +341,8 @@ private void initAuthorityRules() {
     <div class="section-body">
       <p>默认规则存储在内存中，应用重启后丢失。通过Nacos实现规则持久化：</p>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>spring:
+        <div class="code-header"><span class="code-lang">yaml</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-yaml">spring:
   cloud:
     sentinel:
       datasource:
@@ -369,8 +383,8 @@ flowchart LR
     <div class="section-body">
       <h3>控制台部署</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Bash</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code># 下载控制台jar包
+        <div class="code-header"><span class="code-lang">bash</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-bash"># 下载控制台jar包
 wget https://github.com/alibaba/Sentinel/releases/download/1.8.6/sentinel-dashboard-1.8.6.jar
 
 # 启动控制台
@@ -385,8 +399,8 @@ java -Dserver.port=8080 \
 
       <h3>应用接入控制台</h3>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>spring:
+        <div class="code-header"><span class="code-lang">yaml</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-yaml">spring:
   cloud:
     sentinel:
       transport:
@@ -432,11 +446,118 @@ java -Dserver.port=8080 \
     </div>
   </section>
 
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔗</div><h2 class="section-title">Sentinel 规则动态配置（Nacos数据源）</h2></div>
+    <div class="section-body">
+      <p>生产环境应将 Sentinel 规则持久化到 Nacos，实现动态配置，避免重启后规则丢失：</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 1. 引入依赖：sentinel-datasource-nacos
+
+// 2. application.yml 配置
+// spring:
+//   cloud:
+//     sentinel:
+//       datasource:
+//         flow-rules:
+//           nacos:
+//             server-addr: localhost:8848
+//             dataId: ${spring.application.name}-flow-rules
+//             groupId: SENTINEL_GROUP
+//             rule-type: flow
+
+// 3. Nacos 中存储的规则 JSON（dataId: order-service-flow-rules）
+// [
+//   {
+//     "resource": "createOrder",
+//     "grade": 1,          // 1=QPS 2=并发线程数
+//     "count": 100,        // 阈值
+//     "strategy": 0,       // 0=直接 1=关联 2=链路
+//     "controlBehavior": 0 // 0=快速失败 1=WarmUp 2=排队
+//   }
+// ]
+
+// 4. 编程式定义资源 + 降级
+@SentinelResource(
+    value = "createOrder",
+    blockHandler = "createOrderBlock",
+    fallback = "createOrderFallback"
+)
+public OrderDTO createOrder(CreateOrderRequest req) {
+    // 业务逻辑
+    return orderMapper.create(req);
+}
+
+// 限流处理（BlockException 表示被 Sentinel 拦截）
+public OrderDTO createOrderBlock(CreateOrderRequest req, BlockException ex) {
+    log.warn("createOrder 被限流: {}", ex.getClass().getSimpleName());
+    throw new TooManyRequestsException("系统繁忙，请稍后重试");
+}
+
+// 降级处理（业务异常时触发）
+public OrderDTO createOrderFallback(CreateOrderRequest req, Throwable t) {
+    log.error("createOrder 异常降级", t);
+    return OrderDTO.empty();
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: Sentinel 的限流算法有哪些？各自原理？</div>
+        <div class="interview-a">①快速失败（默认）：超过阈值直接拒绝，基于滑动窗口统计 QPS；②WarmUp（预热）：系统启动初期流量缓慢增加，防止冷启动时激增流量压垮系统（令牌桶算法，预热时间默认 3 秒）；③匀速排队：漏桶算法，请求排队等待通过，适合流量削峰（如消息消费场景），超过最大等待时间才丢弃。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: Sentinel 的熔断降级策略有哪几种？</div>
+        <div class="interview-a">①慢调用比例：统计时间窗口内慢调用（超过 RT 阈值）占比，达到阈值触发熔断；②异常比例：异常请求占比超阈值触发熔断；③异常数：时间窗口内异常数超阈值触发。熔断后进入 OPEN 状态，经过熔断时间窗口（timeWindow）后转 HALF-OPEN，放行一个探测请求，成功则关闭熔断，失败则重新打开。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: Sentinel 和 Resilience4j 如何选择？</div>
+        <div class="interview-a">Sentinel：阿里开源，功能全面（流控/熔断/热点/系统保护），有实时监控控制台（Dashboard），支持规则动态推送（Nacos/ZK），适合与 Spring Cloud Alibaba 整合的项目，运维可视化程度高。Resilience4j：轻量级，函数式 API，无 Dashboard，监控依赖 Actuator + Prometheus，适合追求轻量或已有监控体系的项目。国内推荐 Sentinel，国际化项目推荐 Resilience4j。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: 热点参数限流是什么？适合什么场景？</div>
+        <div class="interview-a">热点参数限流针对方法的特定参数值进行精细化限流，而非对整个资源统一限流。例如：商品详情接口对热门商品 ID（爆款秒杀时）单独设更低阈值，对普通商品 ID 使用默认阈值；用户操作接口对同一 userId 的请求频率限制。适合场景：秒杀防刷、热点 Key 保护、用户行为频率限制。Sentinel 通过 @SentinelResource(value="...", blockHandler="...") + 热点规则配置实现。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：Sentinel 规则重启后丢失</strong>
+          默认情况下 Sentinel 规则存储在内存中，服务重启后丢失，需要重新在 Dashboard 配置。生产环境必须配置持久化数据源（推荐 Nacos），将规则同步到外部存储，并在 Dashboard 推送规则时同步写入 Nacos。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：blockHandler 和 fallback 方法签名不匹配</strong>
+          blockHandler 方法必须与原方法签名相同，且最后追加一个 BlockException 参数；fallback 方法必须与原方法签名相同，可选追加一个 Throwable 参数。签名不匹配时 Sentinel 无法找到处理方法，异常直接抛出到调用方，而非执行降级逻辑。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：系统保护规则过于激进导致正常请求被拒</strong>
+          Sentinel 系统保护（CPU 使用率、平均 RT、入口 QPS）是全局兜底策略，阈值设置过低会在系统压力稍高时拒绝大量正常请求。应先通过压测确定系统瓶颈，再合理设置系统保护阈值；优先使用精细化的接口级限流，系统保护作为最后一道防线。
+        </div>
+      </div>
+    </div>
+  </section>
+
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
 </div>
 
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', primaryTextColor: '#e8e6e3', primaryBorderColor: '#4ecdc4', lineColor: '#4ecdc4', background: '#0a0e17', mainBkg: '#0a0e17', secondBkg: '#101624', tertiaryBkg: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
 </script>

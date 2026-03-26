@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Java 8+ 新特性详解 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -48,7 +50,6 @@
   .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
   .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
   .code-btn:hover { border-color: var(--amber); color: var(--amber); }
-  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
   .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
   .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
   .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
@@ -57,6 +58,18 @@
   .highlight-box { background: rgba(78, 205, 196, 0.1); border-left: 3px solid var(--cyan); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
   .tip-box { background: rgba(240, 180, 41, 0.1); border-left: 3px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  .code-body pre { padding: 0; margin: 0; }
+  .code-body pre code.hljs { padding: 20px; border-radius: 0; font-family: var(--font-code); font-size: 13px; line-height: 1.8; }
+  .alert { border-radius: 10px; padding: 16px 20px; margin: 16px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .alert-info { background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.2); }
+  .alert-warn { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.2); }
+  .alert-tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.2); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .interview-q { padding: 16px 20px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); font-weight: 600; color: var(--amber); }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; }
+  .table-container { overflow-x: auto; margin: 16px 0; }
 </style>
 </head>
 <body>
@@ -64,7 +77,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Java基础</span></nav>
   <header class="hero">
-    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <div class="hero-badge">🏷️ JAVA 8+ · 新特性详解</div>
     <h1 class="hero-title">Java 8+ 新特性详解</h1>
     <p class="hero-desc">Lambda表达式、Stream API、Optional、CompletableFuture等Java 8+核心特性的全面解析与实战示例</p>
   </header>
@@ -78,7 +91,7 @@
       <h3 style="color: var(--amber); margin: 20px 0 12px;">语法格式</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 基本语法: (参数) -> { 方法体 }
+        <div class="code-body"><pre><code class="language-java">// 基本语法: (参数) -> { 方法体 }
 
 // 1. 无参数无返回值
 Runnable r1 = () -> System.out.println("Hello Lambda");
@@ -107,9 +120,9 @@ Comparator&lt;Integer&gt; c2 = (a, b) -> {
         <tr><td>BinaryOperator&lt;T&gt;</td><td>T apply(T t1, T t2)</td><td>二元运算</td></tr>
       </table>
 
-      <div class="tip-box">
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body">
         <strong>💡 简化规则：</strong>参数类型可省略（类型推断）、单参数可省略括号、单语句可省略花括号和return
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -130,7 +143,7 @@ Comparator&lt;Integer&gt; c2 = (a, b) -> {
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>List&lt;String&gt; list = Arrays.asList("a", "b", "c");
+        <div class="code-body"><pre><code class="language-java">List&lt;String&gt; list = Arrays.asList("a", "b", "c");
 
 // 1. 静态方法引用
 list.forEach(System.out::println);
@@ -168,7 +181,7 @@ sequenceDiagram
       <h3 style="color: var(--amber); margin: 20px 0 12px;">中间操作（返回Stream）</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>List&lt;Integer&gt; numbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        <div class="code-body"><pre><code class="language-java">List&lt;Integer&gt; numbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
 // filter: 过滤
 List&lt;Integer&gt; evens = numbers.stream()
@@ -200,7 +213,7 @@ numbers.stream()
       <h3 style="color: var(--amber); margin: 20px 0 12px;">终止操作</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// collect: 收集到集合
+        <div class="code-body"><pre><code class="language-java">// collect: 收集到集合
 List&lt;String&gt; list = names.stream().collect(Collectors.toList());
 Set&lt;String&gt; set = names.stream().collect(Collectors.toSet());
 Map&lt;String, Integer&gt; map = names.stream()
@@ -226,7 +239,7 @@ IntSummaryStatistics stats = names.stream()
       <h3 style="color: var(--amber); margin: 20px 0 12px;">并行流</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 串行流
+        <div class="code-body"><pre><code class="language-java">// 串行流
 long serialSum = numbers.stream()
     .mapToLong(n -> n * n)
     .sum();
@@ -243,9 +256,9 @@ long parallelSum2 = numbers.stream()
     .sum();</code></pre></div>
       </div>
 
-      <div class="highlight-box">
+      <div class="alert alert-info"><div class="alert-icon">ℹ️</div><div class="alert-body">
         <strong>⚠️ 并行流适用场景：</strong>数据量大、操作无状态、操作无依赖关系。线程数 = CPU核心数 - 1
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -257,7 +270,7 @@ long parallelSum2 = numbers.stream()
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 创建Optional
+        <div class="code-body"><pre><code class="language-java">// 创建Optional
 Optional&lt;String&gt; opt1 = Optional.of("Hello");           // 非null，null会抛异常
 Optional&lt;String&gt; opt2 = Optional.ofNullable(getName()); // 可为null
 Optional&lt;String&gt; opt3 = Optional.empty();               // 空Optional
@@ -277,13 +290,13 @@ Optional&lt;String&gt; filtered = opt1.filter(s -> s.length() > 3);
 Optional&lt;String&gt; result = opt1.flatMap(s -> Optional.of(s + "!"));</code></pre></div>
       </div>
 
-      <div class="tip-box">
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body">
         <strong>💡 链式调用示例：</strong>传统多层if判断可用Optional链式调用优雅处理
-      </div>
+      </div></div>
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 传统写法
+        <div class="code-body"><pre><code class="language-java">// 传统写法
 String name = getUserName(1L);
 if (name != null) {
     String upper = name.toUpperCase();
@@ -308,7 +321,7 @@ Optional.ofNullable(getUserName(1L))
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>interface MyInterface {
+        <div class="code-body"><pre><code class="language-java">interface MyInterface {
     // 抽象方法
     void abstractMethod();
 
@@ -337,9 +350,9 @@ class MyClass implements MyInterface {
 MyInterface.staticMethod(); // 直接调用静态方法</code></pre></div>
       </div>
 
-      <div class="highlight-box">
+      <div class="alert alert-info"><div class="alert-icon">ℹ️</div><div class="alert-body">
         <strong>解决冲突：</strong>当类实现多个接口且存在相同默认方法时，必须重写该方法
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -362,7 +375,7 @@ MyInterface.staticMethod(); // 直接调用静态方法</code></pre></div>
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 获取当前日期时间
+        <div class="code-body"><pre><code class="language-java">// 获取当前日期时间
 LocalDate today = LocalDate.now();
 LocalTime now = LocalTime.now();
 LocalDateTime dateTime = LocalDateTime.now();
@@ -405,7 +418,7 @@ flowchart LR
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 创建异步任务
+        <div class="code-body"><pre><code class="language-java">// 创建异步任务
 CompletableFuture&lt;String&gt; future = CompletableFuture.supplyAsync(() -> {
     sleep(1000);
     return "Hello";
@@ -427,7 +440,7 @@ CompletableFuture&lt;String&gt; chain = CompletableFuture
       <h3 style="color: var(--amber); margin: 20px 0 12px;">组合多个Future</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>CompletableFuture&lt;String&gt; f1 = CompletableFuture.supplyAsync(() -> "Hello");
+        <div class="code-body"><pre><code class="language-java">CompletableFuture&lt;String&gt; f1 = CompletableFuture.supplyAsync(() -> "Hello");
 CompletableFuture&lt;String&gt; f2 = CompletableFuture.supplyAsync(() -> "World");
 CompletableFuture&lt;String&gt; f3 = CompletableFuture.supplyAsync(() -> "!");
 
@@ -448,7 +461,7 @@ CompletableFuture&lt;Object&gt; any = CompletableFuture.anyOf(f1, f2, f3);</code
       <h3 style="color: var(--amber); margin: 20px 0 12px;">异常处理</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>CompletableFuture&lt;String&gt; result = CompletableFuture
+        <div class="code-body"><pre><code class="language-java">CompletableFuture&lt;String&gt; result = CompletableFuture
     .supplyAsync(() -> {
         if (true) throw new RuntimeException("异常");
         return "OK";
@@ -469,7 +482,7 @@ CompletableFuture&lt;Object&gt; any = CompletableFuture.anyOf(f1, f2, f3);</code
       <h3 style="color: var(--amber); margin: 20px 0 12px;">重复注解（Java 8）</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 定义可重复注解
+        <div class="code-body"><pre><code class="language-java">// 定义可重复注解
 @Repeatable(Schedules.class)
 public @interface Schedule {
     String day();
@@ -484,7 +497,7 @@ public void doWork() {}</code></pre></div>
       <h3 style="color: var(--amber); margin: 20px 0 12px;">类型推断增强（Java 8+）</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// Java 8: 泛型类型推断
+        <div class="code-body"><pre><code class="language-java">// Java 8: 泛型类型推断
 List&lt;String&gt; list = new ArrayList&lt;&gt;();  // 钻石运算符
 
 // Java 10+: var局部变量类型推断（不能用于字段、参数、返回值）
@@ -495,7 +508,7 @@ var stream = list.stream();              // 推断为Stream&lt;String&gt;</code>
       <h3 style="color: var(--amber); margin: 20px 0 12px;">Record类（Java 14预览，Java 16正式）</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// Java 16+: 简洁的数据类
+        <div class="code-body"><pre><code class="language-java">// Java 16+: 简洁的数据类
 public record Person(String name, int age) {
     // 自动获得：构造器、getter（name(), age()）、equals、hashCode、toString
 
@@ -521,7 +534,7 @@ System.out.println(p.isAdult()); // true</code></pre></div>
       <h3 style="color: var(--amber); margin: 20px 0 12px;">Sealed Classes（Java 17）</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 密封类：限制继承层次
+        <div class="code-body"><pre><code class="language-java">// 密封类：限制继承层次
 public sealed class Shape
     permits Circle, Rectangle, Square {
     // 只有指定的类可以继承
@@ -534,10 +547,165 @@ public non-sealed class Square extends Shape { }</code></pre></div>
     </div>
   </section>
 
+  <!-- Stream 实战综合案例 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🚀</div><h2 class="section-title">Stream API 实战综合案例</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">电商订单数据处理</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 模拟订单数据
+List&lt;Order&gt; orders = getOrders();
+
+// 1. 统计各城市已完成订单的总金额（按总金额降序）
+Map&lt;String, Double&gt; cityRevenue = orders.stream()
+    .filter(o -&gt; o.getStatus() == OrderStatus.COMPLETED)
+    .collect(Collectors.groupingBy(
+        Order::getCity,
+        Collectors.summingDouble(Order::getAmount)
+    ))
+    .entrySet().stream()
+    .sorted(Map.Entry.&lt;String, Double&gt;comparingByValue().reversed())
+    .collect(Collectors.toMap(
+        Map.Entry::getKey,
+        Map.Entry::getValue,
+        (a, b) -&gt; a,
+        LinkedHashMap::new  // 保持排序
+    ));
+
+// 2. 找出每个用户消费最高的订单
+Map&lt;Long, Optional&lt;Order&gt;&gt; topOrders = orders.stream()
+    .collect(Collectors.groupingBy(
+        Order::getUserId,
+        Collectors.maxBy(Comparator.comparingDouble(Order::getAmount))
+    ));
+
+// 3. 分页查询（跳过前两页，取第三页10条数据）
+List&lt;Order&gt; page3 = orders.stream()
+    .sorted(Comparator.comparing(Order::getCreateTime).reversed())
+    .skip(20L)   // 跳过前20条（第1、2页）
+    .limit(10)   // 取10条
+    .collect(Collectors.toList());</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">Collector 自定义收集器</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 自定义：将 Stream 收集为 ImmutableList
+Collector&lt;T, List&lt;T&gt;, List&lt;T&gt;&gt; toImmutableList = Collector.of(
+    ArrayList::new,                          // supplier
+    List::add,                               // accumulator
+    (left, right) -&gt; { left.addAll(right); return left; }, // combiner（并行时合并）
+    Collections::unmodifiableList,           // finisher
+    Collector.Characteristics.UNORDERED
+);
+
+List&lt;String&gt; immutable = names.stream().collect(toImmutableList);</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 面试高频考点 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: Lambda 表达式的本质是什么？和匿名内部类有什么区别？</div>
+        <div class="interview-a">
+          <p><strong>本质：</strong>Lambda 是函数式接口的实例，由 JVM 通过 invokedynamic 指令在运行时动态生成，不会产生独立的 .class 文件（匿名内部类会）。</p>
+          <div class="table-container"><table>
+            <tr><th>特性</th><th>Lambda</th><th>匿名内部类</th></tr>
+            <tr><td>this 引用</td><td>指向外部类实例</td><td>指向匿名类自身</td></tr>
+            <tr><td>编译产物</td><td>无独立.class文件</td><td>产生 Outer$1.class</td></tr>
+            <tr><td>接口要求</td><td>只能实现函数式接口（单方法）</td><td>可实现任意接口/抽象类</td></tr>
+            <tr><td>性能</td><td>首次调用略慢（invokedynamic），后续快</td><td>每次 new 创建对象</td></tr>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q2: Stream 的 map() 和 flatMap() 有什么区别？</div>
+        <div class="interview-a">
+          <ul style="margin: 8px 0; padding-left: 24px; line-height: 2;">
+            <li><strong>map()</strong>：一对一转换，将每个元素映射为另一个元素，结果流元素数量不变</li>
+            <li><strong>flatMap()</strong>：一对多转换，将每个元素映射为一个 Stream，然后将所有 Stream 合并为一个流（扁平化）</li>
+          </ul>
+          <div class="code-container">
+            <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code class="language-java">// map: Stream&lt;String[]&gt; → 每个元素是 String[]
+Stream&lt;String[]&gt; mapped = Stream.of("hello world", "foo bar")
+    .map(s -&gt; s.split(" "));  // [["hello","world"], ["foo","bar"]]
+
+// flatMap: Stream&lt;String&gt; → 展平为单个元素流
+Stream&lt;String&gt; flatMapped = Stream.of("hello world", "foo bar")
+    .flatMap(s -&gt; Arrays.stream(s.split(" ")));  // ["hello","world","foo","bar"]</code></pre></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q3: Optional 正确用法是什么？哪些场景不应该用 Optional？</div>
+        <div class="interview-a">
+          <p><strong>正确用法：</strong>作为方法返回值表示"可能为空的结果"，配合 map/flatMap 链式处理，避免 NPE。</p>
+          <p><strong>不应该用 Optional 的场景：</strong></p>
+          <ul style="margin: 8px 0; padding-left: 24px;">
+            <li>方法参数（应由调用者保证非空，或用重载）</li>
+            <li>字段（Optional 不可序列化）</li>
+            <li>集合元素（集合本身就能表达"空"）</li>
+            <li>频繁调用的性能敏感代码（Optional 是对象，有装箱开销）</li>
+          </ul>
+          <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body">避免使用 <code>optional.get()</code>，它在 Optional 为空时抛出 NoSuchElementException，和直接 NPE 一样危险。用 orElse/orElseGet/orElseThrow 替代。</div></div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q4: 并行流（parallelStream）有哪些注意事项？</div>
+        <div class="interview-a">
+          <ul style="margin: 8px 0; padding-left: 24px; line-height: 2;">
+            <li><strong>底层使用 ForkJoinPool.commonPool()</strong>，默认线程数 = CPU核心数-1，所有并行流共享，避免阻塞操作</li>
+            <li><strong>操作必须无状态、无副作用</strong>，如果 Lambda 中修改共享变量会出现线程安全问题</li>
+            <li><strong>数据量小时并行反而更慢</strong>，因为任务分割和线程协调有开销（建议数据量 &gt; 10000 才考虑）</li>
+            <li><strong>有序集合的 forEach 在并行时顺序不保证</strong>，如需有序用 forEachOrdered（但会降低并行效果）</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 实战陷阱 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱1：Lambda 中修改外部局部变量</strong>
+          Lambda 捕获的外部变量必须是 effectively final（事实上的final）。如需在 Lambda 中累加，应使用 AtomicInteger 或 int[] 包装，而不是直接修改 int 变量。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱2：Stream 不可重用</strong>
+          Stream 是一次性的，一旦调用了终止操作（collect/forEach/reduce等），流就关闭了。再次调用会抛出 IllegalStateException。需要再次处理同一数据，必须重新从数据源创建 Stream。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱3：LocalDateTime 没有时区信息</strong>
+          LocalDateTime 不含时区，在跨时区系统中会出现时间偏差。跨时区存储和传输时间应使用 Instant（UTC时间戳）或 ZonedDateTime，数据库存储建议使用 UTC 时区的 timestamp。
+        </div>
+      </div>
+    </div>
+  </section>
+
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
 </script>

@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>线程池详解 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -44,7 +46,23 @@
   .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
   .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
   .code-btn:hover { border-color: var(--amber); color: var(--amber); }
-  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body pre { padding: 0; margin: 0; }
+  .code-body pre code.hljs { padding: 20px; border-radius: 0; font-family: var(--font-code); font-size: 13px; line-height: 1.8; }
+  .alert { border-radius: 10px; padding: 16px 20px; margin: 16px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .alert-info { background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.2); }
+  .alert-warn { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.2); }
+  .alert-tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.2); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .interview-q { padding: 16px 20px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); font-weight: 600; color: var(--amber); }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; }
+  .tag { display: inline-block; font-size: 11px; font-family: var(--font-code); padding: 3px 10px; border-radius: 20px; margin: 2px; }
+  .tag-amber { background: rgba(240,180,41,0.15); color: var(--amber); border: 1px solid rgba(240,180,41,0.3); }
+  .tag-cyan { background: rgba(78,205,196,0.15); color: var(--cyan); border: 1px solid rgba(78,205,196,0.3); }
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .pros-cons-card { padding: 20px; border-radius: 10px; border: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 16px 0; }
   table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
   th, td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
   th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
@@ -68,7 +86,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>并发编程</span></nav>
   <header class="hero">
-    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <div class="hero-badge">🏷️ THREAD POOL · 并发编程</div>
     <h1 class="hero-title">线程池详解</h1>
     <p class="hero-desc">线程池是Java并发编程的核心组件，通过复用线程降低资源消耗、提高响应速度、便于统一管理。掌握线程池原理与最佳实践是高级Java工程师必备技能。</p>
   </header>
@@ -85,8 +103,8 @@
         <tr><td>便于管理</td><td>统一分配、调优和监控线程，防止无限制创建导致系统崩溃</td></tr>
         <tr><td>提高稳定性</td><td>通过拒绝策略和队列机制控制并发量，保护系统稳定性</td></tr>
       </table>
-      <div class="warning">
-        <div><strong>不使用线程池的风险</strong><br>无限制创建线程会导致系统资源耗尽，引发OutOfMemoryError，甚至导致服务不可用。每个线程约占用1MB栈空间，10000个线程就需要约10GB内存。</div>
+      <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body">
+        <strong>不使用线程池的风险</strong>无限制创建线程会导致系统资源耗尽，引发OutOfMemoryError，甚至导致服务不可用。每个线程约占用1MB栈空间，10000个线程就需要约10GB内存。</div>
       </div>
     </div>
   </section>
@@ -108,7 +126,7 @@
       </table>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>public ThreadPoolExecutor(
+        <div class="code-body"><pre><code class="language-java">public ThreadPoolExecutor(
     int corePoolSize,                          // 核心线程数
     int maximumPoolSize,                       // 最大线程数
     long keepAliveTime,                        // 非核心线程存活时间
@@ -153,22 +171,22 @@
       <p>核心线程数 = 最大线程数，使用无界队列LinkedBlockingQueue</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>ExecutorService fixedPool = Executors.newFixedThreadPool(10);
+        <div class="code-body"><pre><code class="language-java">ExecutorService fixedPool = Executors.newFixedThreadPool(10);
 // 等价于：
 new ThreadPoolExecutor(
     10, 10, 0L, TimeUnit.MILLISECONDS,
     new LinkedBlockingQueue&lt;&gt;()  // 无界队列！
 );</code></pre></div>
       </div>
-      <div class="warning">
-        <div><strong>风险提示</strong><br>队列无界，任务堆积时可能导致OOM。不推荐直接使用Executors创建。</div>
+      <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body">
+        <strong>风险提示</strong>队列无界，任务堆积时可能导致OOM。不推荐直接使用Executors创建。</div>
       </div>
 
       <h4 style="color: var(--amber); margin: 20px 0 12px;">2. CachedThreadPool（可缓存线程池）</h4>
       <p>核心线程数为0，最大线程数无限制，空闲线程存活60秒，使用SynchronousQueue</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>ExecutorService cachedPool = Executors.newCachedThreadPool();
+        <div class="code-body"><pre><code class="language-java">ExecutorService cachedPool = Executors.newCachedThreadPool();
 // 等价于：
 new ThreadPoolExecutor(
     0, Integer.MAX_VALUE,  // 最大线程数无限制！
@@ -176,15 +194,15 @@ new ThreadPoolExecutor(
     new SynchronousQueue&lt;&gt;()  // 直接交接，不排队
 );</code></pre></div>
       </div>
-      <div class="warning">
-        <div><strong>风险提示</strong><br>线程数无限制，高并发时可能创建大量线程导致OOM。</div>
+      <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body">
+        <strong>风险提示</strong>线程数无限制，高并发时可能创建大量线程导致OOM。</div>
       </div>
 
       <h4 style="color: var(--amber); margin: 20px 0 12px;">3. SingleThreadExecutor（单线程线程池）</h4>
       <p>只有一个工作线程，任务按提交顺序执行，使用无界队列</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>ExecutorService singlePool = Executors.newSingleThreadExecutor();
+        <div class="code-body"><pre><code class="language-java">ExecutorService singlePool = Executors.newSingleThreadExecutor();
 // 等价于：
 new ThreadPoolExecutor(
     1, 1, 0L, TimeUnit.MILLISECONDS,
@@ -196,7 +214,7 @@ new ThreadPoolExecutor(
       <p>支持定时执行、周期执行任务，基于DelayedWorkQueue</p>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>ScheduledExecutorService scheduledPool = Executors.newScheduledThreadPool(10);
+        <div class="code-body"><pre><code class="language-java">ScheduledExecutorService scheduledPool = Executors.newScheduledThreadPool(10);
 // 延迟执行
 scheduledPool.schedule(task, 5, TimeUnit.SECONDS);
 // 固定频率执行
@@ -221,7 +239,7 @@ scheduledPool.scheduleWithFixedDelay(task, 0, 10, TimeUnit.SECONDS);</code></pre
       </table>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 自定义拒绝策略示例
+        <div class="code-body"><pre><code class="language-java">// 自定义拒绝策略示例
 static class CustomRejectedHandler implements RejectedExecutionHandler {
     @Override
     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
@@ -254,7 +272,7 @@ static class CustomRejectedHandler implements RejectedExecutionHandler {
       </table>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 状态转换方法
+        <div class="code-body"><pre><code class="language-java">// 状态转换方法
 executor.shutdown();      // RUNNING -> SHUTDOWN
 executor.shutdownNow();   // RUNNING -> STOP
 
@@ -293,14 +311,14 @@ executor.isTerminated();  // 是否所有任务已完成</code></pre></div>
         <tr><td>IO密集型</td><td>CPU核心数 * 2</td><td>核心数 * 2~4</td><td>有界队列</td><td>充分利用IO等待时间</td></tr>
         <tr><td>混合型</td><td>CPU核心数 * (1 + 等待/计算比)</td><td>适当扩大</td><td>有界队列</td><td>根据实际占比调整</td></tr>
       </table>
-      <div class="tip">
-        <div><strong>公式参考</strong><br>线程数 = CPU核心数 * (1 + 等待时间/计算时间)。例如IO等待时间是计算时间的2倍，则线程数 = 核心数 * 3</div>
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body">
+        <strong>公式参考</strong>线程数 = CPU核心数 * (1 + 等待时间/计算时间)。例如IO等待时间是计算时间的2倍，则线程数 = 核心数 * 3</div>
       </div>
 
       <h4 style="color: var(--amber); margin: 20px 0 12px;">2. 线程池监控</h4>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>static void monitorThreadPool(ThreadPoolExecutor executor) {
+        <div class="code-body"><pre><code class="language-java">static void monitorThreadPool(ThreadPoolExecutor executor) {
     System.out.println("核心线程数：" + executor.getCorePoolSize());
     System.out.println("最大线程数：" + executor.getMaximumPoolSize());
     System.out.println("当前线程数：" + executor.getPoolSize());
@@ -314,7 +332,7 @@ executor.isTerminated();  // 是否所有任务已完成</code></pre></div>
       <h4 style="color: var(--amber); margin: 20px 0 12px;">3. 优雅关闭线程池</h4>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>static void shutdownGracefully(ExecutorService executor) {
+        <div class="code-body"><pre><code class="language-java">static void shutdownGracefully(ExecutorService executor) {
     // 1. 停止接收新任务
     executor.shutdown();
     try {
@@ -338,7 +356,7 @@ executor.isTerminated();  // 是否所有任务已完成</code></pre></div>
       <h4 style="color: var(--amber); margin: 20px 0 12px;">4. 生产环境推荐配置</h4>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// CPU密集型线程池示例
+        <div class="code-body"><pre><code class="language-java">// CPU密集型线程池示例
 static ExecutorService cpuIntensivePool() {
     int coreSize = Runtime.getRuntime().availableProcessors() + 1;
     return new ThreadPoolExecutor(
@@ -377,8 +395,171 @@ static ExecutorService ioIntensivePool() {
         <li>☐ 确保应用关闭时优雅关闭线程池，避免任务丢失</li>
         <li>☐ 对关键业务线程池设置合理的keepAliveTime</li>
       </ul>
-      <div class="tip">
-        <div><strong>Spring Boot推荐</strong><br>在Spring Boot中可使用ThreadPoolTaskExecutor，它提供了更友好的配置方式，并支持优雅关闭。</div>
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body">
+        <strong>Spring Boot推荐</strong>在Spring Boot中可使用ThreadPoolTaskExecutor，它提供了更友好的配置方式，并支持优雅关闭。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Spring ThreadPoolTaskExecutor -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🍃</div><h2 class="section-title">Spring 中的线程池配置</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">ThreadPoolTaskExecutor 配置</h3>
+      <p>Spring Boot 中推荐使用 ThreadPoolTaskExecutor，配合 @Async 实现声明式异步。</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Configuration
+@EnableAsync
+public class ThreadPoolConfig {
+
+    @Bean("asyncExecutor")
+    public Executor asyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        // 核心线程数
+        executor.setCorePoolSize(8);
+        // 最大线程数
+        executor.setMaxPoolSize(16);
+        // 队列容量
+        executor.setQueueCapacity(500);
+        // 线程名前缀（方便问题排查）
+        executor.setThreadNamePrefix("async-task-");
+        // 拒绝策略：调用者执行（降低提交速度）
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        // 等待所有任务完成再关闭（优雅关闭）
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
+        executor.initialize();
+        return executor;
+    }
+}
+
+// 使用 @Async 声明异步方法
+@Service
+public class OrderService {
+    @Async("asyncExecutor")
+    public CompletableFuture<Void> sendNotification(Long orderId) {
+        // 异步发送通知
+        notificationClient.send(orderId);
+        return CompletableFuture.completedFuture(null);
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">线程池隔离（Bulkhead 模式）</h3>
+      <p>不同业务用不同线程池，防止慢接口拖垮整体服务。</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Configuration
+public class IsolatedPoolConfig {
+    // 支付核心业务线程池（高优先级）
+    @Bean("paymentPool")
+    public Executor paymentPool() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(Runtime.getRuntime().availableProcessors() + 1);
+        executor.setMaxPoolSize(20);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("payment-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+        executor.initialize();
+        return executor;
+    }
+
+    // 日志审计线程池（低优先级，允许丢弃）
+    @Bean("auditPool")
+    public Executor auditPool() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(1000);
+        executor.setThreadNamePrefix("audit-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy()); // 允许丢弃
+        executor.initialize();
+        return executor;
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 面试高频考点 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: 线程池的核心参数有哪些？任务提交后的执行流程是什么？</div>
+        <div class="interview-a">
+          <strong>7个核心参数：</strong>corePoolSize（核心线程数）、maximumPoolSize（最大线程数）、keepAliveTime+unit（非核心线程存活时间）、workQueue（任务队列）、threadFactory（线程工厂）、handler（拒绝策略）。
+          <p><strong>执行流程：</strong></p>
+          <ol style="margin: 8px 0; padding-left: 24px; line-height: 2;">
+            <li>线程数 &lt; corePoolSize → 创建核心线程执行</li>
+            <li>线程数 ≥ corePoolSize → 加入 workQueue</li>
+            <li>队列满且线程数 &lt; maximumPoolSize → 创建非核心线程</li>
+            <li>队列满且线程数 = maximumPoolSize → 执行拒绝策略</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q2: 为什么不推荐用 Executors 创建线程池？</div>
+        <div class="interview-a">
+          <div class="table-container"><table>
+            <tr><th>工厂方法</th><th>风险</th></tr>
+            <tr><td>newFixedThreadPool</td><td>使用无界 LinkedBlockingQueue，任务堆积可能 OOM</td></tr>
+            <tr><td>newCachedThreadPool</td><td>maximumPoolSize=Integer.MAX_VALUE，大量任务时线程数爆炸导致 OOM</td></tr>
+            <tr><td>newSingleThreadExecutor</td><td>同 Fixed，无界队列 OOM 风险</td></tr>
+            <tr><td>newScheduledThreadPool</td><td>maximumPoolSize=Integer.MAX_VALUE，同 Cached</td></tr>
+          </table></div>
+          <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body">生产环境应使用 ThreadPoolExecutor 手动指定有界队列和合理的最大线程数。</div></div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q3: CPU密集型和IO密集型任务，线程数如何设置？</div>
+        <div class="interview-a">
+          <ul style="margin: 8px 0; padding-left: 24px; line-height: 2;">
+            <li><strong>CPU密集型</strong>（大量计算、加密解密）：线程数 = CPU核心数 + 1。多一个是为了应对页缺失等暂停，充分利用CPU。</li>
+            <li><strong>IO密集型</strong>（数据库查询、RPC调用）：线程数 = CPU核心数 × (1 + 等待时间/计算时间)。IO等待期间CPU空闲，可以让更多线程并发。</li>
+            <li><strong>实践建议</strong>：用 JMeter 压测 + Arthas 监控，根据实际线程利用率动态调整，不要只凭公式。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q4: CallerRunsPolicy 拒绝策略有什么优缺点？</div>
+        <div class="interview-a">
+          <p><strong>优点：</strong>不丢任务；当线程池满时由调用者线程执行任务，天然限流（调用者被阻塞，无法继续提交）。</p>
+          <p><strong>缺点：</strong>如果调用者是 Tomcat 线程，会导致该请求处理时间变长，影响接口响应时间。</p>
+          <div class="alert alert-info"><div class="alert-icon">ℹ️</div><div class="alert-body">对于关键业务（如支付），应使用 AbortPolicy 快速失败并报警，而不是静默降级。</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 实战陷阱 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱1：@Async 方法自调用失效</strong>
+          同一个类中调用 @Async 方法不经过 Spring 代理，异步失效。必须通过注入 Bean 引用自身或将方法移到另一个类中调用。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱2：ThreadLocal 在线程池中数据污染</strong>
+          线程池复用线程，若 ThreadLocal 未清理，下一个任务会读取到上一个任务遗留的数据。必须在任务 finally 块中调用 remove()。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱3：submit() 异常被吞掉</strong>
+          用 submit() 提交任务时，任务抛出的异常会被封装到 Future 中，不调用 future.get() 永远不知道任务失败了。应重写 afterExecute() 或用 try-catch 包裹任务体。
+        </div>
       </div>
     </div>
   </section>
@@ -387,6 +568,7 @@ static ExecutorService ioIntensivePool() {
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }

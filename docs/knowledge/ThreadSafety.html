@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>并发编程基础 - 线程安全与同步机制 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -48,7 +50,6 @@
   .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
   .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
   .code-btn:hover { border-color: var(--amber); color: var(--amber); }
-  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
   .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
   .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
   .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
@@ -58,6 +59,21 @@
   .tip-box { background: rgba(240, 180, 41, 0.1); border-left: 3px solid var(--amber); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
   .warning-box { background: rgba(255, 123, 114, 0.1); border-left: 3px solid var(--red); padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  .code-body pre { padding: 0; margin: 0; }
+  .code-body pre code.hljs { padding: 20px; border-radius: 0; font-family: var(--font-code); font-size: 13px; line-height: 1.8; }
+  .alert { border-radius: 10px; padding: 16px 20px; margin: 16px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .alert-info { background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.2); }
+  .alert-warn { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.2); }
+  .alert-tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.2); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .interview-q { padding: 16px 20px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); font-weight: 600; color: var(--amber); }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; }
+  .tag { display: inline-block; font-size: 11px; font-family: var(--font-code); padding: 3px 10px; border-radius: 20px; margin: 2px; }
+  .tag-amber { background: rgba(240,180,41,0.15); color: var(--amber); border: 1px solid rgba(240,180,41,0.3); }
+  .tag-cyan { background: rgba(78,205,196,0.15); color: var(--cyan); border: 1px solid rgba(78,205,196,0.3); }
+  .table-container { overflow-x: auto; margin: 16px 0; }
 </style>
 </head>
 <body>
@@ -65,7 +81,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>并发编程</span></nav>
   <header class="hero">
-    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <div class="hero-badge">🏷️ CONCURRENCY · 并发编程</div>
     <h1 class="hero-title">并发编程基础 - 线程安全与同步机制</h1>
     <p class="hero-desc">线程安全问题、volatile、synchronized、Lock、原子类、ThreadLocal等并发核心概念的全面解析</p>
   </header>
@@ -81,14 +97,14 @@
         <tr><td>有序性</td><td>程序执行顺序与代码顺序一致</td><td>volatile, synchronized, Lock</td></tr>
       </table>
 
-      <div class="warning-box">
+      <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body">
         <strong>⚠️ 问题示例：count++ 不是原子操作</strong><br>
         实际执行：1. 读取count值 → 2. 加1 → 3. 写回。多线程下可能读取相同值，导致计数丢失。
-      </div>
+      </div></div>
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 线程不安全的计数器
+        <div class="code-body"><pre><code class="language-java">// 线程不安全的计数器
 class UnsafeCounter {
     private int count = 0;
     public void increment() {
@@ -129,7 +145,7 @@ sequenceDiagram
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>class VolatileExample {
+        <div class="code-body"><pre><code class="language-java">class VolatileExample {
     // 状态标志：一个线程修改，其他线程立即可见
     private volatile boolean running = true;
 
@@ -161,9 +177,9 @@ class Singleton {
 }</code></pre></div>
       </div>
 
-      <div class="warning-box">
+      <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body">
         <strong>❌ 错误用法：</strong>volatile不能保证原子性，不能用于 count++ 等复合操作
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -176,7 +192,7 @@ class Singleton {
       <h3 style="color: var(--amber); margin: 20px 0 12px;">三种使用方式</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>class SynchronizedCounter {
+        <div class="code-body"><pre><code class="language-java">class SynchronizedCounter {
     private int count = 0;
     private final Object lock = new Object();
 
@@ -221,9 +237,9 @@ flowchart LR
         <tr><td>重量级锁</td><td>竞争激烈，线程阻塞，使用操作系统互斥量</td></tr>
       </table>
 
-      <div class="tip-box">
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body">
         <strong>💡 实现原理：</strong>基于对象的Monitor（监视器锁），通过monitorenter和monitorexit指令实现
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -245,7 +261,7 @@ flowchart LR
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>class ReentrantLockCounter {
+        <div class="code-body"><pre><code class="language-java">class ReentrantLockCounter {
     // 公平锁：new ReentrantLock(true)
     private final ReentrantLock lock = new ReentrantLock();
     private int count = 0;
@@ -290,7 +306,7 @@ flowchart LR
       <h3 style="color: var(--amber); margin: 20px 0 12px;">ReadWriteLock（读写锁）</h3>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>class ReadWriteLockExample {
+        <div class="code-body"><pre><code class="language-java">class ReadWriteLockExample {
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
     private final Lock readLock = rwLock.readLock();
     private final Lock writeLock = rwLock.writeLock();
@@ -318,9 +334,9 @@ flowchart LR
 }</code></pre></div>
       </div>
 
-      <div class="highlight-box">
+      <div class="alert alert-info"><div class="alert-icon">ℹ️</div><div class="alert-body">
         <strong>读写锁规则：</strong>读-读不互斥、读-写互斥、写-写互斥。适合读多写少的场景。
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -351,7 +367,7 @@ sequenceDiagram
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>class AtomicCounter {
+        <div class="code-body"><pre><code class="language-java">class AtomicCounter {
     private final AtomicInteger count = new AtomicInteger(0);
 
     public void increment() {
@@ -389,16 +405,16 @@ sequenceDiagram
         <tr><td>高并发累加器</td><td>LongAdder, LongAccumulator</td><td>分段累加，减少竞争</td></tr>
       </table>
 
-      <div class="tip-box">
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body">
         <strong>💡 LongAdder：</strong>高并发场景下比AtomicLong性能更好，原理是分段累加多个Cell，最后汇总
-      </div>
+      </div></div>
 
-      <div class="warning-box">
+      <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body">
         <strong>⚠️ CAS缺点：</strong><br>
         1. ABA问题（可用AtomicStampedReference解决）<br>
         2. 长时间自旋消耗CPU<br>
         3. 只能保证单个变量的原子性
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -434,13 +450,13 @@ flowchart TD
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>class ThreadLocalExample {
+        <div class="code-body"><pre><code class="language-java">class ThreadLocalExample {
     // 每个线程独立的变量
     private static final ThreadLocal&lt;String&gt; userContext = new ThreadLocal&lt;&gt;();
 
     // 使用initialValue设置初始值
     private static final ThreadLocal&lt;Integer&gt; requestId =
-        ThreadLocal.withInitial(() -> 0);
+        ThreadLocal.withInitial(() -&gt; 0);
 
     public void setUser(String user) {
         userContext.set(user);
@@ -464,15 +480,15 @@ flowchart TD
       </div>
 
       <h3 style="color: var(--amber); margin: 20px 0 12px;">内存泄漏问题</h3>
-      <div class="warning-box">
+      <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body">
         <strong>⚠️ 原因：</strong>ThreadLocalMap的key是弱引用（ThreadLocal），value是强引用（存储的值）。<br>
         线程池场景下，线程不销毁，value无法回收。<br>
         <strong>解决：</strong>使用后必须调用 remove() 方法清理
-      </div>
+      </div></div>
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// InheritableThreadLocal：子线程可继承父线程的值
+        <div class="code-body"><pre><code class="language-java">// InheritableThreadLocal：子线程可继承父线程的值
 private static final InheritableThreadLocal&lt;String&gt; inheritable =
     new InheritableThreadLocal&lt;&gt;();
 
@@ -480,7 +496,7 @@ private static final InheritableThreadLocal&lt;String&gt; inheritable =
 inheritable.set("父线程的值");
 
 // 子线程可以获取到父线程的值
-new Thread(() -> {
+new Thread(() -&gt; {
     System.out.println(inheritable.get()); // 输出：父线程的值
 }).start();</code></pre></div>
       </div>
@@ -496,7 +512,7 @@ new Thread(() -> {
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 线程安全的HashMap
+        <div class="code-body"><pre><code class="language-java">// 线程安全的HashMap
 ConcurrentHashMap&lt;String, Integer&gt; map = new ConcurrentHashMap&lt;&gt;();
 
 // 基本操作
@@ -508,7 +524,7 @@ map.putIfAbsent("key", 2);     // key不存在才put
 map.replace("key", 1, 2);      // 旧值等于1时才替换为2
 
 // compute方法（原子性计算）
-map.compute("key", (k, v) -> v == null ? 1 : v + 1);
+map.compute("key", (k, v) -&gt; v == null ? 1 : v + 1);
 
 // merge方法（合并）
 map.merge("key", 1, Integer::sum); // 存在则相加，不存在则put 1</code></pre></div>
@@ -528,7 +544,7 @@ flowchart LR
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>CopyOnWriteArrayList&lt;String&gt; list = new CopyOnWriteArrayList&lt;&gt;();
+        <div class="code-body"><pre><code class="language-java">CopyOnWriteArrayList&lt;String&gt; list = new CopyOnWriteArrayList&lt;&gt;();
 
 // 读操作：无锁
 for (String s : list) {
@@ -540,9 +556,9 @@ list.add("new item");
 list.remove("old item");</code></pre></div>
       </div>
 
-      <div class="tip-box">
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body">
         <strong>💡 CopyOnWrite原理：</strong>写操作时复制一份新数组，修改后替换引用。读操作始终在原数组上进行，无需加锁。
-      </div>
+      </div></div>
 
       <table>
         <tr><th>容器</th><th>特点</th><th>适用场景</th></tr>
@@ -555,10 +571,162 @@ list.remove("old item");</code></pre></div>
     </div>
   </section>
 
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🚀</div><h2 class="section-title">StampedLock 与 CompletableFuture</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">StampedLock（JDK 8+）</h3>
+      <p>StampedLock 是 ReadWriteLock 的增强版，支持乐观读，大幅提升读多写少场景性能。</p>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">class StampedLockExample {
+    private final StampedLock lock = new StampedLock();
+    private int data = 0;
+
+    // 乐观读（无锁）
+    public int optimisticRead() {
+        long stamp = lock.tryOptimisticRead();
+        int current = data;
+        if (!lock.validate(stamp)) {   // 期间有写操作则升级为悲观读
+            stamp = lock.readLock();
+            try { current = data; } finally { lock.unlockRead(stamp); }
+        }
+        return current;
+    }
+
+    // 写锁
+    public void write(int value) {
+        long stamp = lock.writeLock();
+        try { data = value; } finally { lock.unlockWrite(stamp); }
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">CompletableFuture 异步编排</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 链式异步任务
+CompletableFuture&lt;String&gt; future = CompletableFuture
+    .supplyAsync(() -&gt; fetchUserFromDB(userId))
+    .thenApplyAsync(user -&gt; enrichWithCache(user))
+    .thenApply(user -&gt; convertToDTO(user))
+    .exceptionally(e -&gt; { log.error("失败", e); return UserDTO.empty(); });
+
+// 多任务并行等待
+CompletableFuture&lt;UserDTO&gt; userF = CompletableFuture.supplyAsync(() -&gt; getUser(id));
+CompletableFuture&lt;OrderDTO&gt; orderF = CompletableFuture.supplyAsync(() -&gt; getOrders(id));
+CompletableFuture.allOf(userF, orderF).thenRun(() -&gt; {
+    UserDTO user = userF.join();
+    OrderDTO orders = orderF.join();
+});</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: volatile 和 synchronized 的区别？</div>
+        <div class="interview-a">
+          <div class="table-container"><table>
+            <tr><th>特性</th><th>volatile</th><th>synchronized</th></tr>
+            <tr><td>原子性</td><td>❌ 不保证</td><td>✅ 保证</td></tr>
+            <tr><td>可见性</td><td>✅ 保证</td><td>✅ 保证</td></tr>
+            <tr><td>有序性</td><td>✅ 禁止重排序</td><td>✅ 保证</td></tr>
+            <tr><td>阻塞线程</td><td>❌ 不阻塞</td><td>✅ 会阻塞</td></tr>
+            <tr><td>适用场景</td><td>状态标志、DCL单例</td><td>临界区、复合操作</td></tr>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q2: synchronized 锁升级过程？能降级吗？</div>
+        <div class="interview-a">
+          <strong>升级路径：无锁 → 偏向锁 → 轻量级锁（CAS自旋）→ 重量级锁（OS mutex）</strong>
+          <ul style="margin: 12px 0; padding-left: 24px;">
+            <li><strong>偏向锁</strong>：无竞争时对象头记录线程ID，同一线程重入无需CAS</li>
+            <li><strong>轻量级锁</strong>：两线程交替访问，CAS自旋争锁，避免线程挂起</li>
+            <li><strong>重量级锁</strong>：自旋超阈值，升级为OS mutex，线程进入阻塞队列</li>
+          </ul>
+          <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body">锁<strong>不能降级</strong>。JDK 15+ 已默认禁用偏向锁，因维护偏向锁的成本高于收益。</div></div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q3: ABA 问题是什么？如何解决？</div>
+        <div class="interview-a">
+          <p><strong>ABA问题：</strong>线程1读取值A，线程2将A→B→A，线程1的CAS成功，但逻辑上数据已被篡改。</p>
+          <div class="code-container">
+            <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+            <div class="code-body"><pre><code class="language-java">// AtomicStampedReference 通过版本号解决ABA问题
+AtomicStampedReference&lt;Integer&gt; ref = new AtomicStampedReference&lt;&gt;(1, 0);
+int[] stampHolder = new int[1];
+Integer current = ref.get(stampHolder);
+int stamp = stampHolder[0];
+// 同时比较值和版本号，版本号不同则失败
+ref.compareAndSet(current, 2, stamp, stamp + 1);</code></pre></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q4: ThreadLocal 内存泄漏的原因和解决方案？</div>
+        <div class="interview-a">
+          <p><strong>原因：</strong>ThreadLocalMap 的 key（ThreadLocal引用）是弱引用，GC时被回收后 key=null；但 value 是强引用，线程池中线程不销毁，value永远无法被回收。</p>
+          <p><strong>解决：</strong>使用完毕必须调用 <code class="tag tag-amber">threadLocal.remove()</code>，放在 finally 块中确保执行。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱1：DCL单例忘加 volatile</strong>
+          不加 volatile 时，指令重排序可能让其他线程拿到未初始化完成的对象。volatile 的作用是禁止 new Singleton() 的指令重排序（分配内存→初始化对象→赋值引用，后两步可能被重排）。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱2：synchronized 锁对象被替换导致锁失效</strong>
+          如果锁对象是可变引用（如 Integer 自动装箱、String），被重新赋值后不同线程锁的不是同一对象。锁对象必须用 <code>final</code> 修饰且不可变。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱3：线程池中 ThreadLocal 数据污染</strong>
+          线程池复用线程，若上一个任务的 ThreadLocal 没有清理，下一个任务会读到脏数据。必须在任务的 finally 块中调用 remove()。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 优缺点分析 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚖️</div><h2 class="section-title">各同步方案对比</h2></div>
+    <div class="section-body">
+      <div class="table-container"><table>
+        <tr><th>方案</th><th>原子性</th><th>可见性</th><th>有序性</th><th>是否阻塞</th><th>适用场景</th></tr>
+        <tr><td>volatile</td><td>❌</td><td>✅</td><td>✅</td><td>否</td><td>状态标志、DCL</td></tr>
+        <tr><td>synchronized</td><td>✅</td><td>✅</td><td>✅</td><td>是</td><td>临界区保护</td></tr>
+        <tr><td>ReentrantLock</td><td>✅</td><td>✅</td><td>✅</td><td>是</td><td>需要高级特性（超时/中断）</td></tr>
+        <tr><td>AtomicXxx</td><td>✅</td><td>✅</td><td>部分</td><td>否（CAS自旋）</td><td>计数器、无锁结构</td></tr>
+        <tr><td>StampedLock</td><td>✅</td><td>✅</td><td>✅</td><td>是（悲观）</td><td>读多写少、高性能</td></tr>
+      </table></div>
+    </div>
+  </section>
+
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
 </script>

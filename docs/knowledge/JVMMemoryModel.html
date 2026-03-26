@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JVM内存模型与垃圾回收 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -44,7 +46,22 @@
   .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
   .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
   .code-btn:hover { border-color: var(--amber); color: var(--amber); }
-  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .code-body pre { padding: 0; margin: 0; }
+  .code-body pre code.hljs { padding: 20px; border-radius: 0; font-family: var(--font-code); font-size: 13px; line-height: 1.8; }
+  .alert { border-radius: 10px; padding: 16px 20px; margin: 16px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .alert-info { background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.2); }
+  .alert-warn { background: rgba(255, 123, 114, 0.1); border: 1px solid rgba(255, 123, 114, 0.2); }
+  .alert-tip { background: rgba(126, 231, 135, 0.1); border: 1px solid rgba(126, 231, 135, 0.2); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .interview-q { padding: 16px 20px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); font-weight: 600; color: var(--amber); }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; }
+  .table-container { overflow-x: auto; margin: 16px 0; }
+  .section-body table { width: 100%; border-collapse: collapse; margin: 20px 0; font-family: var(--font-code); font-size: 13px; }
+  .section-body th, .section-body td { padding: 12px 16px; text-align: left; border: 1px solid var(--border-card); }
+  .section-body th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  .section-body tr:hover { background: rgba(240, 180, 41, 0.03); }
   .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
   .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
   .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
@@ -69,7 +86,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
   <header class="hero">
-    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <div class="hero-badge">🏷️ JVM · 内存模型与GC</div>
     <h1 class="hero-title">JVM内存模型与垃圾回收</h1>
     <p class="hero-desc">深入理解JVM内存结构、垃圾回收机制、GC收集器及调优策略，掌握JVM性能优化核心技术。</p>
   </header>
@@ -103,12 +120,11 @@
         </ul>
       </div>
 
-      <div class="tip">
-        <div class="tip-title">💡 Metaspace演进</div>
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body"><strong>Metaspace演进</strong>
         <p>JDK 1.6：字符串常量池在方法区（永久代）<br/>
         JDK 1.7：字符串常量池移到堆中<br/>
         JDK 1.8：方法区改为元空间，使用本地内存，无默认上限</p>
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -150,10 +166,9 @@
         <tr><td>老年代</td><td>约占堆2/3</td><td>存放长期存活对象</td></tr>
       </table>
 
-      <div class="tip">
-        <div class="tip-title">💡 空间分配担保</div>
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body"><strong>空间分配担保</strong>
         <p>Minor GC前，JVM会检查老年代最大连续可用空间是否大于年轻代所有对象总空间。如果不足，会触发一次Full GC或等待担保失败后再执行Full GC。</p>
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -200,11 +215,10 @@
         </table>
       </div>
 
-      <div class="tip">
-        <div class="tip-title">💡 分代收集策略</div>
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body"><strong>分代收集策略</strong>
         <p>新生代：对象朝生夕死，采用<strong>标记-复制</strong>算法<br/>
         老年代：对象存活率高，采用<strong>标记-清除</strong>或<strong>标记-整理</strong>算法</p>
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -300,10 +314,9 @@
         <p>ZGC支持TB级堆内存，适合对延迟敏感的大型应用。</p>
       </div>
 
-      <div class="warning">
-        <div class="warning-title">⚠️ CMS已废弃</div>
+      <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body"><strong>CMS已废弃</strong>
         <p>CMS在JDK 14中被标记为废弃，JDK 17中正式移除。建议迁移至G1或ZGC收集器。</p>
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -318,7 +331,7 @@
           <button class="code-btn" onclick="copyCode(this)">📋 复制</button>
         </div>
         <div class="code-body">
-          <pre><code># JDK 8及之前
+          <pre><code class="language-bash"># JDK 8及之前
 -XX:+PrintGCDetails
 -XX:+PrintGCDateStamps
 -XX:+PrintTenuringDistribution
@@ -337,7 +350,7 @@
             <button class="code-btn" onclick="copyCode(this)">📋 复制</button>
           </div>
           <div class="code-body">
-            <pre><code>[GC (Allocation Failure) [PSYoungGen: 6144K->512K(7168K)]
+            <pre><code class="language-plaintext">[GC (Allocation Failure) [PSYoungGen: 6144K->512K(7168K)]
  6144K->1024K(25600K), 0.0012345 secs]
 
 [Full GC (Metadata GC Threshold) [PSYoungGen: 512K->0K(7168K)]
@@ -355,12 +368,11 @@
         </table>
       </div>
 
-      <div class="tip">
-        <div class="tip-title">💡 关键指标</div>
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body"><strong>关键指标</strong>
         <p><strong>吞吐量</strong> = 用户代码运行时间 / (用户代码运行时间 + GC时间)<br/>
         <strong>停顿时间</strong>：单次GC暂停应用的时间<br/>
         <strong>GC频率</strong>：单位时间内GC发生的次数</p>
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -376,11 +388,11 @@
           <span style="color: var(--red);">❌ 错误示例</span>
         </div>
         <div class="code-body">
-          <pre><code>// 场景1：静态集合持续增长
-private static final Map<String, Object> CACHE = new HashMap<>();
+          <pre><code class="language-java">// 场景1：静态集合持续增长
+private static final Map&lt;String, Object&gt; CACHE = new HashMap&lt;&gt;();
 
 // 场景2：ThreadLocal未清理
-private static final ThreadLocal<byte[]> THREAD_LOCAL = new ThreadLocal<>();
+private static final ThreadLocal&lt;byte[]&gt; THREAD_LOCAL = new ThreadLocal&lt;&gt;();
 public void process() {
     THREAD_LOCAL.set(new byte[1024 * 1024]);
     // 忘记调用 THREAD_LOCAL.remove()
@@ -398,8 +410,8 @@ Scanner scanner = new Scanner(new File("data.txt"));
           <span style="color: var(--green);">✅ 正确做法</span>
         </div>
         <div class="code-body">
-          <pre><code>// 使用WeakHashMap或设置过期时间
-private static final Map<String, Object> CACHE = new WeakHashMap<>();
+          <pre><code class="language-java">// 使用WeakHashMap或设置过期时间
+private static final Map&lt;String, Object&gt; CACHE = new WeakHashMap&lt;&gt;();
 
 // 使用try-with-resources自动关闭资源
 try (Scanner scanner = new Scanner(new File("data.txt"))) {
@@ -424,20 +436,20 @@ try {
             <button class="code-btn" onclick="copyCode(this)">📋 复制</button>
           </div>
           <div class="code-body">
-            <pre><code># 查看Java进程
+            <pre><code class="language-bash"># 查看Java进程
 jps -l
 
 # 查看GC统计（每秒输出一次）
-jstat -gcutil <pid> 1000
+jstat -gcutil &lt;pid&gt; 1000
 
 # 查看对象统计（前20类）
-jmap -histo <pid> | head -20
+jmap -histo &lt;pid&gt; | head -20
 
 # 生成堆转储文件
-jmap -dump:format=b,file=heap.hprof <pid>
+jmap -dump:format=b,file=heap.hprof &lt;pid&gt;
 
 # 打印线程栈
-jstack <pid> > thread.txt</code></pre>
+jstack &lt;pid&gt; &gt; thread.txt</code></pre>
           </div>
         </div>
       </div>
@@ -451,13 +463,12 @@ jstack <pid> > thread.txt</code></pre>
         <tr><td>MAT</td><td>Eclipse插件</td><td>内存分析工具，分析.hprof文件</td></tr>
       </table>
 
-      <div class="warning">
-        <div class="warning-title">⚠️ 引用类型</div>
+      <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body"><strong>引用类型</strong>
         <p><strong>强引用</strong>：永不回收（除非不可达）<br/>
         <strong>软引用</strong>（SoftReference）：内存不足时回收，适合缓存<br/>
         <strong>弱引用</strong>（WeakReference）：下次GC时回收，适合WeakHashMap<br/>
         <strong>虚引用</strong>（PhantomReference）：无法获取对象，用于跟踪GC</p>
-      </div>
+      </div></div>
     </div>
   </section>
 
@@ -485,7 +496,7 @@ jstack <pid> > thread.txt</code></pre>
             <button class="code-btn" onclick="copyCode(this)">📋 复制</button>
           </div>
           <div class="code-body">
-            <pre><code># 使用Parallel GC（JDK 8默认）
+            <pre><code class="language-bash"># 使用Parallel GC（JDK 8默认）
 -XX:+UseParallelGC
 
 # 使用G1收集器（JDK 9+默认，推荐）
@@ -510,7 +521,7 @@ jstack <pid> > thread.txt</code></pre>
             <button class="code-btn" onclick="copyCode(this)">📋 复制</button>
           </div>
           <div class="code-body">
-            <pre><code># OOM时自动生成堆转储
+            <pre><code class="language-bash"># OOM时自动生成堆转储
 -XX:+HeapDumpOnOutOfMemoryError
 -XX:HeapDumpPath=/var/log/java/heap.hprof
 
@@ -525,14 +536,155 @@ jstack <pid> > thread.txt</code></pre>
         </div>
       </div>
 
-      <div class="tip">
-        <div class="tip-title">💡 调优建议</div>
+      <div class="alert alert-tip"><div class="alert-icon">💡</div><div class="alert-body"><strong>调优建议</strong>
         <ul>
           <li><strong>设置相同Xms和Xmx</strong>：避免运行时动态扩容/缩容带来的性能损耗</li>
           <li><strong>合理设置新生代大小</strong>：过小导致频繁Minor GC，过大会导致老年代紧张</li>
           <li><strong>避免大对象</strong>：大对象直接进入老年代，增加Full GC频率</li>
           <li><strong>监控GC日志</strong>：及时发现GC异常（如频繁Full GC）</li>
         </ul>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- JVM调优实战 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚙️</div><h2 class="section-title">JVM调优实战参数</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">常用JVM启动参数</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Shell</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-bash"># 堆内存设置
+-Xms2g                    # 初始堆大小（等于Xmx避免动态扩缩）
+-Xmx2g                    # 最大堆大小
+-Xmn512m                  # 年轻代大小（推荐堆的1/4~1/3）
+-XX:MetaspaceSize=256m    # 元空间初始大小
+-XX:MaxMetaspaceSize=512m # 元空间最大值
+
+# GC收集器选择
+-XX:+UseG1GC              # 使用G1（JDK9+默认）
+-XX:+UseZGC               # 使用ZGC（JDK15+生产可用）
+-XX:MaxGCPauseMillis=200  # G1目标停顿时间（毫秒）
+
+# GC日志（JDK9+）
+-Xlog:gc*:file=gc.log:time,uptime:filecount=5,filesize=10m
+
+# OOM时自动dump
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/tmp/heapdump.hprof</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin: 20px 0 12px;">OOM问题排查步骤</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Shell</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-bash"># 1. 查看JVM进程
+jps -l
+
+# 2. 查看堆内存使用情况
+jmap -heap &lt;pid&gt;
+
+# 3. 生成堆转储文件
+jmap -dump:format=b,file=heap.hprof &lt;pid&gt;
+
+# 4. 用MAT/JProfiler分析hprof文件，找内存泄漏对象
+
+# 5. 查看GC情况（每秒刷新）
+jstat -gcutil &lt;pid&gt; 1000
+
+# 6. Arthas在线诊断
+java -jar arthas-boot.jar &lt;pid&gt;
+# dashboard  查看整体状态
+# heapdump   生成堆转储
+# classloader 查看类加载情况</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 面试高频考点 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: JVM 内存结构有哪几部分？哪些是线程共享的？</div>
+        <div class="interview-a">
+          <div class="table-container"><table>
+            <tr><th>区域</th><th>线程</th><th>存储内容</th><th>OOM风险</th></tr>
+            <tr><td>堆（Heap）</td><td>共享</td><td>对象实例、数组</td><td>✅ Java Heap OOM</td></tr>
+            <tr><td>元空间（Metaspace）</td><td>共享</td><td>类元数据、常量池</td><td>✅ Metaspace OOM</td></tr>
+            <tr><td>虚拟机栈</td><td>私有</td><td>栈帧（局部变量、操作数栈）</td><td>✅ StackOverflow</td></tr>
+            <tr><td>本地方法栈</td><td>私有</td><td>Native方法栈帧</td><td>✅ StackOverflow</td></tr>
+            <tr><td>程序计数器</td><td>私有</td><td>当前字节码指令地址</td><td>❌ 唯一不会OOM</td></tr>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q2: Minor GC、Major GC、Full GC 有什么区别？</div>
+        <div class="interview-a">
+          <ul style="margin: 8px 0; padding-left: 24px; line-height: 2;">
+            <li><strong>Minor GC</strong>：只回收年轻代（Eden+Survivor），频率高，速度快（毫秒级），STW短</li>
+            <li><strong>Major GC</strong>：只回收老年代，通常由 Minor GC 触发（空间担保失败），比 Minor GC 慢10倍</li>
+            <li><strong>Full GC</strong>：回收整个堆+元空间，STW最长，触发条件：调用System.gc()、老年代空间不足、元空间满、空间担保失败</li>
+          </ul>
+          <div class="alert alert-warn"><div class="alert-icon">⚠️</div><div class="alert-body">频繁 Full GC 是性能瓶颈的重要信号，排查方向：内存泄漏、对象过大直接进老年代、元空间不足。</div></div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q3: G1 和 CMS 收集器有何区别？为什么推荐 G1？</div>
+        <div class="interview-a">
+          <div class="table-container"><table>
+            <tr><th>特性</th><th>CMS</th><th>G1</th></tr>
+            <tr><td>工作区域</td><td>仅老年代</td><td>整堆（分Region）</td></tr>
+            <tr><td>内存碎片</td><td>有（标记-清除）</td><td>无（整理）</td></tr>
+            <tr><td>停顿可预测性</td><td>不可预测</td><td>可设置 MaxGCPauseMillis</td></tr>
+            <tr><td>CPU占用</td><td>并发阶段占用CPU</td><td>并发标记占用CPU</td></tr>
+            <tr><td>浮动垃圾</td><td>有</td><td>有</td></tr>
+            <tr><td>状态</td><td>JDK 14废弃，JDK 17移除</td><td>JDK 9+ 默认，推荐</td></tr>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="interview-item">
+        <div class="interview-q">Q4: 什么是 STW（Stop-The-World）？如何减少它的影响？</div>
+        <div class="interview-a">
+          <p>STW 是 GC 时暂停所有用户线程的机制，用于保证 GC 过程中引用关系不变化（一致性快照）。</p>
+          <p><strong>减少 STW 影响的方法：</strong></p>
+          <ul style="margin: 8px 0; padding-left: 24px;">
+            <li>选用低停顿收集器（G1、ZGC、Shenandoah）</li>
+            <li>合理设置堆大小和分代比例，减少 Full GC 频率</li>
+            <li>避免大对象（超过 Region 一半的对象直接进 Humongous 区）</li>
+            <li>ZGC 目标：STW &lt; 1ms，且与堆大小无关</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 实战陷阱 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱1：-Xms 和 -Xmx 设置不一致</strong>
+          初始堆（Xms）远小于最大堆（Xmx）时，JVM 会在运行时动态扩堆，这会触发 Full GC 和内存碎片整理，影响响应时间。生产环境建议设置相等，如 -Xms4g -Xmx4g。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱2：元空间不设上限导致无限增长</strong>
+          JDK 8+ 元空间默认使用本地内存，没有上限。如果有类加载泄漏（如 CGLib 不断生成代理类），元空间会无限增长最终导致系统级 OOM。必须设置 -XX:MaxMetaspaceSize。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>陷阱3：finalize() 延迟导致 GC 困难</strong>
+          重写 finalize() 的对象至少需要两次 GC 才能被回收（第一次标记、执行 finalize()，第二次才真正回收）。finalize() 中若又创建强引用，对象可能"复活"。应改用 try-with-resources 或 Cleaner（JDK9+）。
+        </div>
       </div>
     </div>
   </section>
@@ -541,6 +693,7 @@ jstack <pid> > thread.txt</code></pre>
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }

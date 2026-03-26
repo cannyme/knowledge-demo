@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spring事务管理 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -67,6 +69,18 @@
   .tab-content { display: none; } .tab-content.active { display: block; }
   .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
 </style>
 </head>
 <body>
@@ -74,7 +88,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
   <header class="hero">
-    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <div class="hero-badge">🌱 SPRING · 事务管理</div>
     <h1 class="hero-title">Spring事务管理</h1>
     <p class="hero-desc">Spring事务管理的详细解析和最佳实践，包括声明式事务、传播行为、隔离级别及常见失效场景</p>
   </header>
@@ -111,10 +125,7 @@
           <td>事务提交后永久保存，即使系统崩溃也不会丢失</td>
         </tr>
       </table>
-      <div class="tip">
-        <div class="tip-title">💡 理解要点</div>
-        <p>Spring事务管理是对数据库事务的封装，通过AOP实现声明式事务，让开发者专注于业务逻辑而无需手动管理事务边界。</p>
-      </div>
+      <div class="alert alert-info"><span class="alert-icon">💡</span><div class="alert-body"><strong>理解要点</strong>Spring事务管理是对数据库事务的封装，通过AOP实现声明式事务，让开发者专注于业务逻辑而无需手动管理事务边界。</div></div>
     </div>
   </section>
 
@@ -150,8 +161,8 @@
     <div class="section-header"><div class="section-icon">🏷️</div><h2 class="section-title">@Transactional 注解属性详解</h2></div>
     <div class="section-body">
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>@Transactional(
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Transactional(
     // 事务管理器名称（多数据源时指定）
     transactionManager = "transactionManager",
 
@@ -175,7 +186,7 @@
 )
 public void createOrder(Order order) {
     // 业务逻辑
-}</pre></div>
+}</code></pre></div>
       </div>
 
       <table>
@@ -279,15 +290,11 @@ public void createOrder(Order order) {
         </tr>
       </table>
 
-      <div class="highlight">
-        <div class="highlight-title">📌 REQUIRED vs REQUIRES_NEW 对比</div>
-        <p><strong>REQUIRED：</strong>所有操作在同一个事务中，任何失败都会全部回滚</p>
-        <p><strong>REQUIRES_NEW：</strong>挂起当前事务 -> 新建事务执行 -> 恢复原事务，独立提交/回滚</p>
-      </div>
+      <div class="alert alert-tip"><span class="alert-icon">📌</span><div class="alert-body"><strong>REQUIRED vs REQUIRES_NEW 对比</strong><p><strong>REQUIRED：</strong>所有操作在同一个事务中，任何失败都会全部回滚</p><p><strong>REQUIRES_NEW：</strong>挂起当前事务 -> 新建事务执行 -> 恢复原事务，独立提交/回滚</p></div></div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>// 主业务方法
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 主业务方法
 @Transactional
 public void createOrder(Order order) {
     saveOrder(order);           // 加入当前事务
@@ -311,7 +318,7 @@ public void saveLog(String operation) {
 @Transactional(propagation = Propagation.NESTED)
 public void processItem(Item item) {
     // 内部事务回滚不影响外部，但外部回滚会影响内部
-}</pre></div>
+}</code></pre></div>
       </div>
     </div>
   </section>
@@ -365,18 +372,15 @@ public void processItem(Item item) {
         </tr>
       </table>
 
-      <div class="tip">
-        <div class="tip-title">💡 默认选择建议</div>
-        <p>大多数情况下使用<strong style="color: var(--cyan);">数据库默认级别</strong>即可。MySQL InnoDB的REPEATABLE_READ通过MVCC机制已能解决幻读问题。</p>
-      </div>
+      <div class="alert alert-info"><span class="alert-icon">💡</span><div class="alert-body"><strong>默认选择建议</strong>大多数情况下使用<strong style="color: var(--cyan);">数据库默认级别</strong>即可。MySQL InnoDB的REPEATABLE_READ通过MVCC机制已能解决幻读问题。</div></div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>// 指定隔离级别
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 指定隔离级别
 @Transactional(isolation = Isolation.READ_COMMITTED)
 public void queryData() {
     // 查询逻辑
-}</pre></div>
+}</code></pre></div>
       </div>
     </div>
   </section>
@@ -386,14 +390,11 @@ public void queryData() {
     <div class="section-header"><div class="section-icon">⚠️</div><h2 class="section-title">事务失效场景（6种）</h2></div>
     <div class="section-body">
 
-      <div class="warning">
-        <div class="warning-title">❌ 1. 方法不是 public</div>
-        <p>@Transactional 只对 public 方法有效，protected/private 方法不会生成代理</p>
-      </div>
+      <div class="alert alert-warn"><span class="alert-icon">⚠️</span><div class="alert-body"><strong>❌ 1. 方法不是 public</strong>@Transactional 只对 public 方法有效，protected/private 方法不会生成代理</div></div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>// ❌ 错误：非public方法
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// ❌ 错误：非public方法
 @Transactional
 private void internalMethod() {  // 事务不会生效！
     // ...
@@ -403,17 +404,14 @@ private void internalMethod() {  // 事务不会生效！
 @Transactional
 public void publicMethod() {
     // ...
-}</pre></div>
+}</code></pre></div>
       </div>
 
-      <div class="warning">
-        <div class="warning-title">❌ 2. 自调用问题（最常见）</div>
-        <p>同一个类中，A方法调用B方法，B方法的@Transactional失效。原因：Spring AOP基于代理，自调用不走代理。</p>
-      </div>
+      <div class="alert alert-warn"><span class="alert-icon">⚠️</span><div class="alert-body"><strong>❌ 2. 自调用问题（最常见）</strong>同一个类中，A方法调用B方法，B方法的@Transactional失效。原因：Spring AOP基于代理，自调用不走代理。</div></div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>@Service
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Service
 public class OrderService {
 
     @Autowired
@@ -435,26 +433,16 @@ public class OrderService {
     public void methodB() {
         // 新事务
     }
-}</pre></div>
+}</code></pre></div>
       </div>
 
-      <div class="tip">
-        <div class="tip-title">💡 自调用解决方案</div>
-        <ul>
-          <li><strong>注入自己：</strong>@Autowired private OrderService self; 然后通过self调用</li>
-          <li><strong>AopContext：</strong>((Service) AopContext.currentProxy()).method()</li>
-          <li><strong>拆分到另一个类：</strong>将方法B移到另一个Service类中</li>
-        </ul>
-      </div>
+      <div class="alert alert-info"><span class="alert-icon">💡</span><div class="alert-body"><strong>自调用解决方案</strong><ul><li><strong>注入自己：</strong>@Autowired private OrderService self; 然后通过self调用</li><li><strong>AopContext：</strong>((Service) AopContext.currentProxy()).method()</li><li><strong>拆分到另一个类：</strong>将方法B移到另一个Service类中</li></ul></div></div>
 
-      <div class="warning">
-        <div class="warning-title">❌ 3. 异常被捕获</div>
-        <p>如果捕获异常后没有抛出，事务不会回滚</p>
-      </div>
+      <div class="alert alert-warn"><span class="alert-icon">⚠️</span><div class="alert-body"><strong>❌ 3. 异常被捕获</strong>如果捕获异常后没有抛出，事务不会回滚</div></div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>// ❌ 错误：捕获异常未抛出
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// ❌ 错误：捕获异常未抛出
 @Transactional
 public void wrongCatch() {
     try {
@@ -475,17 +463,14 @@ public void correctCatch() {
         // 手动标记回滚
         TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
     }
-}</pre></div>
+}</code></pre></div>
       </div>
 
-      <div class="warning">
-        <div class="warning-title">❌ 4. 异常类型不对</div>
-        <p>默认只回滚 RuntimeException 和 Error，checked 异常（如 IOException）不会回滚</p>
-      </div>
+      <div class="alert alert-warn"><span class="alert-icon">⚠️</span><div class="alert-body"><strong>❌ 4. 异常类型不对</strong>默认只回滚 RuntimeException 和 Error，checked 异常（如 IOException）不会回滚</div></div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>// ❌ 默认不回滚checked异常
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// ❌ 默认不回滚checked异常
 @Transactional
 public void checkedException() throws IOException {
     // 抛出IOException不会触发回滚
@@ -496,35 +481,29 @@ public void checkedException() throws IOException {
 @Transactional(rollbackFor = Exception.class)
 public void rollbackAll() throws IOException {
     throw new IOException("IO错误");  // 会回滚
-}</pre></div>
+}</code></pre></div>
       </div>
 
-      <div class="warning">
-        <div class="warning-title">❌ 5. 数据库引擎不支持事务</div>
-        <p>MySQL 的 MyISAM 引擎不支持事务，必须用 InnoDB</p>
-      </div>
+      <div class="alert alert-warn"><span class="alert-icon">⚠️</span><div class="alert-body"><strong>❌ 5. 数据库引擎不支持事务</strong>MySQL 的 MyISAM 引擎不支持事务，必须用 InnoDB</div></div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">SQL</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>-- 查看表使用的引擎
+        <div class="code-header"><span class="code-lang">sql</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-sql">-- 查看表使用的引擎
 SHOW CREATE TABLE orders;
 
 -- 修改引擎为InnoDB
-ALTER TABLE orders ENGINE=InnoDB;</pre></div>
+ALTER TABLE orders ENGINE=InnoDB;</code></pre></div>
       </div>
 
-      <div class="warning">
-        <div class="warning-title">❌ 6. 传播行为设置错误</div>
-        <p>如 NOT_SUPPORTED、NEVER 会导致不在事务中执行</p>
-      </div>
+      <div class="alert alert-warn"><span class="alert-icon">⚠️</span><div class="alert-body"><strong>❌ 6. 传播行为设置错误</strong>如 NOT_SUPPORTED、NEVER 会导致不在事务中执行</div></div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>// NOT_SUPPORTED - 以非事务运行
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// NOT_SUPPORTED - 以非事务运行
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 public void noTransaction() {
     // 此方法不在事务中执行
-}</pre></div>
+}</code></pre></div>
       </div>
 
     </div>
@@ -537,8 +516,8 @@ public void noTransaction() {
       <p>使用 TransactionTemplate 进行细粒度事务控制：</p>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>@Service
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Service
 public class OrderService {
 
     @Autowired
@@ -580,18 +559,10 @@ public class OrderService {
             return null;
         });
     }
-}</pre></div>
+}</code></pre></div>
       </div>
 
-      <div class="tip">
-        <div class="tip-title">💡 何时使用编程式事务</div>
-        <ul>
-          <li>需要在事务中执行条件判断（根据条件决定是否回滚）</li>
-          <li>需要在循环中批量提交（每N条提交一次）</li>
-          <li>需要获取事务状态（如是否已回滚）</li>
-          <li>复杂的嵌套事务控制</li>
-        </ul>
-      </div>
+      <div class="alert alert-info"><span class="alert-icon">💡</span><div class="alert-body"><strong>何时使用编程式事务</strong><ul><li>需要在事务中执行条件判断（根据条件决定是否回滚）</li><li>需要在循环中批量提交（每N条提交一次）</li><li>需要获取事务状态（如是否已回滚）</li><li>复杂的嵌套事务控制</li></ul></div></div>
     </div>
   </section>
 
@@ -599,29 +570,13 @@ public class OrderService {
   <section class="section">
     <div class="section-header"><div class="section-icon">⏱️</div><h2 class="section-title">长事务问题及优化</h2></div>
     <div class="section-body">
-      <div class="warning">
-        <div class="warning-title">⚠️ 长事务的危害</div>
-        <ul>
-          <li>数据库连接占用时间长，连接池耗尽风险</li>
-          <li>锁资源占用时间长，影响并发性能</li>
-          <li>回滚代价大（大量undo log）</li>
-          <li>主从延迟增加（长事务提交后才同步）</li>
-        </ul>
-      </div>
+      <div class="alert alert-warn"><span class="alert-icon">⚠️</span><div class="alert-body"><strong>长事务的危害</strong><ul><li>数据库连接占用时间长，连接池耗尽风险</li><li>锁资源占用时间长，影响并发性能</li><li>回滚代价大（大量undo log）</li><li>主从延迟增加（长事务提交后才同步）</li></ul></div></div>
 
-      <div class="highlight">
-        <div class="highlight-title">✅ 优化方案</div>
-        <ul>
-          <li><strong>缩小事务范围：</strong>非必要操作移到事务外</li>
-          <li><strong>REQUIRES_NEW：</strong>让独立操作使用单独事务</li>
-          <li><strong>批量分批：</strong>大数据量分批处理，每批独立事务</li>
-          <li><strong>异步处理：</strong>非核心逻辑异步执行</li>
-        </ul>
-      </div>
+      <div class="alert alert-tip"><span class="alert-icon">📌</span><div class="alert-body"><strong>优化方案</strong><ul><li><strong>缩小事务范围：</strong>非必要操作移到事务外</li><li><strong>REQUIRES_NEW：</strong>让独立操作使用单独事务</li><li><strong>批量分批：</strong>大数据量分批处理，每批独立事务</li><li><strong>异步处理：</strong>非核心逻辑异步执行</li></ul></div></div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre>@Service
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Service
 public class OrderService {
 
     // ❌ 不推荐：事务范围过大
@@ -661,15 +616,110 @@ public class OrderService {
         // 事务提交后异步发送通知
         sendNotification(event.getOrder());
     }
-}</pre></div>
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🌐</div><h2 class="section-title">分布式事务解决方案</h2></div>
+    <div class="section-body">
+      <div class="table-container">
+        <table>
+          <tr><th>方案</th><th>原理</th><th>一致性</th><th>适用场景</th></tr>
+          <tr><td>2PC（两阶段提交）</td><td>协调者准备+提交两阶段</td><td>强一致</td><td>对一致性要求极高，允许高延迟</td></tr>
+          <tr><td>TCC（Try-Confirm-Cancel）</td><td>业务层补偿实现</td><td>最终一致</td><td>金融、支付场景</td></tr>
+          <tr><td>SAGA</td><td>长事务拆分为子事务+补偿</td><td>最终一致</td><td>跨多服务的长流程</td></tr>
+          <tr><td>本地消息表</td><td>消息+定时任务兜底</td><td>最终一致</td><td>跨服务数据同步</td></tr>
+          <tr><td>Seata AT 模式</td><td>自动生成 undo log 回滚</td><td>最终一致</td><td>已有代码改造少</td></tr>
+        </table>
+      </div>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// Seata 分布式事务示例（AT 模式，@GlobalTransactional 注解）
+@Service
+public class OrderService {
+
+    @GlobalTransactional(name = "create-order", rollbackFor = Exception.class)
+    public void createOrder(OrderDTO dto) {
+        // 1. 创建订单（本地事务）
+        orderMapper.insert(dto.toOrder());
+
+        // 2. 扣减库存（远程调用，Seata 自动协调）
+        inventoryService.deduct(dto.getProductId(), dto.getQty());
+
+        // 3. 扣减账户余额（远程调用）
+        accountService.deduct(dto.getUserId(), dto.getAmount());
+
+        // 任何一步失败，Seata TC 协调所有分支事务回滚
+    }
+}</code></pre></div>
+      </div>
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>Seata AT vs TCC</strong>
+          AT 模式侵入性低，自动生成 undo log，适合快速接入；TCC 模式性能高，无全局锁，但需要手动实现 Try/Confirm/Cancel 三个接口，开发成本大。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: @Transactional 有哪些常见失效场景？</div>
+        <div class="interview-a">①方法非 public；②同类自调用（走 this 而非代理）；③异常被 catch 吞掉未抛出；④抛出 checked 异常但未配置 rollbackFor=Exception.class；⑤数据库引擎不支持事务（MyISAM）；⑥传播行为设为 NOT_SUPPORTED/NEVER；⑦多数据源下未指定正确的 transactionManager。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: 事务传播行为 REQUIRED 和 REQUIRES_NEW 的区别？</div>
+        <div class="interview-a">REQUIRED：有事务就加入，没有则新建，所有操作在同一个事务中，任何失败都全部回滚。REQUIRES_NEW：总是新建事务，挂起当前事务，两个事务相互独立，子事务提交/回滚不影响父事务（但父事务回滚时，已提交的子事务不会回滚）。典型场景：日志/审计用 REQUIRES_NEW，保证即使业务失败也能记录日志。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: Spring 事务是如何实现的（底层原理）？</div>
+        <div class="interview-a">Spring 事务基于 AOP 实现。@Transactional 触发 TransactionInterceptor 拦截，使用 PlatformTransactionManager（如 DataSourceTransactionManager）管理事务。底层通过 ThreadLocal 将 Connection 绑定到当前线程，保证同一事务内共用同一个连接。事务提交/回滚时从 ThreadLocal 取出连接操作。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: 长事务有哪些危害？如何优化？</div>
+        <div class="interview-a">危害：数据库连接被长时间占用（连接池耗尽风险）、锁资源长时间持有（影响并发）、undo log 积压（回滚代价大）、主从延迟增加。优化：①缩小事务范围（将非数据库操作移出事务）②用 @Async 异步化非核心操作③REQUIRES_NEW 让独立操作单独提交④批量操作分批处理⑤使用 @TransactionalEventListener 在事务提交后处理后续逻辑。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：readOnly=true 的事务中执行写操作</strong>
+          readOnly=true 告诉数据库驱动这是只读事务（MySQL InnoDB 不生成 undo log，性能更好），如果强行执行 INSERT/UPDATE，会抛出异常（Hibernate 模式）或静默成功（MyBatis 模式但数据可能丢失）。查询方法应正确使用 readOnly=true。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：在事务方法中调用外部 HTTP 接口</strong>
+          事务方法中调用远程 HTTP 接口，会导致数据库连接在 HTTP 等待期间被长时间持有（长事务）。正确做法：HTTP 调用放在事务外，或使用消息队列解耦，事务只处理本地数据库操作。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：NESTED 嵌套事务的使用限制</strong>
+          NESTED 基于 JDBC Savepoint 实现，仅 DataSourceTransactionManager 支持。JPA/Hibernate 的 JpaTransactionManager 不支持嵌套事务，会降级为 REQUIRED，若误用可能导致部分回滚失效。建议在确认事务管理器支持后再使用 NESTED。
+        </div>
       </div>
     </div>
   </section>
 
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) {

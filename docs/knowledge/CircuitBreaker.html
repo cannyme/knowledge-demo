@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>熔断与限流 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -67,6 +69,18 @@
   .param-desc { font-size: 13px; line-height: 1.6; }
   .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } .param-grid { grid-template-columns: 1fr; } }
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
 </style>
 </head>
 <body>
@@ -74,7 +88,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
   <header class="hero">
-    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <div class="hero-badge">☁️ SPRING CLOUD · 熔断降级</div>
     <h1 class="hero-title">熔断与限流</h1>
     <p class="hero-desc">熔断与限流的详细解析和最佳实践。熔断器模式当下游服务故障时快速失败，避免级联崩溃；限流控制请求速率，保护系统不被压垮。</p>
   </header>
@@ -106,9 +120,12 @@ graph TD
         <li>最终导致整个系统不可用</li>
       </ul>
 
-      <div class="tip">
-        <span class="tip-icon">💡</span> <strong>熔断器的作用</strong><br>
-        熔断器模式借鉴了电路熔断器的概念，当"电流"（错误率）过大时自动"断开"电路，阻止故障扩散，给故障服务恢复的时间窗口。
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>熔断器的作用</strong>
+          熔断器模式借鉴了电路熔断器的概念，当"电流"（错误率）过大时自动"断开"电路，阻止故障扩散，给故障服务恢复的时间窗口。
+        </div>
       </div>
     </div>
   </section>
@@ -233,9 +250,12 @@ graph TD
         </div>
       </div>
 
-      <div class="warning">
-        <span class="warning-icon">⚠️</span> <strong>参数配置建议</strong><br>
-        滑动窗口不宜过大（内存占用），也不宜过小（统计不准）。建议生产环境：窗口100-1000，失败率阈值50%，熔断时间10-30秒。
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>参数配置建议</strong>
+          滑动窗口不宜过大（内存占用），也不宜过小（统计不准）。建议生产环境：窗口100-1000，失败率阈值50%，熔断时间10-30秒。
+        </div>
       </div>
     </div>
   </section>
@@ -252,8 +272,8 @@ graph TD
       <div id="sentinel-annotation" class="tab-content active">
         <p>使用 <code>@SentinelResource</code> 注解声明资源和降级方法：</p>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>@RestController
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">@RestController
 public class UserController {
 
     @SentinelResource(
@@ -281,8 +301,8 @@ public class UserController {
       <div id="sentinel-code" class="tab-content">
         <p>通过代码动态配置熔断规则：</p>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>// 熔断规则配置
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">// 熔断规则配置
 DegradeRule rule = new DegradeRule("getUser")
     // 熔断策略：0-慢调用比例 1-异常比例 2-异常数
     .setGrade(CircuitBreakerStrategy.SLOW_REQUEST_RATIO.getType())
@@ -303,8 +323,8 @@ DegradeRuleManager.loadRules(Collections.singletonList(rule));</code></pre></div
       <div id="sentinel-yaml" class="tab-content">
         <p>Spring Cloud Alibaba 支持通过配置文件定义规则：</p>
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>spring:
+          <div class="code-header"><span class="code-lang">yaml</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-yaml">spring:
   cloud:
     sentinel:
       datasource:
@@ -329,11 +349,14 @@ DegradeRuleManager.loadRules(Collections.singletonList(rule));</code></pre></div
         </div>
       </div>
 
-      <div class="tip">
-        <span class="tip-icon">💡</span> <strong>Sentinel熔断策略</strong><br>
-        <strong>慢调用比例</strong>：响应时间超过阈值的请求占比超过设定值时熔断，适用于响应变慢的场景。<br>
-        <strong>异常比例</strong>：异常请求占比超过阈值时熔断，适用于服务出错的场景。<br>
-        <strong>异常数</strong>：异常请求数超过阈值时熔断，适用于异常突增的场景。
+      <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>Sentinel熔断策略</strong>
+          <strong>慢调用比例</strong>：响应时间超过阈值的请求占比超过设定值时熔断，适用于响应变慢的场景。<br>
+          <strong>异常比例</strong>：异常请求占比超过阈值时熔断，适用于服务出错的场景。<br>
+          <strong>异常数</strong>：异常请求数超过阈值时熔断，适用于异常突增的场景。
+        </div>
       </div>
     </div>
   </section>
@@ -342,15 +365,18 @@ DegradeRuleManager.loadRules(Collections.singletonList(rule));</code></pre></div
   <section class="section">
     <div class="section-header"><div class="section-icon">🔌</div><h2 class="section-title">Hystrix熔断配置</h2></div>
     <div class="section-body">
-      <div class="warning">
-        <span class="warning-icon">⚠️</span> <strong>重要提示</strong><br>
-        Netflix Hystrix 已于2018年底停止维护，Spring Cloud 2020+ 版本已移除 Hystrix 依赖。新项目建议使用 Resilience4j 或 Sentinel。
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>重要提示</strong>
+          Netflix Hystrix 已于2018年底停止维护，Spring Cloud 2020+ 版本已移除 Hystrix 依赖。新项目建议使用 Resilience4j 或 Sentinel。
+        </div>
       </div>
 
       <p>Hystrix 通过命令模式包装远程调用：</p>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>@Service
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">@Service
 public class UserService {
 
     @HystrixCommand(
@@ -531,8 +557,8 @@ graph LR
       </table>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>/**
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">/**
  * 令牌桶算法实现 - 允许一定程度的突发流量
  */
 public class TokenBucketRateLimiter {
@@ -604,17 +630,151 @@ public class TokenBucketRateLimiter {
         </div>
       </div>
 
-      <div class="tip">
-        <span class="tip-icon">💡</span> <strong>生产环境配置示例</strong><br>
-        失败率阈值: 50% | 熔断时间: 10-30秒 | 滑动窗口: 100 | 最小请求数: 10 | 半开请求数: 5<br>
-        根据业务特点调整，核心服务可以更保守（阈值30%，熔断时间5秒）。
+      <div class="alert alert-tip">
+        <span class="alert-icon">💡</span>
+        <div class="alert-body">
+          <strong>生产环境配置示例</strong>
+          失败率阈值: 50% | 熔断时间: 10-30秒 | 滑动窗口: 100 | 最小请求数: 10 | 半开请求数: 5<br>
+          根据业务特点调整，核心服务可以更保守（阈值30%，熔断时间5秒）。
+        </div>
       </div>
 
-      <div class="warning">
-        <span class="warning-icon">⚠️</span> <strong>常见陷阱</strong><br>
-        1. <strong>降级逻辑过于复杂</strong>：降级方法应简单快速，避免再次依赖故障服务。<br>
-        2. <strong>忽略慢调用熔断</strong>：响应变慢往往是故障前兆，应配置慢调用比例熔断。<br>
-        3. <strong>全局异常捕获干扰</strong>：确保熔断器能正确捕获异常，不被全局异常处理器拦截。
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>常见陷阱</strong>
+          1. <strong>降级逻辑过于复杂</strong>：降级方法应简单快速，避免再次依赖故障服务。<br>
+          2. <strong>忽略慢调用熔断</strong>：响应变慢往往是故障前兆，应配置慢调用比例熔断。<br>
+          3. <strong>全局异常捕获干扰</strong>：确保熔断器能正确捕获异常，不被全局异常处理器拦截。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🛡️</div><h2 class="section-title">Resilience4j 完整配置实战</h2></div>
+    <div class="section-body">
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">yaml</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-yaml">resilience4j:
+  circuitbreaker:
+    instances:
+      orderService:
+        # 滑动窗口大小（基于次数）
+        sliding-window-size: 10
+        # 失败率阈值（超过则熔断）
+        failure-rate-threshold: 50
+        # 慢调用率阈值（超过也熔断）
+        slow-call-rate-threshold: 80
+        # 慢调用时间阈值（ms）
+        slow-call-duration-threshold: 2000
+        # OPEN 状态持续时间（ms）后进入 HALF-OPEN
+        wait-duration-in-open-state: 10000
+        # HALF-OPEN 时允许通过的请求数
+        permitted-number-of-calls-in-half-open-state: 3
+        # 进入熔断前至少需要的请求数
+        minimum-number-of-calls: 5
+
+  retry:
+    instances:
+      orderService:
+        max-attempts: 3
+        wait-duration: 500ms
+        retry-exceptions:
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+
+  bulkhead:
+    instances:
+      orderService:
+        max-concurrent-calls: 10   # 最大并发
+        max-wait-duration: 100ms   # 等待时间</code></pre></div>
+      </div>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 编程式使用 Resilience4j（更灵活）
+@Service
+public class OrderService {
+
+    private final CircuitBreaker circuitBreaker;
+    private final Retry retry;
+
+    public OrderService(CircuitBreakerRegistry cbRegistry,
+                        RetryRegistry retryRegistry) {
+        this.circuitBreaker = cbRegistry.circuitBreaker("orderService");
+        this.retry = retryRegistry.retry("orderService");
+
+        // 监听熔断器状态变化
+        circuitBreaker.getEventPublisher()
+            .onStateTransition(event ->
+                log.warn("熔断器状态变更: {} -> {}",
+                    event.getStateTransition().getFromState(),
+                    event.getStateTransition().getToState()));
+    }
+
+    public OrderDTO getOrder(Long id) {
+        // 组合 Retry + CircuitBreaker（先重试再熔断）
+        Supplier&lt;OrderDTO&gt; decorated = Decorators
+            .ofSupplier(() -&gt; remoteCall(id))
+            .withRetry(retry)
+            .withCircuitBreaker(circuitBreaker)
+            .withFallback(List.of(CallNotPermittedException.class,
+                                  ConnectException.class),
+                          e -&gt; OrderDTO.empty())
+            .decorate();
+
+        return Try.ofSupplier(decorated).getOrElse(OrderDTO.empty());
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: 熔断器的三种状态和转换规则？</div>
+        <div class="interview-a">CLOSED（关闭）：正常状态，请求正常通过，统计失败率；当失败率超过阈值（如 50%）且请求数达到最小值后转 OPEN。OPEN（开启/熔断）：拒绝所有请求，立即返回降级结果；经过等待窗口（如 10s）后转 HALF-OPEN。HALF-OPEN（半开）：放行有限请求（如 3 个）探测下游是否恢复；若成功率达标转回 CLOSED，否则再次转 OPEN。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: 熔断和降级的区别？</div>
+        <div class="interview-a">熔断（Circuit Breaker）：当下游服务故障率过高时，主动切断调用链路，防止故障扩散（级联失败）。是一种保护机制，保护调用方和下游服务。降级（Fallback）：当调用失败（超时、熔断、异常）时，返回预设的兜底结果（空对象、缓存数据、默认值），保证主流程可用。熔断会触发降级，但降级不一定需要熔断（也可在超时/异常时直接降级）。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: Hystrix 和 Resilience4j 的主要区别？</div>
+        <div class="interview-a">Hystrix：Netflix 开源，已停止维护（2018）；线程池隔离模式为主，通过线程切换实现异步超时；功能集中在熔断和降级。Resilience4j：轻量级（无依赖），函数式设计；支持 CircuitBreaker、RateLimiter、Retry、Bulkhead、TimeLimiter 模块化组合；信号量隔离模式，更适合响应式编程；与 Spring Boot Actuator 深度集成，监控更友好。新项目应选 Resilience4j。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: 舱壁模式（Bulkhead）是什么？有什么作用？</div>
+        <div class="interview-a">Bulkhead（舱壁/隔离）来源于船舱设计：将船舱分为多个隔断，一处进水不影响整体。在微服务中，通过线程池隔离（每个服务用独立线程池）或信号量隔离（限制并发数），防止某个下游慢接口耗尽所有线程，保护服务整体可用性。Resilience4j 的 Bulkhead 通过 max-concurrent-calls 限制并发，SemaphoreBulkhead 适合非阻塞，ThreadPoolBulkhead 适合阻塞操作。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：熔断阈值设置过低导致误熔断</strong>
+          minimum-number-of-calls 设置过小（如 2），偶发的 1 次失败即触发 50% 失败率达到熔断条件，流量正常时也会频繁熔断。应根据实际 QPS 合理设置滑动窗口和最小请求数，生产建议 minimum-number-of-calls ≥ 10，failure-rate-threshold ≥ 50%。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：Fallback 中继续调用失败的下游</strong>
+          降级方法中若继续调用同一个失败的远程服务（如"查询失败就再查一次备用接口"），在熔断器 OPEN 时 fallback 中的调用也会立即失败，导致降级本身也失败。Fallback 应直接返回本地缓存、默认值或静态数据，不要发起新的远程调用。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：注解式 @CircuitBreaker 与 @Retry 顺序问题</strong>
+          当同时使用 @Retry 和 @CircuitBreaker 注解时，执行顺序为 Retry 包裹 CircuitBreaker（即先重试，重试失败才触发熔断计数）。若希望重试不影响熔断计数，应将 CircuitBreaker 包裹 Retry（用编程式 API 组合），确保整体失败才计入熔断窗口。
+        </div>
       </div>
     </div>
   </section>
@@ -623,6 +783,7 @@ public class TokenBucketRateLimiter {
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; mermaid.initialize({ theme: 'dark' }); } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; mermaid.initialize({ theme: 'default' }); } location.reload(); });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }

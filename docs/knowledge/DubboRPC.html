@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dubbo —— 高性能 RPC 框架 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -77,6 +79,19 @@
 
   .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } .compare-grid { grid-template-columns: 1fr; } }
+
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
 </style>
 </head>
 <body>
@@ -84,7 +99,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>后端技术</span></nav>
   <header class="hero">
-    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <div class="hero-badge">🔗 DUBBO · RPC框架</div>
     <h1 class="hero-title">Dubbo —— 高性能 RPC 框架</h1>
     <p class="hero-desc">阿里巴巴开源的高性能Java RPC框架，提供服务调用、负载均衡、服务注册发现等完整微服务能力</p>
   </header>
@@ -165,8 +180,8 @@
           style G fill:rgba(126,231,135,0.2)</div>
 
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>// 服务暴露核心步骤
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">// 服务暴露核心步骤
 @ServiceConfig
 public class ServiceConfig&lt;T&gt; {
     public synchronized void export() {
@@ -203,8 +218,8 @@ public class ServiceConfig&lt;T&gt; {
           style H fill:rgba(126,231,135,0.2)</div>
 
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>// 服务引用核心步骤
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">// 服务引用核心步骤
 @ReferenceConfig
 public class ReferenceConfig&lt;T&gt; {
     public synchronized T get() {
@@ -249,8 +264,8 @@ public class ReferenceConfig&lt;T&gt; {
           style J fill:rgba(126,231,135,0.2)</div>
 
         <div class="code-container">
-          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-          <div class="code-body"><pre><code>// 调用链核心
+          <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code class="language-java">// 调用链核心
 public class InvokerInvocationHandler implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) {
         // 1. 创建RpcInvocation
@@ -307,8 +322,8 @@ public class InvokerInvocationHandler implements InvocationHandler {
         style Nacos fill:rgba(78,205,196,0.1)</div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code># Nacos注册中心配置
+        <div class="code-header"><span class="code-lang">yaml</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-yaml"># Nacos注册中心配置
 dubbo:
   registry:
     address: nacos://127.0.0.1:8848
@@ -363,8 +378,8 @@ dubbo:
         style HashRing fill:rgba(240,180,41,0.1)</div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java/YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// Provider端配置权重
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// Provider端配置权重
 @DubboService(weight = 100)
 public class UserServiceImpl implements UserService { }
 
@@ -421,8 +436,8 @@ dubbo:
         end</div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java/YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 注解方式配置容错
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 注解方式配置容错
 @DubboReference(
     cluster = "failover",  // 容错策略
     retries = 3,           // 重试次数
@@ -465,8 +480,8 @@ dubbo:
         style I fill:rgba(126,231,135,0.2)</div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 方式1：返回null
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 方式1：返回null
 @DubboReference(mock = "return null")
 private UserService userService;
 
@@ -526,8 +541,8 @@ public class UserServiceMock implements UserService {
         F-->>C: 回调处理结果</div>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// 定义异步接口
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 定义异步接口
 public interface UserService {
     // 同步方法
     User getUser(Long id);
@@ -605,8 +620,8 @@ public class OrderService {
       </table>
 
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>// Provider端配置分组和版本
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// Provider端配置分组和版本
 @DubboService(
     version = "2.0.0",
     group = "user",
@@ -681,10 +696,122 @@ private UserService userServiceV2;</code></pre></div>
     </div>
   </section>
 
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚙️</div><h2 class="section-title">Dubbo 3.x 三大中心配置实战</h2></div>
+    <div class="section-body">
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-java">// 服务提供者
+@DubboService(
+    version = "1.0.0",
+    group = "production",
+    timeout = 3000,          // 超时时间（ms）
+    retries = 2,             // 失败重试次数
+    loadbalance = "roundrobin",  // 负载均衡策略
+    filter = "accesslog,monitor"
+)
+public class OrderServiceImpl implements OrderService {
+
+    @Override
+    public OrderDTO getOrder(Long id) {
+        return orderMapper.findById(id);
+    }
+}
+
+// 服务消费者
+@Component
+public class OrderController {
+
+    @DubboReference(
+        version = "1.0.0",
+        group = "production",
+        timeout = 2000,
+        check = false,        // 启动时不检查提供者是否存在
+        mock = "force:return null",  // 强制降级返回 null
+        cluster = "failfast"  // 快速失败（不重试）
+    )
+    private OrderService orderService;
+
+    // 异步调用
+    public CompletableFuture&lt;OrderDTO&gt; getOrderAsync(Long id) {
+        return CompletableFuture.supplyAsync(
+            () -&gt; orderService.getOrder(id)
+        );
+    }
+}
+
+// Dubbo 自定义过滤器（SPI扩展）
+@Activate(group = {CommonConstants.PROVIDER})
+public class TraceFilter implements Filter {
+    @Override
+    public Result invoke(Invoker&lt;?&gt; invoker, Invocation invocation) throws RpcException {
+        String traceId = RpcContext.getContext().getAttachment("traceId");
+        MDC.put("traceId", traceId != null ? traceId : UUID.randomUUID().toString());
+        try {
+            return invoker.invoke(invocation);
+        } finally {
+            MDC.remove("traceId");
+        }
+    }
+}</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: Dubbo 的调用流程是什么？</div>
+        <div class="interview-a">消费者调用 → Proxy（代理层）→ Cluster（集群层，处理负载均衡/重试/熔断）→ Protocol（协议层，默认 Dubbo 协议）→ 序列化 → 网络传输（Netty）→ 提供者接收 → 反序列化 → Filter 链 → Invoker → 实际方法执行 → 结果反序列化返回。核心分层：Business / RPC / Remoting，每层职责单一，通过 SPI 机制可扩展替换。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: Dubbo 和 Spring Cloud Feign 如何选择？</div>
+        <div class="interview-a">Dubbo：二进制协议（Hessian2/Protobuf），性能更高（减少序列化开销），支持多协议多注册中心，服务治理功能完善（负载均衡/路由/熔断内置），适合内网高频调用、性能敏感场景。Feign：HTTP/JSON 协议，调试方便，与 Spring Cloud 生态无缝集成，接入第三方服务更简单，适合异构系统交互或对性能要求不极致的场景。国内大厂内部多用 Dubbo，对外 API 用 Feign。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: Dubbo 的 SPI 机制是什么？与 Java SPI 的区别？</div>
+        <div class="interview-a">Java SPI：通过 ServiceLoader 加载 META-INF/services/ 下的实现类，一次性加载所有实现，不支持按需加载，无依赖注入。Dubbo SPI：加载 META-INF/dubbo/ 下的 KV 配置，支持按名称加载（ExtensionLoader.getExtension("name")），支持 IoC（自动注入其他扩展）、AOP（Wrapper 包装类）、自适应扩展（@Adaptive，运行时根据 URL 参数决定实现），是 Dubbo 可扩展性的核心基础。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: Dubbo 如何处理服务降级和容错？</div>
+        <div class="interview-a">Cluster 容错策略：①Failover（默认）：失败后重试其他节点（幂等接口）；②Failfast：快速失败，只调用一次，失败立即报错（非幂等接口）；③Failsafe：失败忽略，记录日志（日志/统计等非关键操作）；④Failback：失败自动记录，后台定期重试（消息通知）；⑤Forking：并行调用多个节点，最快返回（读操作实时性要求高）。Mock 降级：通过 mock 属性配置强制返回或调用 Mock 类。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：Dubbo 默认重试导致非幂等接口数据重复</strong>
+          Dubbo 默认 retries=2（共调用 3 次），对于写操作（下单、扣款）若第一次调用超时（网络抖动），重试会导致数据重复。必须对非幂等接口设置 retries=0，并在业务层实现幂等控制（唯一流水号）。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：版本/分组不匹配导致 No provider</strong>
+          消费者 @DubboReference 的 version 和 group 必须与提供者 @DubboService 完全一致，否则注册中心匹配不到对应服务，抛出 "No provider available" 异常。多版本并行发布时尤其容易出错，建议通过统一的接口模块管理版本号常量。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：序列化对象缺少无参构造函数</strong>
+          Dubbo 默认 Hessian2 序列化要求传输对象有无参构造函数，缺失会导致反序列化失败（NullPointerException 或 ClassNotFoundException）。使用 Lombok 的 @Builder 时会隐藏无参构造，需同时加 @NoArgsConstructor。建议接口参数/返回值使用 DTO 对象，避免直接传递 Entity（可能含懒加载代理）。
+        </div>
+      </div>
+    </div>
+  </section>
+
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } }); } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; mermaid.initialize({ startOnLoad: false, theme: 'default', themeVariables: { primaryColor: '#b8860b', lineColor: '#4a90a4', background: '#f8f6f1' } }); } location.reload(); });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code'); if (code) { navigator.clipboard.writeText(code.textContent).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); } }

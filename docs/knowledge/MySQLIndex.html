@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MySQL索引优化 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -66,6 +68,18 @@
   .tab-content { display: none; } .tab-content.active { display: block; }
   .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-dim); }
   @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+  .alert { display: flex; gap: 16px; padding: 16px 20px; margin: 20px 0; border-radius: 12px; border: 1px solid; }
+  .alert-info { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.3); }
+  .alert-warn { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.3); }
+  .alert-tip { background: rgba(126,231,135,0.08); border-color: rgba(126,231,135,0.3); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; line-height: 1.8; }
+  .alert-body strong { display: block; margin-bottom: 4px; color: var(--text-primary); }
+  .interview-item { border: 1px solid var(--border-card); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .interview-q { padding: 14px 20px; background: rgba(240,180,41,0.08); font-weight: 600; color: var(--amber); cursor: pointer; }
+  .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
+  .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
+  .table-container table { margin: 0; border: none; }
 </style>
 </head>
 <body>
@@ -73,7 +87,7 @@
 <div class="container">
   <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>数据库</span></nav>
   <header class="hero">
-    <div class="hero-badge">📚 KNOWLEDGE</div>
+    <div class="hero-badge">🗃️ MYSQL · 索引优化</div>
     <h1 class="hero-title">MySQL索引优化</h1>
     <p class="hero-desc">MySQL索引优化的详细解析和最佳实践</p>
   </header>
@@ -156,8 +170,8 @@
         <tr><td><strong>组合索引</strong><br><em>多列索引</em></td><td>多列组合，遵循最左前缀原则</td><td>多条件组合查询</td><td>是</td></tr>
       </table>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">SQL</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>-- 用户表索引创建示例
+        <div class="code-header"><span class="code-lang">sql</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-sql">-- 用户表索引创建示例
 CREATE TABLE `user` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(50) NOT NULL,
@@ -254,8 +268,8 @@ CREATE TABLE `user` (
       <h4 style="color: var(--amber); margin: 24px 0 12px;">3. 索引下推（ICP）</h4>
       <p>MySQL 5.6+ 引入的优化，将WHERE条件的过滤下推到存储引擎层：</p>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">SQL</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>-- 索引下推示例
+        <div class="code-header"><span class="code-lang">sql</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-sql">-- 索引下推示例
 KEY idx_name_age(name, age)
 SELECT * FROM user WHERE name LIKE '张%' AND age = 25;
 
@@ -266,8 +280,8 @@ SELECT * FROM user WHERE name LIKE '张%' AND age = 25;
       <h4 style="color: var(--amber); margin: 24px 0 12px;">4. 前缀索引</h4>
       <p>对长字符串列，可以使用前缀索引节省空间：</p>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">SQL</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>-- 计算前缀选择性
+        <div class="code-header"><span class="code-lang">sql</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-sql">-- 计算前缀选择性
 SELECT COUNT(DISTINCT LEFT(email, 6)) / COUNT(DISTINCT email) FROM user;
 
 -- 创建前缀索引
@@ -281,8 +295,8 @@ ALTER TABLE user ADD INDEX idx_email(email(10));</code></pre></div>
     <div class="section-body">
       <p>使用EXPLAIN分析SQL执行计划，找出性能瓶颈：</p>
       <div class="code-container">
-        <div class="code-header"><span class="code-lang">SQL</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
-        <div class="code-body"><pre><code>EXPLAIN SELECT * FROM user WHERE name = '张三';</code></pre></div>
+        <div class="code-header"><span class="code-lang">sql</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-sql">EXPLAIN SELECT * FROM user WHERE name = '张三';</code></pre></div>
       </div>
 
       <h4 style="color: var(--amber); margin: 20px 0 12px;">type：访问类型（从好到差）</h4>
@@ -372,7 +386,7 @@ ALTER TABLE user ADD INDEX idx_email(email(10));</code></pre></div>
       </div>
       <div class="tip"><div class="tip-title">✅ 优化方案1：子查询+JOIN</div>
         <div class="code-container" style="margin: 0;">
-          <div class="code-body"><pre><code>SELECT * FROM user u
+          <div class="code-body"><pre><code class="language-sql">SELECT * FROM user u
 INNER JOIN (SELECT id FROM user LIMIT 1000000, 10) t
 ON u.id = t.id;
 -- 先通过覆盖索引快速获取id，再JOIN查询完整数据</code></pre></div>
@@ -380,7 +394,7 @@ ON u.id = t.id;
       </div>
       <div class="tip"><div class="tip-title">✅ 优化方案2：记录上次查询位置</div>
         <div class="code-container" style="margin: 0;">
-          <div class="code-body"><pre><code>SELECT * FROM user
+          <div class="code-body"><pre><code class="language-sql">SELECT * FROM user
 WHERE id > #{lastId}
 ORDER BY id
 LIMIT 10;
@@ -395,7 +409,7 @@ LIMIT 10;
       </div>
       <div class="tip"><div class="tip-title">✅ 优化方案</div>
         <div class="code-container" style="margin: 0;">
-          <div class="code-body"><pre><code>-- 只查询需要的字段
+          <div class="code-body"><pre><code class="language-sql">-- 只查询需要的字段
 SELECT id, name, age FROM user WHERE name = '张三';
 
 -- 创建覆盖索引
@@ -411,7 +425,7 @@ ALTER TABLE user ADD INDEX idx_name_age(name, age);
       </div>
       <div class="tip"><div class="tip-title">✅ 优化方案</div>
         <div class="code-container" style="margin: 0;">
-          <div class="code-body"><pre><code>-- 创建联合索引，满足最左前缀
+          <div class="code-body"><pre><code class="language-sql">-- 创建联合索引，满足最左前缀
 ALTER TABLE user ADD INDEX idx_dept_time(department_id, create_time);
 
 -- 这样WHERE和ORDER BY都能使用索引，避免filesort</code></pre></div>
@@ -419,10 +433,115 @@ ALTER TABLE user ADD INDEX idx_dept_time(department_id, create_time);
       </div>
     </div>
   </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔍</div><h2 class="section-title">EXPLAIN 执行计划实战解读</h2></div>
+    <div class="section-body">
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">sql</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code class="language-sql">-- 查看执行计划
+EXPLAIN SELECT o.id, o.amount, u.name
+FROM orders o
+JOIN users u ON o.user_id = u.id
+WHERE o.status = 'PAID'
+  AND o.create_time >= '2024-01-01'
+ORDER BY o.amount DESC
+LIMIT 10;
+
+-- 关键字段解读：
+-- type 列（重要程度从高到低）：
+--   system > const > eq_ref > ref > range > index > ALL
+--   ALL = 全表扫描（需优化），range = 范围扫描（可接受）
+
+-- key 列：实际使用的索引（NULL = 未使用索引）
+-- rows 列：预估扫描行数（越小越好）
+-- Extra 列重要值：
+--   Using index       = 覆盖索引，性能最优
+--   Using where       = 在 server 层过滤
+--   Using filesort    = 需要额外排序（考虑加索引）
+--   Using temporary   = 使用临时表（需优化）
+--   Using index condition = 索引条件下推(ICP)
+
+-- 慢查询分析步骤：
+-- 1. 开启慢查询日志
+SET GLOBAL slow_query_log = ON;
+SET GLOBAL long_query_time = 1;  -- 超过 1 秒记录
+
+-- 2. 查看慢查询日志
+-- mysqldumpslow -s t -t 10 /var/log/mysql/slow.log
+
+-- 3. 用 EXPLAIN 分析慢 SQL
+-- 4. 针对性添加合适索引</code></pre></div>
+      </div>
+      <div class="table-container">
+        <table>
+          <tr><th>type 值</th><th>说明</th><th>是否需要优化</th></tr>
+          <tr><td style="color:var(--red)">ALL</td><td>全表扫描</td><td>必须优化，添加索引</td></tr>
+          <tr><td style="color:var(--amber)">index</td><td>全索引扫描</td><td>建议优化</td></tr>
+          <tr><td style="color:var(--amber)">range</td><td>索引范围扫描</td><td>可接受</td></tr>
+          <tr><td style="color:var(--green)">ref</td><td>非唯一索引等值查询</td><td>良好</td></tr>
+          <tr><td style="color:var(--green)">eq_ref</td><td>唯一索引等值查询</td><td>优秀</td></tr>
+          <tr><td style="color:var(--green)">const</td><td>主键/唯一索引单值查询</td><td>最优</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🎯</div><h2 class="section-title">面试高频考点</h2></div>
+    <div class="section-body">
+      <div class="interview-item">
+        <div class="interview-q">Q1: B+树索引的结构和查询原理？为什么用 B+树而不是 B 树？</div>
+        <div class="interview-a">B+树：非叶子节点只存键值（不存数据），叶子节点存完整数据且通过链表相连。优势：①非叶子节点更小，一页能存更多键，树更矮（通常 3-4 层），IO 次数更少；②叶子节点链表支持高效范围查询（顺序IO）；③查询稳定，所有查询都到叶子节点（固定 IO 次数）。B 树非叶子节点存数据，范围查询需回溯，不适合顺序扫描。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q2: 什么是覆盖索引？什么是回表？如何避免回表？</div>
+        <div class="interview-a">回表：二级索引查到主键后，再根据主键去聚簇索引查完整行数据，产生额外 IO。覆盖索引：查询字段全部包含在索引中，无需回表，EXPLAIN Extra 显示 "Using index"。避免回表：①将查询列加入联合索引；②SELECT 只查需要的列，避免 SELECT *；③使用主键查询（聚簇索引）。覆盖索引是性能优化的重要手段，大数据量分页查询中效果显著。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q3: 索引失效的常见场景有哪些？</div>
+        <div class="interview-a">①最左前缀原则违反：联合索引 (a,b,c) 跳过 a 直接查 b/c；②在索引列上做函数运算或类型转换：WHERE DATE(create_time)='2024-01-01' 或 WHERE id='1'（字符串与数字比较）；③LIKE 以通配符开头：LIKE '%abc'；④使用 OR 连接且 OR 两边非同一索引；⑤范围查询右边的列：联合索引 (a,b,c) 中 a=1 AND b>5 AND c=3，c 索引失效；⑥NOT IN / NOT EXISTS；⑦数据量小时优化器认为全表扫更快。</div>
+      </div>
+      <div class="interview-item">
+        <div class="interview-q">Q4: 聚簇索引和非聚簇索引的区别？</div>
+        <div class="interview-a">聚簇索引（Clustered Index）：数据行与索引在同一 B+树中，叶子节点即数据页，InnoDB 主键索引即聚簇索引，每表只有一个。非聚簇索引（Secondary Index）：叶子节点存的是主键值而非完整数据，查询时需回表。MyISAM 的所有索引都是非聚簇索引（数据文件和索引文件分离）。选择主键建议：自增整数（顺序插入，减少页分裂）；避免 UUID（随机写入，B+树频繁页分裂，性能差）。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">实战陷阱</h2></div>
+    <div class="section-body">
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱1：大数据量深分页性能急剧下降</strong>
+          LIMIT 100000, 10 需要扫描前 100010 行再丢弃前 100000 行，全表IO开销极大。优化方案：①游标分页（WHERE id > last_id LIMIT 10，适合单调递增主键）；②覆盖索引子查询（SELECT * FROM t JOIN (SELECT id FROM t ORDER BY id LIMIT 100000,10) tmp USING(id)）；③业务层限制最大页数。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱2：隐式类型转换导致索引失效</strong>
+          字段类型为 VARCHAR 但查询条件用数字（WHERE phone = 13800000000），MySQL 会对字符串列做隐式转换（CAST），导致索引失效，全表扫描。反之（字段为 INT，条件为字符串）索引仍然生效。务必确保查询参数类型与字段类型完全一致。
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-body">
+          <strong>陷阱3：频繁更新的列不适合建索引</strong>
+          每次更新索引列的值，B+树需要删除旧键并插入新键，可能引发页分裂/合并，写性能下降。状态字段（如 order_status，经常从 PENDING 改为 PAID）若区分度低（只有几个值），索引效果差且维护成本高。应评估字段的查询频率、更新频率和区分度，综合判断是否建索引。
+        </div>
+      </div>
+    </div>
+  </section>
+
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
