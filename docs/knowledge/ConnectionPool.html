@@ -583,25 +583,21 @@ sequenceDiagram
     participant Pool as 连接池
     participant DB as 数据库
 
-    rect rgb(240, 180, 41, 0.1)
-        Note over App,DB: 传统方式（每次新建连接）
-        App->>DB: 创建连接（TCP+认证）
-        DB-->>App: 连接建立
-        App->>DB: 执行SQL
-        DB-->>App: 返回结果
-        App->>DB: 关闭连接
-    end
+    Note over App,DB: 传统方式（每次新建连接）
+    App->>DB: 创建连接（TCP+认证）
+    DB-->>App: 连接建立
+    App->>DB: 执行SQL
+    DB-->>App: 返回结果
+    App->>DB: 关闭连接
 
-    rect rgb(78, 205, 196, 0.1)
-        Note over App,DB: 使用连接池
-        Pool->>DB: 预创建连接
-        DB-->>Pool: 连接就绪
-        App->>Pool: 获取连接
-        Pool-->>App: 返回已有连接
-        App->>DB: 执行SQL
-        DB-->>App: 返回结果
-        App->>Pool: 归还连接
-    end
+    Note over App,DB: 使用连接池
+    Pool->>DB: 预创建连接
+    DB-->>Pool: 连接就绪
+    App->>Pool: 获取连接
+    Pool-->>App: 返回已有连接
+    App->>DB: 执行SQL
+    DB-->>App: 返回结果
+    App->>Pool: 归还连接
           </div>
         </div>
 

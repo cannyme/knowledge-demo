@@ -327,26 +327,20 @@ sequenceDiagram
     participant B as Broker
     participant C as Consumer
 
-    rect rgb(255, 123, 114, 0.1)
-        Note over P,B: 场景1：发送阶段丢失
-        P->>B: 发送消息
-        B--xP: ACK丢失/网络超时
-        Note right of P: 生产者认为失败重试<br/>实际Broker已接收
-    end
+    Note over P,B: 场景1：发送阶段丢失
+    P->>B: 发送消息
+    B--xP: ACK丢失/网络超时
+    Note right of P: 生产者认为失败重试<br/>实际Broker已接收
 
-    rect rgb(255, 123, 114, 0.1)
-        Note over B: 场景2：存储阶段丢失
-        B->>B: 消息写入内存
-        Note right of B: Broker宕机<br/>消息未刷盘丢失
-    end
+    Note over B: 场景2：存储阶段丢失
+    B->>B: 消息写入内存
+    Note right of B: Broker宕机<br/>消息未刷盘丢失
 
-    rect rgb(255, 123, 114, 0.1)
-        Note over B,C: 场景3：消费阶段丢失
-        B->>C: 推送消息
-        C->>C: 处理业务
-        Note left of C: 业务处理成功<br/>但ACK前消费者宕机
-        C--xB: ACK丢失
-    end
+    Note over B,C: 场景3：消费阶段丢失
+    B->>C: 推送消息
+    C->>C: 处理业务
+    Note left of C: 业务处理成功<br/>但ACK前消费者宕机
+    C--xB: ACK丢失
       </div>
 
       <table>
