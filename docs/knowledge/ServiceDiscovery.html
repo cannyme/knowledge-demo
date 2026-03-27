@@ -111,8 +111,8 @@
 
         Before -.->|演进| After
 
-        classDef beforeStyle fill:rgba(255,123,114,0.15),stroke:#ff5f56,stroke-width:2px
-        classDef afterStyle fill:rgba(126,231,135,0.15),stroke:#27c93f,stroke-width:2px
+        style beforeStyle fill:#3a1515,stroke:#ff5f56,stroke-width:2px
+        style afterStyle fill:#153a15,stroke:#27c93f,stroke-width:2px
         class A,B beforeStyle
         class C,D,E,F,G afterStyle</div>
 
@@ -211,9 +211,9 @@
           C -->|3. 选择并调用| P1[Provider 1]
           C -->|3. 选择并调用| P2[Provider 2]
 
-          classDef consumerStyle fill:rgba(240,180,41,0.2),stroke:#f0b429,stroke-width:2px
-          classDef registryStyle fill:rgba(78,205,196,0.2),stroke:#4ecdc4,stroke-width:2px
-          classDef providerStyle fill:rgba(126,231,135,0.15),stroke:#27c93f,stroke-width:2px
+          style consumerStyle fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+          style registryStyle fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
+          style providerStyle fill:#153a15,stroke:#27c93f,stroke-width:2px
           class C consumerStyle
           class R registryStyle
           class P1,P2 providerStyle</div>
@@ -256,9 +256,9 @@
           LB -->|4. 转发请求| P1[Provider 1]
           LB -->|4. 转发请求| P2[Provider 2]
 
-          classDef lbStyle fill:rgba(240,180,41,0.2),stroke:#f0b429,stroke-width:2px
-          classDef registryStyle fill:rgba(78,205,196,0.2),stroke:#4ecdc4,stroke-width:2px
-          classDef providerStyle fill:rgba(126,231,135,0.15),stroke:#27c93f,stroke-width:2px
+          style lbStyle fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+          style registryStyle fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
+          style providerStyle fill:#153a15,stroke:#27c93f,stroke-width:2px
           class LB lbStyle
           class R registryStyle
           class P1,P2 providerStyle</div>
@@ -313,8 +313,8 @@
 
         S1 -.->|自我保护| S1
 
-        classDef serverStyle fill:rgba(240,180,41,0.15),stroke:#f0b429,stroke-width:2px
-        classDef clientStyle fill:rgba(78,205,196,0.15),stroke:#4ecdc4,stroke-width:2px
+        style serverStyle fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style clientStyle fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
         class S1,S2,S3 serverStyle
         class P1,P2,C1 clientStyle</div>
 
@@ -335,8 +335,8 @@
         D -->|停止剔除| E[保留所有注册信息]
         E -->|网络恢复| A
 
-        classDef warningStyle fill:rgba(240,180,41,0.3),stroke:#f0b429,stroke-width:2px
-        classDef successStyle fill:rgba(126,231,135,0.2),stroke:#27c93f,stroke-width:2px
+        style warningStyle fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style successStyle fill:#153a15,stroke:#27c93f,stroke-width:2px
         class D warningStyle
         class E successStyle</div>
 
@@ -401,9 +401,9 @@ eureka:
         P1[Provider] -->|注册| N1
         C1[Consumer] -->|订阅| N2
 
-        classDef nacosStyle fill:rgba(240,180,41,0.15),stroke:#f0b429,stroke-width:2px
-        classDef dbStyle fill:rgba(126,231,135,0.15),stroke:#27c93f,stroke-width:2px
-        classDef clientStyle fill:rgba(78,205,196,0.15),stroke:#4ecdc4,stroke-width:2px
+        style nacosStyle fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style dbStyle fill:#153a15,stroke:#27c93f,stroke-width:2px
+        style clientStyle fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
         class N1,N2,N3 nacosStyle
         class DB dbStyle
         class P1,C1 clientStyle</div>
@@ -476,8 +476,8 @@ spring:
 
         C1 -->|DNS/HTTP| D[Consumer]
 
-        classDef consulStyle fill:rgba(240,180,41,0.15),stroke:#f0b429,stroke-width:2px
-        classDef agentStyle fill:rgba(78,205,196,0.15),stroke:#4ecdc4,stroke-width:2px
+        style consulStyle fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style agentStyle fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
         class C1,C2,C3 consulStyle
         class A1,A2 agentStyle</div>
 
