@@ -110,37 +110,24 @@
     <div class="section-body">
       <p>Dubbo架构包含五个核心角色，它们协作完成服务的注册、发现和调用：</p>
       <div class="mermaid">flowchart TB
-        subgraph Consumer["服务消费者 Consumer"]
-          C_Proxy[Proxy代理]
-          C_Cluster[Cluster集群]
-          C_Protocol[Protocol协议]
-        end
+        C1[Proxy代理]
+        C2[Cluster集群]
+        C3[Protocol协议消费者]
+        P1[Protocol协议提供者]
+        P2[Filter过滤器]
+        P3[Invoker执行体]
+        R[注册中心]
+        M[监控中心]
 
-        subgraph Provider["服务提供者 Provider"]
-          P_Protocol[Protocol协议]
-          P_Filter[Filter过滤器]
-          P_Invoker[Invoker执行体]
-        end
-
-        subgraph Registry["注册中心 Registry"]
-          R_Service[服务注册表]
-        end
-
-        subgraph Monitor["监控中心 Monitor"]
-          M_Stats[调用统计]
-        end
-
-        C_Cluster -->|负载均衡| C_Protocol
-        C_Protocol -->|RPC调用| P_Protocol
-        P_Filter --> P_Invoker
-        P_Protocol -->|上报| M_Stats
-        C_Protocol -->|上报| M_Stats
-        C_Proxy -->|订阅| R_Service
-        P_Filter -->|注册| R_Service
-
-        style Consumer fill:rgba(78,205,196,0.15),stroke:#4ecdc4
-        style Provider fill:rgba(240,180,41,0.15),stroke:#f0b429
-        style Registry fill:rgba(126,231,135,0.15),stroke:#7ee787</div>
+        C1 --> C2
+        C2 --> C3
+        C3 --> P1
+        P1 --> P2
+        P2 --> P3
+        P1 --> M
+        C3 --> M
+        C1 --> R
+        P2 --> R</div>
 
       <table>
         <tr><th>角色</th><th>职责说明</th></tr>
@@ -168,16 +155,13 @@
       <div id="expose-flow" class="tab-content active">
         <p>Provider端服务暴露的核心流程：</p>
         <div class="mermaid">flowchart TD
-          A[Spring容器启动] --> B[解析@Service注解]
-          B --> C[ServiceConfig解析配置]
-          C --> D[ProtocolConfig创建Protocol]
-          D --> E[打开NettyServer绑定端口]
-          E --> F[创建Invoker包装服务实现]
-          F --> G[Registry.register注册服务]
-          G --> H[URL: dubbo://ip:port/interface]
-
-          style A fill:rgba(240,180,41,0.2)
-          style G fill:rgba(126,231,135,0.2)</div>
+          A[Spring容器启动] --> B[解析注解]
+          B --> C[解析配置]
+          C --> D[创建Protocol]
+          D --> E[打开NettyServer]
+          E --> F[创建Invoker]
+          F --> G[注册服务]
+          G --> H[配置URL]</div>
 
         <div class="code-container">
           <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
@@ -205,17 +189,14 @@ public class ServiceConfig&lt;T&gt; {
       <div id="reference-flow" class="tab-content">
         <p>Consumer端服务引用的核心流程：</p>
         <div class="mermaid">flowchart TD
-          A[Spring容器启动] --> B[解析@Reference注解]
-          B --> C[ReferenceConfig解析配置]
-          C --> D[Registry.subscribe订阅服务]
-          D --> E[获取Provider地址列表]
-          E --> F[为每个Provider创建Invoker]
-          F --> G[Cluster包装为集群Invoker]
-          G --> H[ProxyFactory创建代理对象]
-          H --> I[注入到Spring容器]
-
-          style A fill:rgba(240,180,41,0.2)
-          style H fill:rgba(126,231,135,0.2)</div>
+          A[Spring启动] --> B[解析注解]
+          B --> C[解析配置]
+          C --> D[订阅服务]
+          D --> E[获取地址列表]
+          E --> F[创建Invoker]
+          F --> G[Cluster包装]
+          G --> H[创建代理]
+          H --> I[注入容器]</div>
 
         <div class="code-container">
           <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
@@ -247,7 +228,7 @@ public class ReferenceConfig&lt;T&gt; {
       <div id="invoke-flow" class="tab-content">
         <p>一次完整的服务调用流程：</p>
         <div class="mermaid">flowchart LR
-          A[consumer.method] --> B[代理对象拦截]
+          A[consumer method] --> B[代理对象拦截]
           B --> C[Cluster Invoker]
           C --> C1[路由规则]
           C --> C2[负载均衡]
@@ -258,10 +239,7 @@ public class ReferenceConfig&lt;T&gt; {
           F --> G[Provider解码]
           G --> H[Filter Chain]
           H --> I[Invoker执行]
-          I --> J[返回结果]
-
-          style A fill:rgba(78,205,196,0.2)
-          style J fill:rgba(126,231,135,0.2)</div>
+          I --> J[返回结果]</div>
 
         <div class="code-container">
           <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
@@ -300,26 +278,24 @@ public class InvokerInvocationHandler implements InvocationHandler {
       </table>
 
       <div class="mermaid">flowchart TB
-        subgraph ZK["ZooKeeper目录结构"]
-          Z1[/dubbo]
-          Z1 --> Z2[/com.example.UserService]
-          Z2 --> Z3[/providers]
-          Z2 --> Z4[/consumers]
-          Z2 --> Z5[/routers]
-          Z2 --> Z6[/configurators]
-          Z3 --> Z7[dubbo://192.168.1.1:20880/...]
-          Z3 --> Z8[dubbo://192.168.1.2:20880/...]
-        end
+        Z1[ZooKeeper根节点]
+        Z2[服务接口节点]
+        Z3[providers节点]
+        Z7[Provider地址1]
+        Z8[Provider地址2]
+        N1[Nacos服务名]
+        N2[Nacos集群1]
+        N3[Nacos实例1]
+        N4[Nacos实例2]
 
-        subgraph Nacos["Nacos服务列表"]
-          N1[服务名: user-service]
-          N1 --> N2[集群1]
-          N2 --> N3[实例1: 192.168.1.1:20880]
-          N2 --> N4[实例2: 192.168.1.2:20880]
-        end
+        Z1 --> Z2
+        Z2 --> Z3
+        Z3 --> Z7
+        Z3 --> Z8
 
-        style ZK fill:rgba(240,180,41,0.1)
-        style Nacos fill:rgba(78,205,196,0.1)</div>
+        N1 --> N2
+        N2 --> N3
+        N2 --> N4</div>
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">yaml</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
@@ -363,19 +339,20 @@ dubbo:
       <div class="highlight-box"><strong>一致性哈希原理：</strong>将Provider和请求参数都哈希到一个环上，顺时针找到第一个Provider。当Provider增减时只影响相邻节点，保证缓存命中率。</div>
 
       <div class="mermaid">flowchart LR
-        subgraph HashRing["一致性哈希环 0-360°"]
-          direction LR
-          H1[0°] --> H2[90°] --> H3[180°] --> H4[270°] --> H1
-          H1 -.-> P1[Provider A]
-          H2 -.-> P2[Provider B]
-          H3 -.-> P3[Provider C]
-          H4 -.-> P4[Provider D]
-        end
+        H1[0度] --> H2[90度]
+        H2 --> H3[180度]
+        H3 --> H4[270度]
+        H4 --> H1
 
-        Request[请求参数hash] -->|hash=45°| P1
-        Request2[请求参数hash] -->|hash=200°| P3
+        P1[Provider A]
+        P2[Provider B]
+        P3[Provider C]
+        P4[Provider D]
 
-        style HashRing fill:rgba(240,180,41,0.1)</div>
+        H1 -.-> P1
+        H2 -.-> P2
+        H3 -.-> P3
+        H4 -.-> P4</div>
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
@@ -464,20 +441,14 @@ dubbo:
       <p>当服务不可用或响应超时时，Dubbo支持通过Mock机制进行服务降级，保证系统整体可用性：</p>
 
       <div class="mermaid">flowchart TB
-        A[服务调用] --> B{服务可用?}
-        B -->|是| C[正常调用]
-        B -->|否| D[触发Mock降级]
+        A[服务调用] --> B{服务可用}
+        B --> C[正常调用]
+        B --> D[触发降级]
         D --> E{Mock类型}
-        E -->|return null| F[返回null]
-        E -->|return empty| G[返回空对象]
-        E -->|return json| H[返回默认值]
-        E -->|class| I[执行Mock类逻辑]
-
-        style D fill:rgba(240,180,41,0.3)
-        style F fill:rgba(126,231,135,0.2)
-        style G fill:rgba(126,231,135,0.2)
-        style H fill:rgba(126,231,135,0.2)
-        style I fill:rgba(126,231,135,0.2)</div>
+        E --> F[返回null]
+        E --> G[返回空对象]
+        E --> H[返回默认值]
+        E --> I[执行Mock类]</div>
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
@@ -595,22 +566,17 @@ public class OrderService {
       <p>Dubbo支持通过分组（group）和版本（version）实现服务的多维度管理：</p>
 
       <div class="mermaid">flowchart TB
-        subgraph Group["服务分组 Group"]
-          G1[group: online]
-          G2[group: offline]
-        end
+        G1[group online]
+        G2[group offline]
+        V1[version 1.0.0]
+        V2[version 2.0.0]
+        S1[UserService v1]
+        S2[UserService v2]
+        S3[AdminService v1]
 
-        subgraph Version["服务版本 Version"]
-          V1[version: 1.0.0]
-          V2[version: 2.0.0]
-        end
-
-        G1 --> S1[UserService v1.0.0]
-        G1 --> S2[UserService v2.0.0]
-        G2 --> S3[AdminService v1.0.0]
-
-        style Group fill:rgba(240,180,41,0.1)
-        style Version fill:rgba(78,205,196,0.1)</div>
+        G1 --> S1
+        G1 --> S2
+        G2 --> S3</div>
 
       <table>
         <tr><th>特性</th><th>说明</th><th>使用场景</th></tr>
