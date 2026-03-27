@@ -94,6 +94,35 @@
   .interview-a { padding: 16px 20px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border-card); }
   .table-container { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border-card); }
   .table-container table { margin: 0; border: none; }
+
+  /* Enhanced IDE-style Code Block */
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; transition: all 0.3s ease; }
+  .code-container:hover { border-color: rgba(240, 180, 41, 0.3); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); }
+  .code-container.collapsed .code-body { max-height: 60px; overflow: hidden; }
+  .code-container.collapsed .code-body::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40px; background: linear-gradient(transparent, var(--bg-code)); pointer-events: none; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-header-left { display: flex; align-items: center; gap: 12px; }
+  .code-dots { display: flex; gap: 6px; }
+  .code-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .code-dot.red { background: #ff5f56; }
+  .code-dot.yellow { background: #ffbd2e; }
+  .code-dot.green { background: #27c93f; }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .code-actions { display: flex; gap: 8px; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); background: rgba(240, 180, 41, 0.05); }
+  .code-btn.copied { color: var(--cyan); border-color: var(--cyan); }
+  .code-body { position: relative; display: flex; }
+  .line-numbers { padding: 20px 0; background: rgba(0, 0, 0, 0.2); border-right: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; line-height: 1.8; color: var(--text-dim); text-align: right; user-select: none; min-width: 50px; }
+  .line-numbers span { display: block; padding: 0 12px; }
+  .line-numbers span.highlight { color: var(--amber); background: rgba(240, 180, 41, 0.1); }
+  .code-content { flex: 1; overflow-x: auto; }
+  .code-content pre { padding: 20px; margin: 0; font-family: var(--font-code); font-size: 13px; line-height: 1.8; color: var(--text-primary); background: transparent; }
+  .code-content code { font-family: var(--font-code); }
+  .expand-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; background: linear-gradient(transparent, var(--bg-code) 60%); display: flex; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .code-container.collapsed .expand-overlay { opacity: 1; pointer-events: auto; }
+  .expand-btn { padding: 8px 20px; background: var(--amber); color: #0a0e17; border: none; border-radius: 20px; font-family: var(--font-code); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .expand-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(240, 180, 41, 0.3); }
 </style>
 </head>
 <body>
@@ -1023,20 +1052,83 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
+// Initialize code blocks with line numbers and folding
+function initCodeBlocks() {
+  document.querySelectorAll('.code-container').forEach(container => {
+    const pre = container.querySelector('pre');
+    const code = pre.querySelector('code');
+    if (!pre || !code) return;
+
+    // Calculate line numbers
+    const lines = code.textContent.split('\n').length;
+    const lineNumbers = document.createElement('div');
+    lineNumbers.className = 'line-numbers';
+    for (let i = 1; i <= lines; i++) {
+      const span = document.createElement('span');
+      span.textContent = i;
+      lineNumbers.appendChild(span);
+    }
+
+    // Wrap content
+    const codeContent = document.createElement('div');
+    codeContent.className = 'code-content';
+    pre.parentNode.insertBefore(codeContent, pre);
+    codeContent.appendChild(pre);
+
+    // Insert line numbers
+    const codeBody = container.querySelector('.code-body');
+    codeBody.insertBefore(lineNumbers, codeBody.firstChild);
+
+    // Add collapse button for long code (>15 lines)
+    if (lines > 15) {
+      container.classList.add('collapsible');
+      const expandOverlay = document.createElement('div');
+      expandOverlay.className = 'expand-overlay';
+      const expandBtn = document.createElement('button');
+      expandBtn.className = 'expand-btn';
+      expandBtn.textContent = '📂 展开全部 (' + lines + ' 行)';
+      expandOverlay.appendChild(expandBtn);
+      codeContent.appendChild(expandOverlay);
+
+      expandBtn.addEventListener('click', function() {
+        container.classList.remove('collapsed');
+      });
+
+      // Add collapse button to header
+      const headerActions = container.querySelector('.code-actions');
+      const collapseBtn = document.createElement('button');
+      collapseBtn.className = 'code-btn collapse-btn';
+      collapseBtn.textContent = '📁 折叠';
+      collapseBtn.addEventListener('click', function() {
+        container.classList.toggle('collapsed');
+        this.textContent = container.classList.contains('collapsed') ? '📂 展开' : '📁 折叠';
+      });
+      headerActions.insertBefore(collapseBtn, headerActions.firstChild);
+
+      // Start collapsed
+      container.classList.add('collapsed');
+    }
+  });
+}
+
+// Copy code function
 function copyCode(btn) {
-  const codeBlock = btn.closest('.code-container').querySelector('pre, code');
+  const codeBlock = btn.closest('.code-container').querySelector('pre');
   const code = codeBlock ? codeBlock.textContent : '';
   navigator.clipboard.writeText(code).then(() => {
+    btn.classList.add('copied');
     btn.textContent = '✓ 已复制';
-    btn.style.color = '#4ecdc4';
     setTimeout(() => {
+      btn.classList.remove('copied');
       btn.textContent = '📋 复制';
-      btn.style.color = '';
     }, 2000);
   }).catch(err => {
     console.error('复制失败:', err);
   });
 }
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', initCodeBlocks);
 </script>
 </body>
 </html>

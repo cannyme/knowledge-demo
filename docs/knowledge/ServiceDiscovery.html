@@ -100,18 +100,21 @@
       <div class="mermaid">flowchart LR
         subgraph Before["传统方式：硬编码地址"]
           A[订单服务] -->|http://192.168.1.100:8080| B[用户服务]
-          style Before fill:rgba(255,123,114,0.1)
         end
 
         subgraph After["服务发现：动态寻址"]
-          C[订单服务] -->|registry.lookup"user-service"| D[(注册中心)]
+          C[订单服务] -->|registry.lookup| D[(注册中心)]
           D -->|返回可用实例| E[用户服务实例1]
           D -->|返回可用实例| F[用户服务实例2]
           D -->|返回可用实例| G[用户服务实例3]
-          style After fill:rgba(126,231,135,0.1)
         end
 
-        Before -.->|演进| After</div>
+        Before -.->|演进| After
+
+        classDef beforeStyle fill:rgba(255,123,114,0.15),stroke:#ff5f56,stroke-width:2px
+        classDef afterStyle fill:rgba(126,231,135,0.15),stroke:#27c93f,stroke-width:2px
+        class A,B beforeStyle
+        class C,D,E,F,G afterStyle</div>
 
       <div class="arch-grid">
         <div class="arch-card">
@@ -208,8 +211,12 @@
           C -->|3. 选择并调用| P1[Provider 1]
           C -->|3. 选择并调用| P2[Provider 2]
 
-          style C fill:rgba(240,180,41,0.2)
-          style R fill:rgba(78,205,196,0.2)</div>
+          classDef consumerStyle fill:rgba(240,180,41,0.2),stroke:#f0b429,stroke-width:2px
+          classDef registryStyle fill:rgba(78,205,196,0.2),stroke:#4ecdc4,stroke-width:2px
+          classDef providerStyle fill:rgba(126,231,135,0.15),stroke:#27c93f,stroke-width:2px
+          class C consumerStyle
+          class R registryStyle
+          class P1,P2 providerStyle</div>
 
         <div class="arch-grid">
           <div class="arch-card">
@@ -249,8 +256,12 @@
           LB -->|4. 转发请求| P1[Provider 1]
           LB -->|4. 转发请求| P2[Provider 2]
 
-          style LB fill:rgba(240,180,41,0.2)
-          style R fill:rgba(78,205,196,0.2)</div>
+          classDef lbStyle fill:rgba(240,180,41,0.2),stroke:#f0b429,stroke-width:2px
+          classDef registryStyle fill:rgba(78,205,196,0.2),stroke:#4ecdc4,stroke-width:2px
+          classDef providerStyle fill:rgba(126,231,135,0.15),stroke:#27c93f,stroke-width:2px
+          class LB lbStyle
+          class R registryStyle
+          class P1,P2 providerStyle</div>
 
         <div class="arch-grid">
           <div class="arch-card">
@@ -302,8 +313,10 @@
 
         S1 -.->|自我保护| S1
 
-        style Server fill:rgba(240,180,41,0.1)
-        style Client fill:rgba(78,205,196,0.1)</div>
+        classDef serverStyle fill:rgba(240,180,41,0.15),stroke:#f0b429,stroke-width:2px
+        classDef clientStyle fill:rgba(78,205,196,0.15),stroke:#4ecdc4,stroke-width:2px
+        class S1,S2,S3 serverStyle
+        class P1,P2,C1 clientStyle</div>
 
       <table>
         <tr><th>组件</th><th>职责</th></tr>
@@ -322,8 +335,10 @@
         D -->|停止剔除| E[保留所有注册信息]
         E -->|网络恢复| A
 
-        style D fill:rgba(240,180,41,0.3)
-        style E fill:rgba(126,231,135,0.2)</div>
+        classDef warningStyle fill:rgba(240,180,41,0.3),stroke:#f0b429,stroke-width:2px
+        classDef successStyle fill:rgba(126,231,135,0.2),stroke:#27c93f,stroke-width:2px
+        class D warningStyle
+        class E successStyle</div>
 
       <div class="alert alert-warn">
         <span class="alert-icon">⚠️</span>
@@ -370,7 +385,7 @@ eureka:
       <p>Nacos是阿里巴巴开源的动态服务发现、配置管理和服务管理平台，功能全面：</p>
 
       <div class="mermaid">flowchart TB
-        subgraph Nacos["Nacos集群"]
+        subgraph NacosCluster["Nacos集群"]
           N1[Nacos Node 1 Leader]
           N2[Nacos Node 2 Follower]
           N3[Nacos Node 3 Follower]
@@ -386,8 +401,12 @@ eureka:
         P1[Provider] -->|注册| N1
         C1[Consumer] -->|订阅| N2
 
-        style Nacos fill:rgba(240,180,41,0.1)
-        style DB fill:rgba(126,231,135,0.1)</div>
+        classDef nacosStyle fill:rgba(240,180,41,0.15),stroke:#f0b429,stroke-width:2px
+        classDef dbStyle fill:rgba(126,231,135,0.15),stroke:#27c93f,stroke-width:2px
+        classDef clientStyle fill:rgba(78,205,196,0.15),stroke:#4ecdc4,stroke-width:2px
+        class N1,N2,N3 nacosStyle
+        class DB dbStyle
+        class P1,C1 clientStyle</div>
 
       <table>
         <tr><th>特性</th><th>说明</th></tr>
@@ -441,7 +460,7 @@ spring:
       <p>Consul是HashiCorp出品的开源服务网格解决方案，提供服务发现、健康检查、Key/Value存储等功能：</p>
 
       <div class="mermaid">flowchart TB
-        subgraph Consul["Consul集群"]
+        subgraph ConsulCluster["Consul集群"]
           C1[Consul Server Leader]
           C2[Consul Server]
           C3[Consul Server]
@@ -457,7 +476,10 @@ spring:
 
         C1 -->|DNS/HTTP| D[Consumer]
 
-        style Consul fill:rgba(240,180,41,0.1)</div>
+        classDef consulStyle fill:rgba(240,180,41,0.15),stroke:#f0b429,stroke-width:2px
+        classDef agentStyle fill:rgba(78,205,196,0.15),stroke:#4ecdc4,stroke-width:2px
+        class C1,C2,C3 consulStyle
+        class A1,A2 agentStyle</div>
 
       <table>
         <tr><th>特性</th><th>说明</th></tr>
