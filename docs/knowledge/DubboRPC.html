@@ -394,23 +394,19 @@ dubbo:
         participant B as Provider B
         participant D as Provider C
 
-        rect rgb(240,180,41,0.1)
-          Note over C,D: Failover 失败重试流程
-          C->>A: 调用（失败）
-          A--xC: 超时异常
-          C->>B: 重试Provider B（失败）
-          B--xC: 连接异常
-          C->>D: 重试Provider C（成功）
-          D-->>C: 返回结果
-        end
+        Note over C,D: Failover 失败重试流程
+        C->>A: 调用（失败）
+        A--xC: 超时异常
+        C->>B: 重试Provider B（失败）
+        B--xC: 连接异常
+        C->>D: 重试Provider C（成功）
+        D-->>C: 返回结果
 
-        rect rgb(78,205,196,0.1)
-          Note over C,D: Forking 并行调用流程
-          C->>A: 并行调用
-          C->>B: 并行调用
-          C->>D: 并行调用
-          B-->>C: 最快返回（取消其他）
-        end</div>
+        Note over C,D: Forking 并行调用流程
+        C->>A: 并行调用
+        C->>B: 并行调用
+        C->>D: 并行调用
+        B-->>C: 最快返回（取消其他）</div>
 
       <div class="code-container">
         <div class="code-header"><span class="code-lang">java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
@@ -441,9 +437,9 @@ dubbo:
       <p>当服务不可用或响应超时时，Dubbo支持通过Mock机制进行服务降级，保证系统整体可用性：</p>
 
       <div class="mermaid">flowchart TB
-        A[服务调用] --> B{服务可用}
-        B --> C[正常调用]
-        B --> D[触发降级]
+        A[服务调用] --> B{可用}
+        B -->|是| C[正常调用]
+        B -->|否| D[触发降级]
         D --> E{Mock类型}
         E --> F[返回null]
         E --> G[返回空对象]
