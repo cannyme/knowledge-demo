@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>适配器模式 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="idea-darcula.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
@@ -75,8 +75,8 @@
       <div class="mermaid">graph LR
     C[客户端] -- "Target接口" --> A[适配器 Adapter]
     A -- "调用" --> B[被适配者 Adaptee]
-    style A fill:#f0b429,color:#000
-    style B fill:#4ecdc4,color:#000</div>
+    style A fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style B fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4</div>
       <div class="table-container"><table>
         <tr><th>形式</th><th>实现方式</th><th>优缺点</th></tr>
         <tr><td><strong class="highlight">对象适配器</strong></td><td>组合：持有 Adaptee 引用</td><td>✅ 推荐，灵活，不受单继承限制</td></tr>

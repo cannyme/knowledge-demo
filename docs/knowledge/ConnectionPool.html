@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>数据库连接池详解 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="idea-darcula.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
 
@@ -808,7 +810,7 @@ flowchart LR
     优化1 --> 性能[极致性能]
     优化2 --> 性能
     优化3 --> 性能
-    style 性能 fill:#f0b429,stroke:#0a0e17,stroke-width:2px
+    style 性能 fill:#3a2e15,stroke:#f0b429,color:#f0b429
           </div>
         </div>
 
@@ -1216,7 +1218,7 @@ flowchart TB
     性能 --> 目标[目标]
     稳定 --> 目标
 
-    style 目标 fill:#f0b429,stroke:#0a0e17,stroke-width:3px
+    style 目标 fill:#3a2e15,stroke:#f0b429,color:#f0b429
           </div>
         </div>
 
@@ -1270,6 +1272,7 @@ flowchart TB
       useMaxWidth: true
     }
   });
+  hljs.highlightAll();
 
   // Theme toggle
   var themeToggle = document.getElementById('themeToggle');

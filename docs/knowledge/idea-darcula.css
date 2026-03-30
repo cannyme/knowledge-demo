@@ -1,0 +1,177 @@
+/* IntelliJ IDEA Darcula Theme for Highlight.js */
+
+.hljs {
+  background: #2b2b2b !important;
+  color: #a9b7c6 !important;
+}
+
+/* Keywords - orange */
+.hljs-keyword,
+.hljs-literal,
+.hljs-symbol,
+.hljs-name {
+  color: #cc7832 !important;
+}
+
+/* Types - orange */
+.hljs-type,
+.hljs-class .hljs-title,
+.hljs-function .hljs-title {
+  color: #ffc66d !important;
+}
+
+/* Classes - yellow */
+.hljs-class,
+.hljs-title.class_ {
+  color: #ffc66d !important;
+}
+
+/* Methods/Functions - yellow */
+.hljs-function,
+.hljs-title.function_ {
+  color: #ffc66d !important;
+}
+
+/* Strings - green */
+.hljs-string,
+.hljs-regexp,
+.hljs-addition {
+  color: #6a8759 !important;
+}
+
+/* Numbers - blue */
+.hljs-number,
+.hljs-literal {
+  color: #6897bb !important;
+}
+
+/* Comments - gray */
+.hljs-comment,
+.hljs-quote {
+  color: #808080 !important;
+  font-style: italic !important;
+}
+
+/* Annotations/Decorators - yellow-green */
+.hljs-meta,
+.hljs-meta-keyword,
+.hljs-meta-string {
+  color: #bbb529 !important;
+}
+
+/* Variables/Parameters - purple */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-params,
+.hljs-attr {
+  color: #9876aa !important;
+}
+
+/* Properties - white/gray */
+.hljs-property {
+  color: #a9b7c6 !important;
+}
+
+/* Tags (XML/HTML) - blue */
+.hljs-tag,
+.hljs-name.tag_ {
+  color: #e8bf6a !important;
+}
+
+/* Attributes - pink/purple */
+.hljs-attr,
+.hljs-attribute {
+  color: #9876aa !important;
+}
+
+/* Built-ins - yellow */
+.hljs-built_in {
+  color: #ffc66d !important;
+}
+
+/* Operators - gray */
+.hljs-operator {
+  color: #a9b7c6 !important;
+}
+
+/* Punctuation */
+.hljs-punctuation {
+  color: #a9b7c6 !important;
+}
+
+/* Documentation comments - green */
+.hljs-doctag {
+  color: #629755 !important;
+}
+
+/* Generic emphasis */
+.hljs-emphasis {
+  font-style: italic !important;
+}
+
+/* Generic strong */
+.hljs-strong {
+  font-weight: bold !important;
+}
+
+/* Deletion */
+.hljs-deletion {
+  color: #bc3f3c !important;
+}
+
+/* Diff changed */
+.hljs-section,
+.hljs-selector-tag {
+  color: #e8bf6a !important;
+}
+
+/* YAML keys */
+.hljs-bullet,
+.hljs-selector-tag,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-selector-attr {
+  color: #cc7832 !important;
+}
+
+/* JSON keys */
+.hljs-attr {
+  color: #9876aa !important;
+}
+
+/* Inline code background in body */
+code:not(pre code) {
+  background: #3c3f41 !important;
+  color: #a9b7c6 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.9em !important;
+}
+
+/* Code block container styling */
+pre code.hljs {
+  display: block !important;
+  overflow-x: auto !important;
+  padding: 16px 20px !important;
+  border-radius: 0 0 8px 8px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+/* Code header styling to match IDEA */
+.code-header {
+  background: #3c3f41 !important;
+  border-bottom: 1px solid #555555 !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.code-lang {
+  color: #cc7832 !important;
+  font-weight: 600 !important;
+}
+
+.code-body {
+  background: #2b2b2b !important;
+}

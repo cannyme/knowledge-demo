@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>高级数据结构 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="idea-darcula.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -279,9 +281,9 @@ flowchart LR
       <h3>结构示意</h3>
       <div class="mermaid">
 graph TB
-    A[30|60] --> B[10|20|30]
-    A --> C[30|40|50|60]
-    A --> D[60|70|80]
+    A[30 / 60] --> B[10 / 20 / 30]
+    A --> C[30 / 40 / 50 / 60]
+    A --> D[60 / 70 / 80]
 
     B --> B1[d1]
     B --> B2[d2]
@@ -441,6 +443,7 @@ graph LR
 
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', primaryTextColor: '#e8e6e3', primaryBorderColor: '#4ecdc4', lineColor: '#4ecdc4', background: '#0a0e17', mainBkg: '#0a0e17', secondBkg: '#101624', tertiaryBkg: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
 </script>

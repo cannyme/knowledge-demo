@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MVCC多版本并发控制 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="idea-darcula.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
 
@@ -549,8 +551,8 @@ graph LR
     C[事务B修改] --> D[创建版本V2]
     E[事务C读取] --> B
     F[事务D读取] --> D
-    style B fill:#4ecdc4,stroke:#0a0e17,stroke-width:2px
-    style D fill:#f0b429,stroke:#0a0e17,stroke-width:2px
+    style B fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style D fill:#3a2e15,stroke:#f0b429,color:#f0b429
           </div>
         </div>
       </div>
@@ -651,9 +653,9 @@ graph TB
     A[当前数据<br/>id=1, name='王五'<br/>DB_TRX_ID=102] -->|DB_ROLL_PTR| B[Undo Log版本1<br/>id=1, name='李四'<br/>DB_TRX_ID=101]
     B -->|DB_ROLL_PTR| C[Undo Log版本2<br/>id=1, name='张三'<br/>DB_TRX_ID=100]
     C -->|DB_ROLL_PTR| D[NULL]
-    style A fill:#f0b429,stroke:#0a0e17,stroke-width:2px
-    style B fill:#4ecdc4,stroke:#0a0e17,stroke-width:2px
-    style C fill:#4ecdc4,stroke:#0a0e17,stroke-width:2px
+    style A fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style B fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style C fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
           </div>
         </div>
 
@@ -694,20 +696,20 @@ graph TB
         <div class="mermaid-container">
           <div class="mermaid">
 flowchart TD
-    A[开始判断] --> B{DB_TRX_ID ==<br/>creator_trx_id?}
+    A[开始判断] --> B{"DB_TRX_ID ==<br/>creator_trx_id?"}
     B -->|是| C[可见<br/>自己修改的]
-    B -->|否| D{DB_TRX_ID <<br/>min_trx_id?}
+    B -->|否| D{"DB_TRX_ID &lt;<br/>min_trx_id?"}
     D -->|是| E[可见<br/>事务已提交]
-    D -->|否| F{DB_TRX_ID >=<br/>max_trx_id?}
+    D -->|否| F{"DB_TRX_ID >=<br/>max_trx_id?"}
     F -->|是| G[不可见<br/>事务在Read View之后开启]
-    F -->|否| H{DB_TRX_ID 在<br/>m_ids中?}
+    F -->|否| H{"DB_TRX_ID 在<br/>m_ids中?"}
     H -->|是| I[不可见<br/>事务未提交]
     H -->|否| J[可见<br/>事务已提交]
-    style C fill:#4ecdc4,stroke:#0a0e17,stroke-width:2px
-    style E fill:#4ecdc4,stroke:#0a0e17,stroke-width:2px
-    style J fill:#4ecdc4,stroke:#0a0e17,stroke-width:2px
-    style G fill:#ff6b6b,stroke:#0a0e17,stroke-width:2px
-    style I fill:#ff6b6b,stroke:#0a0e17,stroke-width:2px
+    style C fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style E fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style J fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style G fill:#3a1515,stroke:#ff6b6b,color:#ff6b6b
+    style I fill:#3a1515,stroke:#ff6b6b,color:#ff6b6b
           </div>
         </div>
 
@@ -949,12 +951,12 @@ sequenceDiagram
         <div class="mermaid-container">
           <div class="mermaid">
 flowchart LR
-    A[Undo Log<br/>历史版本] --> B{是否还有<br/>事务引用?}
+    A[Undo Log<br/>历史版本] --> B{"是否还有<br/>事务引用?"}
     B -->|是| C[保留]
     B -->|否| D[Purge清理]
     C --> E[等待]
     E --> B
-    style D fill:#f0b429,stroke:#0a0e17,stroke-width:2px
+    style D fill:#3a2e15,stroke:#f0b429,color:#f0b429
           </div>
         </div>
 
@@ -1007,7 +1009,7 @@ flowchart TB
     end
 
     subgraph 快照读
-        R1[生成/复用<br/>Read View] --> R2{根据可见性<br/>规则判断}
+        R1[生成/复用<br/>Read View] --> R2{"根据可见性<br/>规则判断"}
         R2 -->|可见| R3[返回该版本]
         R2 -->|不可见| R4[通过DB_ROLL_PTR<br/>找上一版本]
         R4 --> R2
@@ -1018,15 +1020,15 @@ flowchart TB
     end
 
     subgraph Purge
-        P1[检查Undo Log] --> P2{是否有事务<br/>引用?}
+        P1[检查Undo Log] --> P2{"是否有事务<br/>引用?"}
         P2 -->|无| P3[清理回收空间]
         P2 -->|有| P4[保留]
     end
 
-    style W1 fill:#f0b429,stroke:#0a0e17
-    style R1 fill:#4ecdc4,stroke:#0a0e17
-    style C1 fill:#ff6b6b,stroke:#0a0e17
-    style P1 fill:#9b59b6,stroke:#0a0e17
+    style W1 fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style R1 fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style C1 fill:#3a1515,stroke:#ff6b6b,color:#ff6b6b
+    style P1 fill:#2a153a,stroke:#9b59b6,color:#9b59b6
           </div>
         </div>
 
@@ -1057,6 +1059,7 @@ flowchart TB
 (function() {
   // Initialize Mermaid
   mermaid.initialize({
+hljs.highlightAll();
     startOnLoad: true,
     theme: 'dark',
     themeVariables: {
@@ -1090,11 +1093,13 @@ flowchart TB
       themeToggle.textContent = '🌙';
       localStorage.setItem('theme', 'dark');
       mermaid.initialize({ theme: 'dark' });
+hljs.highlightAll();
     } else {
       html.setAttribute('data-theme', 'light');
       themeToggle.textContent = '☀️';
       localStorage.setItem('theme', 'light');
       mermaid.initialize({ theme: 'default' });
+hljs.highlightAll();
     }
   }
   themeToggle.addEventListener('click', toggleTheme);

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HashMap源码分析 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="idea-darcula.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
@@ -153,11 +153,12 @@
       </ul>
 
       <div class="mermaid">graph TD
-    A[HashMap数据结构] --> B[数组 Node\[\] table]
-    B --> C[链表 Node]
-    B --> D[红黑树 TreeNode]
-    C --> E[拉链法解决冲突]
-    D --> F[优化长链表查询]</div>
+    A[HashMap数据结构] --> B["数组 Node table"]
+    B --> C["链表 Node"]
+    B --> D["红黑树 TreeNode"]
+    C --> E["拉链法解决冲突"]
+    D --> F["优化长链表查询"]
+      </div>
     </div>
   </section>
 
@@ -203,7 +204,7 @@
     A -->|否| C[计算hash]
     C --> D{table为空?}
     D -->|是| E[扩容初始化]
-    D -->|否| F[计算下标: (n-1) & hash]
+    D -->|否| F["计算下标: (n-1) &amp; hash"]
     F --> G{该位置为空?}
     G -->|是| H[直接插入新节点]
     G -->|否| I{key相同?}
@@ -214,14 +215,14 @@
     M --> N{遍历到相同key?}
     N -->|是| J
     N -->|否| O[尾插新节点]
-    O --> P{链表长度 >= 8?}
+    O --> P{"链表长度 >= 8?"}
     P -->|是| Q[转为红黑树]
     P -->|否| R[检查扩容]
     Q --> R
     H --> R
     L --> R
     J --> R
-    R --> S{size > threshold?}
+    R --> S{"size > threshold?"}
     S -->|是| T[扩容resize]
     S -->|否| End([结束])
     T --> End</div>
@@ -333,9 +334,9 @@ for (Node&lt;K,V&gt; e = oldTab[j]; e != null; e = e.next) {
       <p>当红黑树节点数 <code>&lt;= UNTREEIFY_THRESHOLD (6)</code> 时，在resize过程中会退化回链表。</p>
 
       <div class="mermaid">flowchart LR
-    A[链表] -->|长度>=8 & 容量>=64| B[红黑树]
-    B -->|节点数<=6| A
-    A -->|长度>=8 & 容量<64| C[扩容]
+    A[链表] -->|"长度>=8 &amp; 容量>=64"| B[红黑树]
+    B -->|"节点数<=6"| A
+    A -->|"长度>=8 &amp; 容量<64"| C[扩容]
     C -->|链表变短| A</div>
     </div>
   </section>

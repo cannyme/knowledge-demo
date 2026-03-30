@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>熔断与限流 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="idea-darcula.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
@@ -107,9 +107,9 @@ graph TD
     C --> E[支付服务]
     D --> F[(库存数据库)]
     E --> G[第三方支付]
-    style G fill:#ff7b72,color:#fff
-    style C fill:#ff7b72,color:#fff
-    style B fill:#ff7b72,color:#fff
+    style G fill:#3a1515,stroke:#ff7b72,color:#ff7b72
+    style C fill:#3a1515,stroke:#ff7b72,color:#ff7b72
+    style B fill:#3a1515,stroke:#ff7b72,color:#ff7b72
       </div>
 
       <p>如上图所示，当<strong>第三方支付服务</strong>响应缓慢或不可用时：</p>

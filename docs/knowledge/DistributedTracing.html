@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>分布式追踪 - Java Knowledge Review</title>
+<link rel="stylesheet" href="idea-darcula.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
 
@@ -519,11 +521,11 @@ graph LR
     Account --> DB2[(账户DB)]
     Coupon --> Redis[Redis缓存]
 
-    style User fill:#f0b429
-    style Gateway fill:#4ecdc4
-    style Order fill:#4ecdc4
-    style Inventory fill:#4ecdc4
-    style Account fill:#4ecdc4
+    style User fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style Gateway fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style Order fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style Inventory fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style Account fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
           </pre>
         </div>
 
@@ -572,10 +574,10 @@ graph TD
     S2 --> S3
     S2 --> S4
 
-    style S1 fill:#f0b429,stroke:#4ecdc4
-    style S2 fill:#4ecdc4
-    style S3 fill:#4ecdc4
-    style S4 fill:#4ecdc4
+    style S1 fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style S2 fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style S3 fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style S4 fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
           </pre>
         </div>
 
@@ -633,8 +635,8 @@ graph LR
     Collector --> OTLP[OTLP Backend]
     Collector --> Logstash[ELK Stack]
 
-    style SDK fill:#f0b429
-    style Collector fill:#4ecdc4
+    style SDK fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style Collector fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
           </pre>
         </div>
 
@@ -682,8 +684,8 @@ graph TB
     OAP --> Storage
     WebUI --> OAP
 
-    style OAP fill:#f0b429,stroke:#4ecdc4
-    style Agent fill:#4ecdc4
+    style OAP fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style Agent fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
           </pre>
         </div>
 
@@ -802,7 +804,7 @@ graph TB
     Query --> Storage
     UI --> Query
 
-    style ZipkinServer fill:#f0b429,stroke:#4ecdc4
+    style ZipkinServer fill:#3a2e15,stroke:#f0b429,color:#f0b429
           </pre>
         </div>
 
@@ -1122,6 +1124,8 @@ sampler.adaptive.minimal_sample_rate=<span class="number">100</span></code></pre
     },
     flowchart: { curve: 'basis' }
   });
+
+  hljs.highlightAll();
 
   var themeToggle = document.getElementById('themeToggle');
   function toggleTheme() {

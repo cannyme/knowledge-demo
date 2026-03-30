@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>服务注册与发现 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="idea-darcula.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
@@ -111,10 +111,14 @@
 
         Before -.->|演进| After
 
-        style beforeStyle fill:#3a1515,stroke:#ff5f56,stroke-width:2px
-        style afterStyle fill:#153a15,stroke:#27c93f,stroke-width:2px
-        class A,B beforeStyle
-        class C,D,E,F,G afterStyle</div>
+        style A fill:#3a1515,stroke:#ff5f56,stroke-width:2px
+        style B fill:#3a1515,stroke:#ff5f56,stroke-width:2px
+        style C fill:#153a15,stroke:#27c93f,stroke-width:2px
+        style D fill:#153a15,stroke:#27c93f,stroke-width:2px
+        style E fill:#153a15,stroke:#27c93f,stroke-width:2px
+        style F fill:#153a15,stroke:#27c93f,stroke-width:2px
+        style G fill:#153a15,stroke:#27c93f,stroke-width:2px
+      </div>
 
       <div class="arch-grid">
         <div class="arch-card">
@@ -211,12 +215,11 @@
           C -->|3. 选择并调用| P1[Provider 1]
           C -->|3. 选择并调用| P2[Provider 2]
 
-          style consumerStyle fill:#3a2e15,stroke:#f0b429,stroke-width:2px
-          style registryStyle fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
-          style providerStyle fill:#153a15,stroke:#27c93f,stroke-width:2px
-          class C consumerStyle
-          class R registryStyle
-          class P1,P2 providerStyle</div>
+          style C fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+          style R fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
+          style P1 fill:#153a15,stroke:#27c93f,stroke-width:2px
+          style P2 fill:#153a15,stroke:#27c93f,stroke-width:2px
+        </div>
 
         <div class="arch-grid">
           <div class="arch-card">
@@ -256,12 +259,11 @@
           LB -->|4. 转发请求| P1[Provider 1]
           LB -->|4. 转发请求| P2[Provider 2]
 
-          style lbStyle fill:#3a2e15,stroke:#f0b429,stroke-width:2px
-          style registryStyle fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
-          style providerStyle fill:#153a15,stroke:#27c93f,stroke-width:2px
-          class LB lbStyle
-          class R registryStyle
-          class P1,P2 providerStyle</div>
+          style LB fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+          style R fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
+          style P1 fill:#153a15,stroke:#27c93f,stroke-width:2px
+          style P2 fill:#153a15,stroke:#27c93f,stroke-width:2px
+        </div>
 
         <div class="arch-grid">
           <div class="arch-card">
@@ -313,10 +315,13 @@
 
         S1 -.->|自我保护| S1
 
-        style serverStyle fill:#3a2e15,stroke:#f0b429,stroke-width:2px
-        style clientStyle fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
-        class S1,S2,S3 serverStyle
-        class P1,P2,C1 clientStyle</div>
+        style S1 fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style S2 fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style S3 fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style P1 fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
+        style P2 fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
+        style C1 fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
+      </div>
 
       <table>
         <tr><th>组件</th><th>职责</th></tr>
@@ -331,14 +336,13 @@
       <div class="mermaid">flowchart TB
         A[正常状态] -->|心跳续约| B[服务健康]
         A -->|网络故障| C[大量服务失联]
-        C -->|15分钟内丢失>85%心跳| D[进入自我保护模式]
+        C -->|"15分钟内丢失>85%心跳"| D[进入自我保护模式]
         D -->|停止剔除| E[保留所有注册信息]
         E -->|网络恢复| A
 
-        style warningStyle fill:#3a2e15,stroke:#f0b429,stroke-width:2px
-        style successStyle fill:#153a15,stroke:#27c93f,stroke-width:2px
-        class D warningStyle
-        class E successStyle</div>
+        style D fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style E fill:#153a15,stroke:#27c93f,stroke-width:2px
+      </div>
 
       <div class="alert alert-warn">
         <span class="alert-icon">⚠️</span>
@@ -401,12 +405,13 @@ eureka:
         P1[Provider] -->|注册| N1
         C1[Consumer] -->|订阅| N2
 
-        style nacosStyle fill:#3a2e15,stroke:#f0b429,stroke-width:2px
-        style dbStyle fill:#153a15,stroke:#27c93f,stroke-width:2px
-        style clientStyle fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
-        class N1,N2,N3 nacosStyle
-        class DB dbStyle
-        class P1,C1 clientStyle</div>
+        style N1 fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style N2 fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style N3 fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style DB fill:#153a15,stroke:#27c93f,stroke-width:2px
+        style P1 fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
+        style C1 fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
+      </div>
 
       <table>
         <tr><th>特性</th><th>说明</th></tr>
@@ -476,10 +481,12 @@ spring:
 
         C1 -->|DNS/HTTP| D[Consumer]
 
-        style consulStyle fill:#3a2e15,stroke:#f0b429,stroke-width:2px
-        style agentStyle fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
-        class C1,C2,C3 consulStyle
-        class A1,A2 agentStyle</div>
+        style C1 fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style C2 fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style C3 fill:#3a2e15,stroke:#f0b429,stroke-width:2px
+        style A1 fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
+        style A2 fill:#153a3a,stroke:#4ecdc4,stroke-width:2px
+      </div>
 
       <table>
         <tr><th>特性</th><th>说明</th></tr>
@@ -549,22 +556,33 @@ spring:
         <tr><td>脚本探测</td><td>执行自定义脚本检查</td><td>复杂健康检查逻辑</td></tr>
       </table>
 
-      <div class="mermaid">gantt
-        title 心跳时间线示例（Nacos）
-        dateFormat X
-        axisFormat %s秒
+      <div class="mermaid">flowchart LR
+        subgraph 时间轴["⏱️ 心跳时间线（Nacos）"]
+          T0["0s<br/>注册成功"] --> T5["5s<br/>心跳1"]
+          T5 --> T10["10s<br/>心跳2"]
+          T10 --> T15["15s<br/>心跳3"]
+          T15 --> T20["20s<br/>心跳丢失"]
+          T20 --> T30["30s<br/>服务移除"]
+        end
 
-        section 心跳
-        服务注册成功      :0, 1s
-        心跳1             :5s, 6s
-        心跳2             :10s, 11s
-        心跳3             :15s, 16s
-        心跳丢失          :20s, 21s
+        subgraph 健康状态["健康状态变化"]
+          S1["🟢 健康"] --> S2["🟡 不健康"]
+          S2 --> S3["🔴 已移除"]
+        end
 
-        section 状态
-        健康              :0, 15s
-        不健康            :15s, 30s
-        已移除            :30s, 35s</div>
+        T15 -.->|15s未收到心跳| S2
+        T30 -.->|30s未收到心跳| S3
+
+        style T0 fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17
+        style T5 fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17
+        style T10 fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17
+        style T15 fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17
+        style T20 fill:#ff7b72,stroke:#ff7b72,color:#0a0e17
+        style T30 fill:#ff7b72,stroke:#ff7b72,color:#0a0e17
+        style S1 fill:#1a3a1a,stroke:#7ee787
+        style S2 fill:#3a2e15,stroke:#f0b429
+        style S3 fill:#3a1515,stroke:#ff7b72
+      </div>
 
       <table>
         <tr><th>注册中心</th><th>心跳间隔</th><th>不健康阈值</th><th>移除阈值</th></tr>

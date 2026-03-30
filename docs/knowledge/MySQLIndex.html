@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MySQL索引优化 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="idea-darcula.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
@@ -129,11 +129,11 @@
     A --> B2
     A --> B3
     A --> B4
-    style A fill:#f0b429,stroke:#f0b429,color:#0a0e17
-    style B1 fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17
-    style B2 fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17
-    style B3 fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17
-    style B4 fill:#4ecdc4,stroke:#4ecdc4,color:#0a0e17</div>
+    style A fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style B1 fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style B2 fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style B3 fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style B4 fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4</div>
       <div class="two-col">
         <div>
           <h4 style="color: var(--amber); margin-bottom: 12px;">B+树 vs B树</h4>
@@ -222,9 +222,9 @@ CREATE TABLE `user` (
     B2[(id=2\nname=李四\nage=30\n...)]
     B3[(id=3\nname=王五\nage=28\n...)]
     end
-    style B1 fill:#f0b429,stroke:#f0b429,color:#0a0e17
-    style B2 fill:#f0b429,stroke:#f0b429,color:#0a0e17
-    style B3 fill:#f0b429,stroke:#f0b429,color:#0a0e17</div>
+    style B1 fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style B2 fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style B3 fill:#3a2e15,stroke:#f0b429,color:#f0b429</div>
       <div class="tip"><div class="tip-title">💡 回表示例</div>
         <p>SELECT * FROM user WHERE name = '张三';</p>
         <ol style="margin-top: 8px;">

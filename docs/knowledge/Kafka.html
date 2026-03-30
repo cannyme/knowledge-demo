@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kafka核心概念与使用 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="idea-darcula.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -90,9 +92,9 @@
     P2 -->|副本| R2[Replica]
     Broker[Broker<br/>消息服务器] --> Topic
     ZooKeeper[ZooKeeper<br/>集群协调] --> Broker
-    style Producer fill:#f0b429
-    style CG fill:#4ecdc4
-    style Broker fill:#7ee787</div>
+    style Producer fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style CG fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style Broker fill:#1a3a1a,stroke:#7ee787,color:#7ee787</div>
 
       <table>
         <tr><th>概念</th><th>说明</th><th>特点</th></tr>
@@ -112,9 +114,9 @@
     P1["Partition 1<br/>Offset: 0,1,2,3..."]
     P2["Partition 2<br/>Offset: 0,1,2,3..."]
     end
-    style P0 fill:#f0b429
-    style P1 fill:#4ecdc4
-    style P2 fill:#7ee787</div>
+    style P0 fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style P1 fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style P2 fill:#1a3a1a,stroke:#7ee787,color:#7ee787</div>
 
       <div class="tip">
         <strong>💡 分区的作用：</strong>1) 提高并行度（多分区可并行消费）2) 提高吞吐量 3) 分区内的消息有序。Topic是逻辑概念，Partition是物理概念。
@@ -148,8 +150,8 @@
     Z[ZooKeeper] -.->|协调| B1
     Z -.-> B2
     Z -.-> B3
-    style B1 fill:#f0b429
-    style B3 fill:#4ecdc4</div>
+    style B1 fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style B3 fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4</div>
     </div>
   </section>
 
@@ -282,10 +284,10 @@ public class OrderProducer {
     C4 --> P1
     C4 --> P2
     end
-    style C1 fill:#f0b429
-    style C2 fill:#f0b429
-    style C3 fill:#f0b429
-    style C4 fill:#4ecdc4</div>
+    style C1 fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style C2 fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style C3 fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style C4 fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4</div>
 
       <div class="tip">
         <strong>💡 消费者组规则：</strong>1) 一个分区只能被同组一个消费者消费 2) 消费者数 > 分区数时，有消费者空闲 3) 消费者故障时触发Rebalance（再均衡）
@@ -465,8 +467,8 @@ public class CustomPartitioner implements Partitioner {
     L -.->|同步复制| F1
     L -.->|同步复制| F2
     ISR["ISR = [Leader, Follower1, Follower2]"]
-    style L fill:#f0b429
-    style ISR fill:#4ecdc4</div>
+    style L fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style ISR fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4</div>
 
       <table>
         <tr><th>概念</th><th>说明</th></tr>
@@ -574,6 +576,7 @@ retries=3                        # 发送失败重试次数</code></pre></div>
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) {

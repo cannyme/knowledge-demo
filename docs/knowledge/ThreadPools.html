@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>线程池详解 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="idea-darcula.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
@@ -151,13 +151,14 @@
         <li><strong>执行拒绝策略：</strong>如果线程数达到maximumPoolSize且队列已满，触发拒绝策略</li>
       </ol>
       <div class="mermaid">flowchart TD
-    A[任务提交] --> B{核心线程数 < corePoolSize?}
+    A[任务提交] --> B{"核心线程数 < corePoolSize?"}
     B -->|是| C[创建核心线程<br/>执行任务]
-    B -->|否| D{任务队列 <br/>未满?}
+    B -->|否| D{"任务队列 <br/>未满?"}
     D -->|是| E[任务加入队列<br/>等待执行]
-    D -->|否| F{线程数 < maximumPoolSize?}
+    D -->|否| F{"线程数 < maximumPoolSize?"}
     F -->|是| G[创建非核心线程<br/>执行任务]
-    F -->|否| H[执行拒绝策略]</div>
+    F -->|否| H[执行拒绝策略]
+  </div>
     </div>
   </section>
 

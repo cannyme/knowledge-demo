@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RocketMQ核心概念与使用 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="idea-darcula.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -83,8 +85,8 @@
     NameServer[NameServer<br>路由注册中心] -->|注册/发现| Broker
     Broker -->|推送消息| Consumer[Consumer<br>消费者]
     Broker --> Store[消息存储<br>CommitLog/ConsumeQueue]
-    style Broker fill:#f0b429
-    style NameServer fill:#4ecdc4</div>
+    style Broker fill:#5c4015,color:#f0b429,stroke:#f0b429
+    style NameServer fill:#0d3d3a,color:#4ecdc4,stroke:#4ecdc4</div>
 
       <table>
         <tr><th>组件</th><th>作用</th><th>特点</th></tr>
@@ -140,10 +142,10 @@
     P3 --> P6[Consumer B]
     P4 --> P7[Consumer C]
     end
-    style G2 fill:#f0b429
-    style P2 fill:#4ecdc4
-    style P3 fill:#4ecdc4
-    style P4 fill:#4ecdc4</div>
+    style G2 fill:#5c4015,color:#f0b429,stroke:#f0b429
+    style P2 fill:#0d3d3a,color:#4ecdc4,stroke:#4ecdc4
+    style P3 fill:#0d3d3a,color:#4ecdc4,stroke:#4ecdc4
+    style P4 fill:#0d3d3a,color:#4ecdc4,stroke:#4ecdc4</div>
 
       <table>
         <tr><th>对比项</th><th>全局顺序</th><th>分区顺序（推荐）</th></tr>
@@ -456,10 +458,249 @@ public class IdempotentConsumer {
     </div>
   </section>
 
+  <!-- 消费者使用 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📥</div><h2 class="section-title">消费者使用</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="push-consumer">Push模式</button>
+        <button class="tab" data-tab="pull-consumer">Pull模式</button>
+        <button class="tab" data-tab="batch-consumer">批量消费</button>
+        <button class="tab" data-tab="order-consumer">顺序消费</button>
+      </div>
+
+      <div id="push-consumer" class="tab-content active">
+        <p>Push模式（推送模式）是默认消费方式，Broker主动推送消息给消费者。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>@Service
+@RocketMQMessageListener(
+    topic = "order-topic",
+    consumerGroup = "order-consumer-group",
+    consumeMode = ConsumeMode.CONCURRENTLY  // 并发消费
+)
+public class OrderConsumer implements RocketMQListener&lt;Order&gt; {
+    @Override
+    public void onMessage(Order order) {
+        System.out.println("收到订单: " + order.getOrderId());
+        // 处理订单业务
+        processOrder(order);
+    }
+}
+
+// 并发消费配置
+@RocketMQMessageListener(
+    topic = "order-topic",
+    consumerGroup = "order-consumer-group",
+    consumeMode = ConsumeMode.CONCURRENTLY,
+    consumeThreadMax = 20  // 最大消费线程数
+)
+public class ConcurrentConsumer implements RocketMQListener&lt;Order&gt; {
+    @Override
+    public void onMessage(Order order) {
+        // 并发处理消息
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="pull-consumer" class="tab-content">
+        <p>Pull模式（拉取模式）由消费者主动拉取消息，适合需要精细控制消费节奏的场景。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>@Service
+public class PullConsumerService {
+    @Autowired
+    private RocketMQTemplate rocketMQTemplate;
+
+    public void pullMessage() {
+        // 创建Pull消费者
+        DefaultLitePullConsumer consumer = new DefaultLitePullConsumer("pull-consumer-group");
+        consumer.setNamesrvAddr("localhost:9876");
+        consumer.subscribe("order-topic", "*");
+        consumer.setPullBatchSize(10);  // 每次拉取消息数
+
+        try {
+            consumer.start();
+
+            while (true) {
+                // 主动拉取消息
+                List&lt;MessageExt&gt; messages = consumer.poll(3000);
+                for (MessageExt msg : messages) {
+                    System.out.println(new String(msg.getBody()));
+                    // 处理完成后手动确认消费位置
+                    consumer.commitSync();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            consumer.shutdown();
+        }
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="batch-consumer" class="tab-content">
+        <p>批量消费可以一次处理多条消息，提高吞吐量。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 批量消费器
+@RocketMQMessageListener(
+    topic = "log-topic",
+    consumerGroup = "log-batch-consumer",
+    consumeMode = ConsumeMode.CONCURRENTLY,
+    consumeMessageBatchMaxSize = 50  // 批量消费大小
+)
+public class BatchConsumer implements RocketMQListener&lt;List&lt;MessageExt&gt;&gt; {
+
+    @Override
+    public void onMessage(List&lt;MessageExt&gt; messages) {
+        System.out.println("批次消费消息数: " + messages.size());
+
+        // 批量处理，例如批量写入数据库
+        List&lt;LogEntry&gt; logs = messages.stream()
+            .map(msg -&gt; parseLog(msg.getBody()))
+            .collect(Collectors.toList());
+
+        // 批量插入数据库
+        logRepository.batchInsert(logs);
+    }
+
+    private LogEntry parseLog(byte[] body) {
+        return JSON.parseObject(new String(body), LogEntry.class);
+    }
+}</code></pre></div>
+        </div>
+      </div>
+
+      <div id="order-consumer" class="tab-content">
+        <p>顺序消费保证同一队列的消息按顺序处理。</p>
+        <div class="code-container">
+          <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+          <div class="code-body"><pre><code>// 顺序消费：使用ORDERLY模式
+@RocketMQMessageListener(
+    topic = "order-status-topic",
+    consumerGroup = "order-status-consumer",
+    consumeMode = ConsumeMode.ORDERLY  // 顺序消费模式
+)
+public class OrderStatusConsumer implements RocketMQListener&lt;MessageExt&gt; {
+
+    @Override
+    public void onMessage(MessageExt message) {
+        String orderId = message.getKeys();
+        String status = new String(message.getBody());
+
+        // 同一订单的消息会被分配到同一个队列，按顺序处理
+        System.out.println("订单" + orderId + " 状态变更: " + status);
+        updateOrderStatus(orderId, status);
+    }
+}
+
+// 顺序消费注意事项：
+// 1. 生产者发送时需要指定shardingKey（如orderId）
+// 2. 消费者使用ORDERLY模式
+// 3. 同一队列只能被一个消费线程处理</code></pre></div>
+        </div>
+      </div>
+
+      <h3 style="color: var(--amber); margin-top: 24px;">消费者重试策略</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@RocketMQMessageListener(
+    topic = "order-topic",
+    consumerGroup = "order-consumer",
+    consumeMode = ConsumeMode.CONCURRENTLY,
+    maxReconsumeTimes = 3  // 消费失败重试次数，默认16次
+)
+public class OrderConsumerWithRetry implements RocketMQListener&lt;Order&gt; {
+
+    @Override
+    public void onMessage(Order order) {
+        try {
+            processOrder(order);
+        } catch (Exception e) {
+            // 业务异常，抛出异常触发重试
+            throw new RuntimeException("处理失败", e);
+        }
+    }
+}
+
+// 消费失败后的处理策略：
+// 1. 重试消费：默认间隔10秒，最多16次
+// 2. 进入死信队列：超过重试次数进入DLQ
+// 3. 异步处理：记录到异步任务表，人工干预处理</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 性能优化 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚡</div><h2 class="section-title">性能优化</h2></div>
+    <div class="section-body">
+      <div class="mermaid">flowchart LR
+    subgraph 生产者优化
+    P1[批量发送]
+    P2[异步发送]
+    P3[压缩消息]
+    end
+    subgraph Broker优化
+    B1[主从同步]
+    B2[刷盘策略]
+    B3[文件映射]
+    end
+    subgraph 消费者优化
+    C1[批量消费]
+    C2[并发消费]
+    C3[流控处理]
+    end
+    P1 --> B1 --> C1
+    P2 --> B2 --> C2
+    P3 --> B3 --> C3</div>
+
+      <h3 style="color: var(--amber); margin-top: 20px;">生产者性能优化</h3>
+      <table>
+        <tr><th>优化点</th><th>配置</th><th>效果</th></tr>
+        <tr><td>批量发送</td><td>batchSize=100</td><td>减少网络RTT，提升吞吐</td></tr>
+        <tr><td>异步发送</td><td>asyncSend</td><td>不阻塞业务线程</td></tr>
+        <tr><td>压缩消息</td><td>enableCompression=true</td><td>减少网络传输</td></tr>
+        <tr><td>路由缓存</td><td>setLatencyMax=500ms</td><td>减少NameServer查询</td></tr>
+      </table>
+
+      <h3 style="color: var(--amber); margin-top: 20px;">Broker性能优化</h3>
+      <table>
+        <tr><th>配置项</th><th>建议值</th><th>说明</th></tr>
+        <tr><td>flushDiskType</td><td>ASYNC_FLUSH</td><td>异步刷盘，性能更高</td></tr>
+        <tr><td>flushIntervalCommitLog</td><td>500ms</td><td>CommitLog刷盘间隔</td></tr>
+        <tr><td>flushIntervalConsumeQueue</td><td>1000ms</td><td>消费队列刷盘间隔</td></tr>
+        <tr><td>useReentrantLockWhenPutMessage</td><td>true</td><td>使用重入锁替代旋转锁</td></tr>
+      </table>
+
+      <h3 style="color: var(--amber); margin-top: 20px;">消费者性能优化</h3>
+      <table>
+        <tr><th>优化点</th><th>配置</th><th>效果</th></tr>
+        <tr><td>消费线程数</td><td>consumeThreadMin/Max=20/64</td><td>根据CPU和业务调整</td></tr>
+        <tr><td>批量消费</td><td>consumeMessageBatchMaxSize=32</td><td>减少IO次数</td></tr>
+        <tr><td>拉取批量</td><td>pullBatchSize=32</td><td>一次拉取更多消息</td></tr>
+        <tr><td>消费流控</td><td>useTLS=false</td><td>禁用无关功能</td></tr>
+      </table>
+
+      <div class="tip">
+        <strong>💡 关键性能指标</strong><br>
+        生产端 TPS：单机可达 10万+（批量发送）<br>
+        消费端 TPS：单机可达 5万+（并发消费）<br>
+        延迟：毫秒级（同机房）<br>
+        消息堆积：支持亿级消息堆积
+      </div>
+    </div>
+  </section>
+
   <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
 function copyCode(btn) {

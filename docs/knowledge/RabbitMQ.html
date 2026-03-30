@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RabbitMQ 消息队列 - Java Knowledge Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="idea-darcula.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  :root {
+    --bg-deep: #0a0e17; --bg-card: rgba(16, 22, 36, 0.7); --bg-code: rgba(10, 14, 23, 0.9);
+    --border-card: rgba(240, 180, 41, 0.12); --amber: #f0b429; --cyan: #4ecdc4;
+    --green: #7ee787; --red: #ff7b72; --text-primary: #e8e6e3; --text-secondary: #8a8f98;
+    --font-code: 'JetBrains Mono', monospace; --font-heading: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg-deep: #f8f6f1; --bg-card: rgba(255, 255, 255, 0.85); --bg-code: rgba(245, 243, 238, 0.95);
+    --border-card: rgba(160, 120, 20, 0.18); --amber: #b8860b; --text-primary: #1a1a2e;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-heading); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(240, 180, 41, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(240, 180, 41, 0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-card); background: var(--bg-card); backdrop-filter: blur(12px); cursor: pointer; font-size: 20px; transition: all 0.3s; }
+  .theme-toggle:hover { border-color: var(--amber); transform: scale(1.1); }
+  .breadcrumb { display: flex; gap: 8px; margin-bottom: 24px; font-family: var(--font-code); font-size: 13px; color: var(--text-secondary); }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; } .breadcrumb a:hover { color: var(--amber); }
+  .hero { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), var(--cyan), var(--amber)); }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-code); font-size: 12px; font-weight: 600; color: var(--cyan); background: rgba(78, 205, 196, 0.15); border: 1px solid rgba(78, 205, 196, 0.2); border-radius: 20px; padding: 6px 16px; margin-bottom: 20px; }
+  .hero-title { font-weight: 800; font-size: clamp(32px, 5vw, 48px); background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .hero-desc { font-size: 18px; color: var(--text-secondary); line-height: 1.8; max-width: 700px; }
+  .section { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 24px 28px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; gap: 12px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(78, 205, 196, 0.15)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
+  .section-body { padding: 28px; color: var(--text-secondary); line-height: 1.8; }
+  .section-body p { margin-bottom: 12px; }
+  .section-body ul { margin: 12px 0; padding-left: 24px; }
+  .section-body li { margin-bottom: 8px; }
+  .mermaid { display: flex; justify-content: center; padding: 20px; background: var(--bg-code); border-radius: 12px; margin: 20px 0; }
+  .code-container { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; overflow: hidden; margin: 20px 0; }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(240, 180, 41, 0.05); border-bottom: 1px solid var(--border-card); }
+  .code-lang { font-family: var(--font-code); font-size: 11px; color: var(--amber); font-weight: 600; }
+  .code-btn { font-family: var(--font-code); font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-card); border-radius: 6px; color: var(--text-secondary); cursor: pointer; }
+  .code-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .code-body pre { padding: 20px; overflow-x: auto; font-family: var(--font-code); font-size: 13px; line-height: 1.8; margin: 0; color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; padding: 20px 28px 0; border-bottom: 1px solid var(--border-card); overflow-x: auto; }
+  .tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: var(--font-heading); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .tip { background: rgba(78, 205, 196, 0.1); border-left: 4px solid var(--cyan); padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-card); }
+  th { background: rgba(240, 180, 41, 0.08); color: var(--amber); font-weight: 600; }
+  tr:hover { background: rgba(240, 180, 41, 0.03); }
+  .exchange-type { background: var(--bg-code); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; margin: 16px 0; }
+  .exchange-name { font-weight: 700; font-size: 16px; color: var(--cyan); margin-bottom: 8px; }
+  .footer { text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border-card); font-family: var(--font-code); font-size: 12px; color: var(--text-secondary); }
+  @media (max-width: 768px) { .container { padding: 20px 16px; } .hero { padding: 28px; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle">🌙</button>
+<div class="container">
+  <nav class="breadcrumb"><a href="../knowledge-map.html">📚 知识地图</a> <span>/</span> <span>Messaging</span></nav>
+  <header class="hero">
+    <div class="hero-badge">🐰 MQ</div>
+    <h1 class="hero-title">RabbitMQ 消息队列</h1>
+    <p class="hero-desc">RabbitMQ 是基于 AMQP 协议的开源消息队列，采用 Erlang 编写，以灵活的路由能力和高可靠性著称，适合复杂的企业级业务场景。</p>
+  </header>
+
+  <!-- 核心概念 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📖</div><h2 class="section-title">核心概念</h2></div>
+    <div class="section-body">
+      <div class="mermaid">graph LR
+    P[Producer<br/>生产者] -->|路由键| E[Exchange<br/>交换器]
+    E -->|绑定| Q1[Queue<br/>队列1]
+    E -->|绑定| Q2[Queue<br/>队列2]
+    E -->|绑定| Q3[Queue<br/>队列3]
+    Q1 --> C1[Consumer<br/>消费者1]
+    Q2 --> C2[Consumer<br/>消费者2]
+    Q3 --> C3[Consumer<br/>消费者3]
+    style E fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style P fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style C1 fill:#1a3a1a,stroke:#7ee787,color:#7ee787
+    style C2 fill:#1a3a1a,stroke:#7ee787,color:#7ee787
+    style C3 fill:#1a3a1a,stroke:#7ee787,color:#7ee787</div>
+
+      <table>
+        <tr><th>概念</th><th>说明</th><th>类比</th></tr>
+        <tr><td><strong>Producer</strong></td><td>消息生产者，创建并发送消息</td><td>寄件人</td></tr>
+        <tr><td><strong>Exchange</strong></td><td>交换器，接收消息并按规则路由到队列</td><td>邮局分拣中心</td></tr>
+        <tr><td><strong>Queue</strong></td><td>消息队列，存储消息的缓冲区</td><td>邮箱</td></tr>
+        <tr><td><strong>Consumer</strong></td><td>消息消费者，从队列获取并处理消息</td><td>收件人</td></tr>
+        <tr><td><strong>Binding</strong></td><td>绑定，Exchange 与 Queue 的路由规则</td><td>收件地址</td></tr>
+        <tr><td><strong>Routing Key</strong></td><td>路由键，Exchange 路由消息的依据</td><td>邮编</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 交换器类型 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">🔄</div><h2 class="section-title">Exchange 交换器类型</h2></div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="direct">Direct</button>
+        <button class="tab" data-tab="topic">Topic</button>
+        <button class="tab" data-tab="fanout">Fanout</button>
+        <button class="tab" data-tab="headers">Headers</button>
+      </div>
+
+      <div id="direct" class="tab-content active">
+        <div class="exchange-type">
+          <div class="exchange-name">Direct Exchange - 精确匹配</div>
+          <p>完全匹配路由键，点对点发送。</p>
+          <div class="mermaid">graph LR
+    P[Producer] -->|routingKey=order| E[Direct Exchange]
+    E -->|bindingKey=order| Q1[Order Queue]
+    E -.->|bindingKey=user| Q2[User Queue]
+    style E fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style Q1 fill:#1a3a1a,stroke:#7ee787,color:#7ee787</div>
+          <pre><code>// 声明 Direct Exchange
+channel.exchangeDeclare("order.exchange", "direct");
+channel.queueBind("order.queue", "order.exchange", "order.create");</code></pre>
+        </div>
+      </div>
+
+      <div id="topic" class="tab-content">
+        <div class="exchange-type">
+          <div class="exchange-name">Topic Exchange - 模式匹配</div>
+          <p>支持通配符匹配：* 匹配一个单词，# 匹配零个或多个单词。</p>
+          <div class="mermaid">graph LR
+    P[Producer] -->|order.create.success| E[Topic Exchange]
+    E -->|order.*.*| Q1[All Order Events]
+    E -->|order.create.#| Q2[Create Events]
+    E -->|order.*.success| Q3[Success Events]
+    style E fill:#3a2e15,stroke:#f0b429,color:#f0b429</div>
+          <pre><code>// 声明 Topic Exchange
+channel.exchangeDeclare("order.topic", "topic");
+channel.queueBind("order.all.queue", "order.topic", "order.*.*");
+channel.queueBind("order.create.queue", "order.topic", "order.create.#");</code></pre>
+        </div>
+      </div>
+
+      <div id="fanout" class="tab-content">
+        <div class="exchange-type">
+          <div class="exchange-name">Fanout Exchange - 广播</div>
+          <p>忽略路由键，广播到所有绑定的队列。</p>
+          <div class="mermaid">graph LR
+    P[Producer] --> E[Fanout Exchange]
+    E --> Q1[SMS Notification]
+    E --> Q2[Email Notification]
+    E --> Q3[Push Notification]
+    style E fill:#3a2e15,stroke:#f0b429,color:#f0b429</div>
+          <pre><code>// 声明 Fanout Exchange（广播）
+channel.exchangeDeclare("notification.fanout", "fanout");
+channel.queueBind("sms.queue", "notification.fanout", "");
+channel.queueBind("email.queue", "notification.fanout", "");</code></pre>
+        </div>
+      </div>
+
+      <div id="headers" class="tab-content">
+        <div class="exchange-type">
+          <div class="exchange-name">Headers Exchange - 头属性匹配</div>
+          <p>根据消息头属性进行匹配，支持 x-match: any 或 all。</p>
+          <pre><code>// Headers Exchange 匹配示例
+Map&lt;String, Object&gt; headers = new HashMap&lt;&gt;();
+headers.put("x-match", "all");  // 需要匹配所有 headers
+headers.put("type", "vip");
+headers.put("level", "gold");
+
+channel.queueBind("vip.queue", "headers.exchange", "", headers);</code></pre>
+        </div>
+      </div>
+
+      <table>
+        <tr><th>类型</th><th>路由规则</th><th>适用场景</th></tr>
+        <tr><td>Direct</td><td>精确匹配 routing key</td><td>点对点消息、简单路由</td></tr>
+        <tr><td>Topic</td><td>模式匹配 * 和 #</td><td>日志分级、事件订阅</td></tr>
+        <tr><td>Fanout</td><td>广播到所有队列</td><td>通知推送、多副本处理</td></tr>
+        <tr><td>Headers</td><td>匹配 header 属性</td><td>复杂属性筛选</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- Java 代码示例 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">☕</div><h2 class="section-title">Java 使用示例</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber);">生产者</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Component
+public class RabbitProducer {
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    // Direct 发送
+    public void sendDirect(String routingKey, Object message) {
+        rabbitTemplate.convertAndSend("order.exchange", routingKey, message);
+    }
+
+    // Topic 发送
+    public void sendTopic(String routingKey, Object message) {
+        rabbitTemplate.convertAndSend("order.topic", routingKey, message);
+    }
+
+    // Fanout 发送（无需 routing key）
+    public void sendFanout(Object message) {
+        rabbitTemplate.convertAndSend("notification.fanout", "", message);
+    }
+
+    // 发送带确认
+    public void sendWithConfirm(String routingKey, Object message) {
+        rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
+            if (ack) {
+                System.out.println("消息已送达 Exchange");
+            } else {
+                System.err.println("消息投递失败: " + cause);
+            }
+        });
+        rabbitTemplate.convertAndSend("order.exchange", routingKey, message);
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin-top: 24px;">消费者</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>@Component
+public class RabbitConsumer {
+
+    // Direct 消费
+    @RabbitListener(queues = "order.queue")
+    public void handleOrder(Order order) {
+        System.out.println("收到订单: " + order.getOrderId());
+        processOrder(order);
+    }
+
+    // Topic 消费 - 监听所有订单创建事件
+    @RabbitListener(bindings = @QueueBinding(
+        value = @Queue("order.create.queue"),
+        exchange = @Exchange(value = "order.topic", type = ExchangeTypes.TOPIC),
+        key = "order.create.#"
+    ))
+    public void handleOrderCreate(Order order) {
+        System.out.println("订单创建: " + order.getOrderId());
+    }
+
+    // 手动 ACK 模式
+    @RabbitListener(queues = "critical.queue", ackMode = "MANUAL")
+    public void handleCritical(Order order, Channel channel,
+                               @Header(AmqpHeaders.DELIVERY_TAG) long tag) throws IOException {
+        try {
+            processCriticalOrder(order);
+            // 手动确认
+            channel.basicAck(tag, false);
+        } catch (Exception e) {
+            // 拒绝并重新入队
+            channel.basicNack(tag, false, true);
+        }
+    }
+}</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin-top: 24px;">Spring Boot 配置</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">YAML</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    # 生产者确认
+    publisher-confirms: true
+    publisher-returns: true
+    # 消费者配置
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10  # 每次预取消息数
+        concurrency: 5
+        max-concurrency: 20
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 高级特性 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">⚙️</div><h2 class="section-title">高级特性</h2></div>
+    <div class="section-body">
+      <h3 style="color: var(--amber);">死信队列（DLX）</h3>
+      <div class="mermaid">graph LR
+    Q[Normal Queue<br/>TTL/MaxRetry] -->|dead letter| DLX[Dead Letter Exchange]
+    DLX --> DLQ[Dead Letter Queue]
+    DLQ --> C[Consumer/Monitor]
+    style Q fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style DLX fill:#3a1515,stroke:#ff7b72,color:#ff7b72
+    style DLQ fill:#3a1515,stroke:#ff7b72,color:#ff7b72</div>
+      <div class="code-container">
+        <div class="code-body"><pre><code>// 声明死信队列
+Map&lt;String, Object&gt; args = new HashMap&lt;&gt;();
+args.put("x-dead-letter-exchange", "dlx.exchange");
+args.put("x-dead-letter-routing-key", "dlx.routing.key");
+args.put("x-message-ttl", 60000);  // 消息 60 秒过期
+args.put("x-max-retries", 3);      // 最大重试次数
+
+channel.queueDeclare("normal.queue", true, false, false, args);</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin-top: 24px;">延迟队列</h3>
+      <div class="code-container">
+        <div class="code-header"><span class="code-lang">Java</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
+        <div class="code-body"><pre><code>// 方式一：TTL + 死信队列实现延迟
+@Bean
+public Queue delayQueue() {
+    Map&lt;String, Object&gt; args = new HashMap&lt;&gt;();
+    args.put("x-message-ttl", 30000);           // 30秒过期
+    args.put("x-dead-letter-exchange", "normal.exchange");
+    args.put("x-dead-letter-routing-key", "order.routing.key");
+    return QueueBuilder.durable("delay.queue").withArguments(args).build();
+}
+
+// 方式二：使用延迟队列插件（推荐）
+@Bean
+public CustomExchange delayedExchange() {
+    Map&lt;String, Object&gt; args = new HashMap&lt;&gt;();
+    args.put("x-delayed-type", "direct");
+    return new CustomExchange("delayed.exchange", "x-delayed-message", true, false, args);
+}
+
+// 发送延迟消息
+rabbitTemplate.convertAndSend("delayed.exchange", "order.routing.key", order, msg -> {
+    msg.getMessageProperties().setDelay(30000);  // 延迟 30 秒
+    return msg;
+});</code></pre></div>
+      </div>
+
+      <h3 style="color: var(--amber); margin-top: 24px;">消息可靠性保证</h3>
+      <table>
+        <tr><th>层级</th><th>机制</th><th>配置</th></tr>
+        <tr><td>生产者</td><td>Confirm 确认 + Return 回退</td><td>publisher-confirms: true</td></tr>
+        <tr><td>Exchange</td><td>持久化</td><td>durable: true</td></tr>
+        <tr><td>Queue</td><td>持久化 + 镜像队列</td><td>durable: true</td></tr>
+        <tr><td>消息</td><td>持久化投递</td><td>MessageProperties.PERSISTENT</td></tr>
+        <tr><td>消费者</td><td>手动 ACK</td><td>acknowledge-mode: manual</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 对比总结 -->
+  <section class="section">
+    <div class="section-header"><div class="section-icon">📊</div><h2 class="section-title">RabbitMQ 特点总结</h2></div>
+    <div class="section-body">
+      <table>
+        <tr><th>特性</th><th>RabbitMQ</th></tr>
+        <tr><td><strong>核心优势</strong></td><td>灵活路由（多种 Exchange 类型）、AMQP 标准协议</td></tr>
+        <tr><td><strong>单机吞吐量</strong></td><td>万级（5-10万）</td></tr>
+        <tr><td><strong>消息延迟</strong></td><td>微秒级</td></tr>
+        <tr><td><strong>路由能力</strong></td><td>极强（Direct/Topic/Fanout/Headers）</td></tr>
+        <tr><td><strong>延迟队列</strong></td><td>支持（TTL + DLX 或插件）</td></tr>
+        <tr><td><strong>消息回溯</strong></td><td>不支持</td></tr>
+        <tr><td><strong>适用场景</strong></td><td>复杂路由、企业集成、RPC 调用、任务分发</td></tr>
+      </table>
+
+      <div class="tip">
+        <strong>💡 选型建议：</strong><br>
+        RabbitMQ 适合需要复杂路由规则、灵活消息分发的场景。如果业务需要精准的消息路由（如按用户等级、订单类型等），RabbitMQ 是最佳选择。但对于超大规模数据流处理，Kafka 更合适。
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Java Knowledge Review Demo - 50 Knowledge Points<br><a href="../knowledge-map.html" style="color: var(--cyan);">← 返回知识地图</a></footer>
+</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
+document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
+document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { const parent = tab.closest('.section'); parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.getAttribute('data-tab')).classList.add('active'); }); });
+function copyCode(btn) {
+  const container = btn.closest('.code-container');
+  const codeElement = container.querySelector('code');
+  const preElement = container.querySelector('pre');
+  const code = codeElement ? codeElement.textContent : (preElement ? preElement.textContent : '');
+  navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); });
+}
+</script>
+</body>
+</html>

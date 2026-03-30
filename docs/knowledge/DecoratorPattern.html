@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>装饰器模式 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="idea-darcula.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
@@ -301,9 +301,9 @@ public class RequestBodyCachingFilter extends OncePerRequestFilter {
     SerializedCache --> ScheduledCache
     ScheduledCache --> LruCache
     LruCache --> PerpetualCache["PerpetualCache\n(基础 HashMap)"]
-    style PerpetualCache fill:#f0b429,color:#000
-    style SynchronizedCache fill:#1e2a3a,color:#4ecdc4
-    style LoggingCache fill:#1e2a3a,color:#4ecdc4</div>
+    style PerpetualCache fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style SynchronizedCache fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style LoggingCache fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4</div>
       <div class="code-container">
         <div class="code-header"><span class="code-lang">Java - MyBatis Cache 装饰器</span><button class="code-btn" onclick="copyCode(this)">📋 复制</button></div>
         <div class="code-body"><pre><code class="language-java">// Cache 接口（组件接口）

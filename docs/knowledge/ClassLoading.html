@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>类加载机制 - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="idea-darcula.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
@@ -96,8 +96,8 @@
     D --> E[初始化 Initialization]
     E --> F[使用 Using]
     F --> G[卸载 Unloading]
-    style A fill:#f0b429
-    style E fill:#4ecdc4</div>
+    style A fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style E fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4</div>
 
       <h3 style="color: var(--amber); margin: 24px 0 16px;">五个阶段详解</h3>
       <table>
@@ -119,7 +119,7 @@
     A[自定义类加载器<br>Custom ClassLoader] --> B[应用类加载器<br>Application ClassLoader]
     B --> C[扩展类加载器<br>Extension/Platform ClassLoader]
     C --> D[启动类加载器<br>Bootstrap ClassLoader<br>C++实现]
-    style D fill:#f0b429</div>
+    style D fill:#3a2e15,stroke:#f0b429,color:#f0b429</div>
 
       <table>
         <tr><th>类加载器</th><th>实现语言</th><th>加载路径</th><th>加载内容</th></tr>

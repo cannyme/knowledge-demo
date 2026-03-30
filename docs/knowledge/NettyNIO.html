@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Netty与NIO - Java Knowledge Review</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="idea-darcula.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800;900&display=swap');
   :root {
@@ -386,9 +388,9 @@ flowchart LR
     E -->|出站| L2[LoggingHandler]
     L2 -->|出站| C2[Client]
 
-    style D fill:#4ecdc4,stroke:#4ecdc4
-    style E fill:#f0b429,stroke:#f0b429
-    style B fill:#7ee787,stroke:#7ee787
+    style D fill:#0d3d3a,stroke:#4ecdc4,color:#4ecdc4
+    style E fill:#3a2e15,stroke:#f0b429,color:#f0b429
+    style B fill:#1a3a1a,stroke:#7ee787,color:#7ee787
       </div>
 
       <div class="code-container">
@@ -684,6 +686,7 @@ public class BusinessHandler extends ChannelInboundHandlerAdapter {
 </div>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#f0b429', lineColor: '#4ecdc4', background: '#0a0e17' } });
+hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
 </script>
