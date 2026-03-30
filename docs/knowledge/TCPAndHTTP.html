@@ -565,5 +565,6 @@ hljs.highlightAll();
 document.getElementById('themeToggle').addEventListener('click', () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'light') { html.removeAttribute('data-theme'); document.getElementById('themeToggle').textContent = '🌙'; } else { html.setAttribute('data-theme', 'light'); document.getElementById('themeToggle').textContent = '☀️'; } });
 function copyCode(btn) { const code = btn.closest('.code-container').querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ 已复制'; btn.style.color = '#4ecdc4'; setTimeout(() => { btn.textContent = '📋 复制'; btn.style.color = ''; }, 2000); }); }
 </script>
+<script src="../navigation.js"></script>
 </body>
 </html>
