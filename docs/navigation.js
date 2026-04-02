@@ -701,8 +701,9 @@
       '  height: 40px;',
       '  min-height: 40px;',
       '  max-height: 40px;',
-      '  border-radius: 50%;',
-      '  overflow: hidden;',
+      '  border: none;',
+      '  background: transparent;',
+      '  overflow: visible;',
       '}',
 
       '.toc-container.toc-collapsed .toc-header,',
@@ -728,8 +729,8 @@
       '  width: 24px;',
       '  height: 24px;',
       '  border: none;',
-      '  background: var(--border-card);',
-      '  color: var(--text-secondary);',
+      '  background: var(--amber);',
+      '  color: var(--bg-deep);',
       '  border-radius: 50%;',
       '  cursor: pointer;',
       '  font-size: 10px;',
@@ -741,7 +742,7 @@
 
       '.toc-toggle:hover {',
       '  background: var(--amber);',
-      '  color: var(--bg-deep);',
+      '  filter: brightness(1.2);',
       '}',
 
       '.toc-list {',
