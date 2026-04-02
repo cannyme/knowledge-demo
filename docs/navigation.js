@@ -68,6 +68,12 @@
     return match ? match[1] : null;
   }
 
+  // 检查是否是知识地图页面
+  function isKnowledgeMapPage() {
+    var path = window.location.pathname;
+    return path.includes('knowledge-map') || path.endsWith('/docs/') || path.endsWith('/docs/index.html');
+  }
+
   // 获取当前页面索引
   function getCurrentPageIndex() {
     var currentId = getCurrentPageId();
@@ -385,7 +391,12 @@
         if (selectedIndex >= 0 && items[selectedIndex]) {
           items[selectedIndex].click();
         } else if (filteredPages.length > 0) {
-          window.location.href = filteredPages[0].id + '.html';
+          var targetPage = filteredPages[0];
+          var href = 'knowledge/' + targetPage.id + '.html';
+          if (getCurrentPageId()) {
+            href = targetPage.id + '.html';
+          }
+          window.location.href = href;
         }
       } else if (e.key === 'Escape') {
         dropdown.style.display = 'none';
@@ -671,15 +682,15 @@
       '  transition: all 0.3s ease;',
       '}',
 
-      '/* 页面内容留出右侧空间 */',
-      '.container {',
+      '/* 页面内容留出右侧空间 - 只在有目录的页面应用 */',
+      'body:not(.toc-collapsed) .container {',
       '  max-width: calc(100% - 320px) !important;',
       '  margin-right: 260px !important;',
       '  margin-left: 60px !important;',
       '  box-sizing: border-box;',
       '}',
 
-      '/* 目录收缩时内容居中，宽度不变 */',
+      '/* 目录收缩时或无目录时内容居中 */',
       'body.toc-collapsed .container {',
       '  margin-left: auto !important;',
       '  margin-right: auto !important;',
@@ -877,6 +888,11 @@
     // 首先应用保存的主题（在添加其他元素之前）
     applySavedTheme();
 
+    // 知识地图页面直接添加 toc-collapsed 类
+    if (isKnowledgeMapPage()) {
+      document.body.classList.add('toc-collapsed');
+    }
+
     addStyles();
 
     // 增强主题切换按钮
@@ -892,6 +908,9 @@
       var toc = generateTOC();
       if (toc) {
         document.body.appendChild(toc);
+      } else {
+        // 没有目录时，添加 toc-collapsed 类让内容居中
+        document.body.classList.add('toc-collapsed');
       }
 
       var navButtons = createNavButtons();
