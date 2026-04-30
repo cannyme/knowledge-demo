@@ -173,15 +173,7 @@
     });
     tocContainer.appendChild(toggleBtn);
 
-    // 恢复之前的折叠状态
-    try {
-      if (localStorage.getItem('toc-collapsed') === '1') {
-        tocContainer.classList.add('toc-collapsed');
-        document.body.classList.add('toc-collapsed');
-        toggleBtn.textContent = '▶';
-        toggleBtn.title = '展开目录';
-      }
-    } catch (e) {}
+    // 默认展开目录，不恢复折叠状态
 
     // 滚动时高亮当前章节
     function updateActiveItem() {
